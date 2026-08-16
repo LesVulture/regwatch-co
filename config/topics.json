@@ -1,0 +1,73 @@
+{
+  "$comment": "Taxonomía de temas. Cada tema define los términos que lo activan. La clasificación es LÉXICA y auditable a propósito: se puede explicar por qué un registro quedó en un tema (ver GOVERNANCE.md §4). Añadir un tema es añadir una entrada aquí; no hay código que tocar.",
+  "version": 1,
+  "topics": {
+    "ia-tech": {
+      "label": "IA, datos y tecnología",
+      "description": "Inteligencia artificial, protección de datos, ciberseguridad, gobierno digital y derechos digitales.",
+      "terms": [
+        "inteligencia artificial", "sistemas de inteligencia artificial", "algoritmo", "algorítmic",
+        "aprendizaje automático", "machine learning", "modelo fundacional",
+        "datos personales", "habeas data", "tratamiento de datos", "protección de datos",
+        "ciberseguridad", "seguridad digital", "gobierno digital", "transformación digital",
+        "derechos digitales", "brecha digital", "economía digital",
+        "propiedad intelectual", "derecho de autor", "obra generada",
+        "plataforma digital", "interoperabilidad", "computación en la nube",
+        "deepfake", "contenido sintético", "biometr"
+      ],
+      "authorities": ["MinTIC", "MinCiencias", "SIC", "CRC", "DNP"]
+    },
+    "salud": {
+      "label": "Salud y protección social",
+      "description": "SGSSS, aseguramiento, financiamiento y regulación sanitaria.",
+      "terms": [
+        "sistema general de seguridad social en salud", "SGSSS", "aseguramiento en salud",
+        "unidad de pago por capitación", "UPC", "plan de beneficios",
+        "EPS", "IPS", "régimen subsidiado", "régimen contributivo",
+        "INVIMA", "medicamento", "dispositivo médico", "tecnología en salud",
+        "salud pública", "atención primaria"
+      ],
+      "authorities": ["MinSalud", "INVIMA", "ADRES", "Supersalud"]
+    },
+    "infancia": {
+      "label": "Infancia, adolescencia y familia",
+      "description": "Primera infancia, niñez y adolescencia, y el Sistema Nacional de Bienestar Familiar.",
+      "terms": [
+        "primera infancia", "de cero a siempre", "niñez", "niños, niñas y adolescentes",
+        "adolescencia", "sistema nacional de bienestar familiar", "SNBF",
+        "ruta integral de atenciones", "protección integral", "interés superior"
+      ],
+      "authorities": ["ICBF", "MinSalud", "MinEducación", "DNP"]
+    },
+    "cooperacion": {
+      "label": "Cooperación internacional",
+      "description": "Cooperación técnica y financiera, donaciones y banca multilateral.",
+      "terms": [
+        "cooperación internacional", "cooperación técnica", "ayuda oficial al desarrollo",
+        "donación", "banca multilateral", "crédito externo", "empréstito",
+        "organismo internacional", "acuerdo de cooperación", "convenio internacional"
+      ],
+      "authorities": ["APC-Colombia", "Cancillería", "MinHacienda", "DNP"]
+    },
+    "territorio": {
+      "label": "Territorio y descentralización",
+      "description": "Catastro multipropósito, ordenamiento territorial y planeación local.",
+      "terms": [
+        "catastro multipropósito", "ordenamiento territorial", "plan de ordenamiento",
+        "entidad territorial", "descentralización", "regalías", "planeación territorial",
+        "esquema asociativo", "región administrativa"
+      ],
+      "authorities": ["IGAC", "DNP", "MinVivienda", "MinInterior"]
+    },
+    "migracion": {
+      "label": "Migración e integración",
+      "description": "Migración, refugio e integración socioeconómica de población migrante.",
+      "terms": [
+        "migración", "migrante", "refugiado", "permiso por protección temporal",
+        "estatuto temporal de protección", "integración socioeconómica", "movilidad humana",
+        "regularización migratoria"
+      ],
+      "authorities": ["Migración Colombia", "Cancillería", "Gerencia de Frontera"]
+    }
+  }
+}

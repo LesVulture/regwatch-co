@@ -1,0 +1,17 @@
+{
+  "name": "regwatch-co",
+  "version": "0.1.0",
+  "description": "Monitor de normatividad colombiana en la terminal, con procedencia obligatoria. Arranca en IA, datos y tecnología; extensible a cualquier eje de política pública.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "bin": { "regwatch": "./bin/regwatch.mjs" },
+  "scripts": {
+    "start": "node bin/regwatch.mjs",
+    "list": "node bin/regwatch.mjs --list",
+    "verify": "node bin/verify.mjs",
+    "test": "node tests/test-provenance.mjs && node bin/verify.mjs"
+  },
+  "keywords": ["colombia", "policy", "regulation", "ai-governance", "legaltech", "tui", "govtech"],
+  "repository": { "type": "git", "url": "https://github.com/LesVulture/regwatch-co.git" }
+}
