@@ -17,6 +17,7 @@ import { g0Contrato } from "../gates/g0-contrato.ts";
 import { depsPorDefecto, type HttpDeps, pedir } from "../http.ts";
 import { BASE } from "../senado/basedoc.ts";
 import { type Chunk, chunkNorma, estadisticas } from "./chunking.ts";
+import { extraerEpigrafe } from "./epigrafe.ts";
 
 /** `Ley 1616 de 2013` → `ley_1616_2013`, que es como los nombra la fuente. */
 export function slugBasedoc(tipo: string, numero: string, anio: string | number): string {
@@ -50,7 +51,17 @@ export interface ArtefactoArticulado {
     readonly httpStatus: number;
     readonly bytes: number;
   };
-  readonly norma: { readonly tipo: string; readonly numero: string; readonly anio: number };
+  readonly norma: {
+    readonly tipo: string;
+    readonly numero: string;
+    readonly anio: number;
+    /**
+     * El EPÍGRAFE de la ley, que es su título oficial. `null` si no se pudo
+     * extraer — y entonces `db/load-chunks.ts --crear-norma` se NIEGA a crear
+     * la fila en vez de inventarse un título. Ver `epigrafe.ts`.
+     */
+    readonly titulo: string | null;
+  };
   readonly gate: ReturnType<typeof g0Contrato>;
   readonly estadisticas: ReturnType<typeof estadisticas> | null;
   /** Chunks contaminados. Tiene que ser CERO para que esto se pueda cargar. */
@@ -76,7 +87,7 @@ export async function recolectarArticulado(
     httpStatus: capture.httpStatus,
     bytes: capture.byteLength,
   };
-  const norma = { tipo, numero, anio };
+  const norma = { tipo, numero, anio, titulo: null as string | null };
 
   // Una captura bloqueada NO se parsea, pero sí se registra: es el punto de
   // replay y la prueba de que la fuente se rompió.
@@ -94,6 +105,7 @@ export async function recolectarArticulado(
   // La fuente es ISO-8859-1 y está declarado en `sources.ts`. Decodificarla
   // como UTF-8 no falla: produce mojibake en cada tilde, en silencio.
   const html = new TextDecoder("iso-8859-1").decode(body);
+  const titulo = extraerEpigrafe(html);
   const chunks = chunkNorma(html, {
     tipo,
     numero,
@@ -108,7 +120,7 @@ export async function recolectarArticulado(
 
   return {
     _procedencia: procedencia,
-    norma,
+    norma: { ...norma, titulo },
     gate,
     estadisticas: estadisticas(chunks),
     contaminados,
@@ -131,6 +143,7 @@ async function main(): Promise<void> {
   await writeFile(destino, `${JSON.stringify(art, null, 1)}\n`);
 
   console.log(`fuente      : ${art._procedencia.url}`);
+  console.log(`título      : ${art.norma.titulo ?? "(no extraído — no se podrá crear la norma)"}`);
   console.log(`gate        : ${art.gate.outcome}`);
   console.log(`artículos   : ${art.chunks.length}`);
   if (art.estadisticas) {
