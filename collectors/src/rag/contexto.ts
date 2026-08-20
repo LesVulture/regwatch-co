@@ -75,7 +75,10 @@ export function agruparContexto(filas: readonly FilaContexto[]): Contexto {
 
   for (const f of filas) {
     // Sin chunk: la entidad casó y su texto no está capturado. Hueco real.
-    if (f.chunk_id === null) {
+    // `== null` cubre también el campo AUSENTE: una fila sin `chunk_id` es un
+    // hueco, y dejarla caer al siguiente `if` la contaría como «redactada por
+    // la política», que es una acusación distinta y falsa.
+    if (f.chunk_id == null) {
       huecos.push({ entidad: f.entidad, origen: f.origen, urlFuente: f.url_fuente });
       continue;
     }

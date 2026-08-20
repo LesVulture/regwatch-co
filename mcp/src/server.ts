@@ -65,7 +65,12 @@ server.registerTool(
                 `  fuente: ${String(f.url_fuente)} · capturado: ${String(f.captured_at ?? "").slice(0, 10)} · tier: ${String(f.tier)}`,
             )
             .join("\n");
-    return { content: [{ type: "text", text: cuerpo + ADVERTENCIA_SIEMPRE }] };
+    // Si la búsqueda se ensanchó, el aviso va DELANTE de los resultados y no en
+    // la coletilla final. Un agente que recibe una lista la presenta como «lo
+    // que hay»: enterarse al final de que el criterio era más laxo que el
+    // pedido llega tarde.
+    const aviso = r.ensanchada && r.advertencia ? `${r.advertencia}\n\n` : "";
+    return { content: [{ type: "text", text: aviso + cuerpo + ADVERTENCIA_SIEMPRE }] };
   },
 );
 

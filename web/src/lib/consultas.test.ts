@@ -11,6 +11,8 @@ import {
   buscar,
   type Consultante,
   contextoQa,
+  ensanchar,
+  MAX_ENTIDADES_QA,
   PROCEDENCIA_CAMPOS,
   verificarProcedencia,
   vigencia,
@@ -23,6 +25,10 @@ const FILA_BUSQUEDA = {
   id: "uuid-1",
   titulo: "Ley de Salud Mental",
   referencia: "ley 1616 de 2013",
+  // La encontró la mitad LÉXICA. Sin este campo, `buscar` concluiría —con
+  // razón— que el texto no casó nada y reintentaría ensanchando.
+  posicion_lexica: 1,
+  posicion_semantica: null,
   url_fuente: "http://www.secretariasenado.gov.co/x.html",
   captured_at: "2026-08-20T00:00:00.000Z",
   tier: "primaria",
@@ -303,5 +309,325 @@ describe("contextoQa — el Q&A sale por la misma puerta", () => {
     const r = await contextoQa(db, "  ", "api_bloque");
     expect(llamada).toBe(false);
     expect(r.advertencia).toBe("consulta vacía");
+  });
+
+  /**
+   * La unión estricto+ensanchado son DOS llamadas, cada una con su propio
+   * presupuesto. Sin recorte, pedir 5 entidades devuelve hasta 10 y el prompt
+   * del Q&A crece al doble sin que el llamador lo pida — contra una cuota
+   * finita y sin que nada lo diga.
+   */
+  const porTanda = (tandas: unknown[][]): Consultante => {
+    let i = 0;
+    return { rpc: async () => ({ filas: tandas[i++] ?? [] }) };
+  };
+
+  const filaDe = (n: number) =>
+    fila({
+      entidad_id: `00000000-0000-0000-0000-00000000000${n}`,
+      entidad: `ley ${n}`,
+      chunk_id: `ley:${n}:art:1`,
+      posicion_entidad: n,
+    });
+
+  it("recorta la unión al presupuesto de entidades pedido, estricto primero", async () => {
+    const db = porTanda([
+      [filaDe(1), filaDe(2), filaDe(3)],
+      [filaDe(4), filaDe(5), filaDe(6), filaDe(7)],
+    ]);
+    const r = await contextoQa(db, "obligaciones de las empresas de salud", "api_bloque", {
+      maxEntidades: 4,
+    });
+    expect(r.chunks.map((c) => c.id)).toEqual([
+      "ley:1:art:1",
+      "ley:2:art:1",
+      "ley:3:art:1",
+      "ley:4:art:1",
+    ]);
+  });
+
+  it("por defecto el techo es el mismo que declara el SQL", async () => {
+    expect(MAX_ENTIDADES_QA).toBe(5);
+    const db = porTanda([
+      [filaDe(1), filaDe(2), filaDe(3), filaDe(4), filaDe(5)],
+      [filaDe(6), filaDe(7)],
+    ]);
+    const r = await contextoQa(db, "obligaciones de las empresas de salud", "api_bloque");
+    expect(r.chunks).toHaveLength(MAX_ENTIDADES_QA);
+  });
+
+  /**
+   * Anunciar un ensanchado cuyo aporte se acaba de recortar sería avisar de algo
+   * que el lector no tiene delante: la advertencia describe el contexto que se
+   * entregó, no la consulta que se intentó.
+   */
+  it("no anuncia ensanchado si lo ensanchado no sobrevivió al recorte", async () => {
+    const db = porTanda([[filaDe(1), filaDe(2), filaDe(3), filaDe(4), filaDe(5)], [filaDe(9)]]);
+    const r = await contextoQa(db, "obligaciones de las empresas de salud", "api_bloque");
+    expect(r.advertencia ?? "").not.toContain("ENSANCHADA");
+  });
+
+  it("sí lo anuncia cuando el ensanchado ocupa un hueco que sobraba", async () => {
+    const db = porTanda([[filaDe(1)], [filaDe(2)]]);
+    const r = await contextoQa(db, "obligaciones de las empresas de salud", "api_bloque");
+    expect(r.advertencia ?? "").toContain("ENSANCHADA");
+    expect(r.chunks.map((c) => c.id)).toEqual(["ley:1:art:1", "ley:2:art:1"]);
+  });
+
+  /**
+   * EL RECORTE NO PUEDE COMERSE LOS HUECOS, que es exactamente lo que hizo la
+   * primera versión de esta función: con una sola cuenta, cinco entidades con
+   * articulado agotaban el cupo y los huecos —que llegan al final, porque son
+   * lo que aporta el ensanchado— desaparecían. Medido contra el gold set: 3
+   * huecos por pregunta pasaron a 0. Borraba justo aquello para lo que se
+   * construyó la unión.
+   */
+  it("un hueco no compite por el cupo de las entidades con texto", async () => {
+    const hueco = (n: number) =>
+      fila({
+        entidad_id: `00000000-0000-0000-0000-0000000000f${n}`,
+        entidad: `ley sin texto ${n}`,
+        chunk_id: null,
+        texto: null,
+      });
+    const db = porTanda([
+      [filaDe(1), filaDe(2), filaDe(3), filaDe(4), filaDe(5)],
+      [hueco(1), hueco(2)],
+    ]);
+    const r = await contextoQa(db, "obligaciones de las empresas de salud", "api_bloque");
+    expect(r.chunks).toHaveLength(MAX_ENTIDADES_QA);
+    expect(r.huecos.map((h) => h.entidad)).toEqual(["ley sin texto 1", "ley sin texto 2"]);
+  });
+
+  /**
+   * Una fila cuyo `chunk_id` viene AUSENTE —no nulo— es un hueco igual.
+   * Compararlo con `=== null` la contaba como entidad con texto y le hacía
+   * gastar cupo de chunks a algo que no aporta ninguno.
+   */
+  it("una fila sin `chunk_id` es un hueco, aunque el campo venga ausente", async () => {
+    const sinCampo = fila();
+    delete (sinCampo as Record<string, unknown>).chunk_id;
+    delete (sinCampo as Record<string, unknown>).texto;
+    const r = await contextoQa(con([sinCampo]), "salud mental", "api_bloque");
+    expect(r.huecos).toHaveLength(1);
+    expect(r.chunks).toHaveLength(0);
+    expect(r.redactados).toEqual([]);
+  });
+
+  it("pero los huecos tampoco son ilimitados: llevan su propio techo", async () => {
+    const hueco = (n: number) =>
+      fila({
+        entidad_id: `00000000-0000-0000-0000-0000000000e${n}`,
+        entidad: `hueco ${n}`,
+        chunk_id: null,
+        texto: null,
+      });
+    const db = porTanda([
+      [filaDe(1)],
+      [hueco(1), hueco(2), hueco(3), hueco(4), hueco(5), hueco(6), hueco(7)],
+    ]);
+    const r = await contextoQa(db, "obligaciones de las empresas de salud", "api_bloque");
+    expect(r.huecos).toHaveLength(MAX_ENTIDADES_QA);
+  });
+});
+
+describe("ensanchar — el AND que no encuentra nada", () => {
+  /**
+   * EL CASO QUE MOTIVA ESTO, medido el 2026-08-20: «¿cuántos proyectos de ley
+   * sobre inteligencia artificial hay en el Senado?» devolvía CERO filas del
+   * lado léxico, con 13 proyectos que llevan «INTELIGENCIA ARTIFICIAL» en el
+   * título. `websearch_to_tsquery` exige TODOS los términos y ningún título
+   * tiene los cinco.
+   */
+  it("pone los términos en OR y deja fuera el armazón de la pregunta", () => {
+    // «proyectos», «ley» y «senado» son la FORMA de la pregunta; un OR que los
+    // incluya devuelve cientos de coincidencias ajenas por encima del asunto.
+    expect(ensanchar("proyectos de ley sobre inteligencia artificial en el Senado")).toBe(
+      "sobre OR inteligencia OR artificial",
+    );
+  });
+
+  it("«salud» no es armazón aunque sea frecuente: es el asunto", () => {
+    expect(ensanchar("atención en salud mental para menores")).toContain("salud");
+  });
+
+  it("quita las tildes, que es como están los índices", () => {
+    expect(ensanchar("atención integral")).toBe("atencion OR integral");
+  });
+
+  it("no ensancha lo que no tiene nada que ensanchar", () => {
+    expect(ensanchar("telesalud")).toBeNull();
+    expect(ensanchar("de la")).toBeNull();
+  });
+
+  it("no repite términos ni deja crecer la consulta sin tope", () => {
+    expect(ensanchar("salud salud salud mental")).toBe("salud OR mental");
+    expect(
+      (ensanchar(Array.from({ length: 30 }, (_, i) => `palabra${i}`).join(" ")) ?? "").split(
+        " OR ",
+      ),
+    ).toHaveLength(12);
+  });
+});
+
+describe("el ensanchado se DECLARA, nunca se hace en silencio", () => {
+  /** Devuelve vacío la primera vez y filas la segunda: el reintento. */
+  const dbConReintento = (segundaTanda: unknown[]): Consultante => {
+    let llamadas = 0;
+    return {
+      async rpc() {
+        llamadas += 1;
+        return { filas: llamadas === 1 ? [] : segundaTanda };
+      },
+    };
+  };
+
+  it("reintenta cuando el estricto devuelve cero, y lo dice", async () => {
+    const r = await buscar(
+      dbConReintento([FILA_BUSQUEDA]),
+      "proyectos de ley sobre inteligencia artificial",
+      "api_bloque",
+    );
+    expect(r.filas).toHaveLength(1);
+    expect(r.ensanchada).toBe(true);
+    expect(r.advertencia).toContain("búsqueda ensanchada");
+  });
+
+  /**
+   * NUNCA empeora un resultado bueno: si el estricto encontró algo, no hay
+   * reintento. Un buscador que ensancha siempre deja de distinguir «esto casa
+   * con lo que pediste» de «esto casa con una palabra de lo que pediste».
+   */
+  /**
+   * EL CASO QUE SE ESCAPABA. Con vector, `hybrid_search` devuelve algo casi
+   * siempre; que no esté vacío NO significa que el texto haya casado. Una fila
+   * con `posicion_lexica: null` la encontró solo el vector, y entonces falta
+   * todo lo que únicamente el léxico podía traer.
+   */
+  it("ensancha aunque haya filas, si NINGUNA la encontró el léxico", async () => {
+    const soloVector = { ...FILA_BUSQUEDA, posicion_lexica: null, posicion_semantica: 1 };
+    const porLexico = { ...FILA_BUSQUEDA, id: "uuid-2" };
+    let llamadas = 0;
+    const db2: Consultante = {
+      async rpc() {
+        llamadas += 1;
+        return { filas: llamadas === 1 ? [soloVector] : [porLexico] };
+      },
+    };
+    const r = await buscar(db2, "inteligencia artificial en salud", "api_bloque");
+    expect(llamadas).toBe(2);
+    expect(r.ensanchada).toBe(true);
+  });
+
+  /**
+   * EL COMENTARIO DECÍA «ensanchar no puede QUITAR resultados» Y SÍ PODÍA.
+   *
+   * El reintento usa otra tsquery y por tanto otro ranking RRF: la fila que solo
+   * encontró el vector puede no volver a salir. Devolver las filas del reintento
+   * a secas la borraba, y el usuario perdía un resultado por pedir MÁS.
+   */
+  it("la unión conserva lo que encontró el estricto, no lo sustituye", async () => {
+    const soloVector = { ...FILA_BUSQUEDA, id: "uuid-solo-vector", posicion_lexica: null };
+    let llamadas = 0;
+    const db2: Consultante = {
+      async rpc() {
+        llamadas += 1;
+        return { filas: llamadas === 1 ? [soloVector] : [{ ...FILA_BUSQUEDA, id: "uuid-lexica" }] };
+      },
+    };
+    const r = await buscar(db2, "inteligencia artificial en salud", "api_bloque");
+    expect(r.filas.map((f) => f.id)).toEqual(["uuid-solo-vector", "uuid-lexica"]);
+  });
+
+  /** Y la unión respeta el `limite` que se pidió: no devuelve el doble. */
+  it("la unión se recorta al límite pedido", async () => {
+    const fila = (id: string, lex: number | null) => ({
+      ...FILA_BUSQUEDA,
+      id,
+      posicion_lexica: lex,
+    });
+    let llamadas = 0;
+    const db2: Consultante = {
+      async rpc() {
+        llamadas += 1;
+        return {
+          filas:
+            llamadas === 1
+              ? [fila("a", null), fila("b", null)]
+              : [fila("c", 1), fila("d", 2), fila("e", 3)],
+        };
+      },
+    };
+    const r = await buscar(db2, "inteligencia artificial en salud", "api_bloque", 3);
+    expect(r.filas.map((f) => f.id)).toEqual(["a", "b", "c"]);
+  });
+
+  /**
+   * Si el ensanchado no aporta ninguna fila nueva, no se anuncia: la
+   * advertencia describe el contexto que se entregó, no la consulta que se
+   * intentó.
+   */
+  it("no anuncia ensanchado cuando el reintento no aporta nada nuevo", async () => {
+    const soloVector = { ...FILA_BUSQUEDA, posicion_lexica: null };
+    const db2: Consultante = {
+      async rpc() {
+        return { filas: [soloVector] };
+      },
+    };
+    const r = await buscar(db2, "inteligencia artificial en salud", "api_bloque");
+    expect(r.ensanchada).toBe(false);
+    expect(r.filas).toHaveLength(1);
+  });
+
+  it("no reintenta si el estricto ya encontró algo", async () => {
+    let llamadas = 0;
+    const db2: Consultante = {
+      async rpc() {
+        llamadas += 1;
+        return { filas: [FILA_BUSQUEDA] };
+      },
+    };
+    const r = await buscar(db2, "salud mental infantil", "api_bloque");
+    expect(llamadas).toBe(1);
+    expect(r.ensanchada).toBe(false);
+    expect(r.advertencia).toBeNull();
+  });
+
+  it("si el reintento tampoco encuentra nada, no se declara ensanchado", async () => {
+    const r = await buscar(db([]), "criptomonedas en el metaverso", "api_bloque");
+    expect(r.ensanchada).toBe(false);
+    expect(r.advertencia).toContain("no aparece en lo capturado");
+  });
+
+  /** Ensanchar puede AÑADIR resultados; nunca quitarlos. */
+  it("un reintento vacío no borra lo que el vector había encontrado", async () => {
+    const soloVector = { ...FILA_BUSQUEDA, posicion_lexica: null, posicion_semantica: 1 };
+    let llamadas = 0;
+    const db2: Consultante = {
+      async rpc() {
+        llamadas += 1;
+        return { filas: llamadas === 1 ? [soloVector] : [] };
+      },
+    };
+    const r = await buscar(db2, "inteligencia artificial en salud", "api_bloque");
+    expect(r.filas).toHaveLength(1);
+    expect(r.ensanchada).toBe(false);
+  });
+
+  /**
+   * La vigencia se consulta por IDENTIDAD de norma, no por texto. Ensancharla
+   * devolvería la vigencia de otra norma, que es peor que no devolver nada.
+   */
+  it("la vigencia no se ensancha nunca", async () => {
+    let llamadas = 0;
+    const db2: Consultante = {
+      async rpc() {
+        llamadas += 1;
+        return { filas: [] };
+      },
+    };
+    const r = await vigencia(db2, { tipo: "ley", numero: "9999", anio: 2099 }, "api_bloque");
+    expect(llamadas).toBe(1);
+    expect(r.ensanchada).toBe(false);
   });
 });

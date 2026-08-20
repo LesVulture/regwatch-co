@@ -35,38 +35,81 @@ stable
 set search_path = ''
 as $$
   with q as (
-    select plainto_tsquery('spanish', public.immutable_unaccent(consulta)) as tsq
+    -- `websearch_to_tsquery` y no `plainto_tsquery`, y no es un cambio cosmético.
+    --
+    -- Los dos hacen AND de todos los lexemas, que es lo correcto para «salud
+    -- mental» y lo RUINOSO para una pregunta entera: «¿cuántos proyectos de ley
+    -- sobre inteligencia artificial hay en el Senado?» exige que un título
+    -- contenga a la vez «proyecto», «ley», «inteligencia», «artificial» y
+    -- «senado», y no lo cumple ninguno de los 1.694. Medido: cero filas, con 13
+    -- proyectos que llevan «INTELIGENCIA ARTIFICIAL» en el título.
+    --
+    -- La diferencia es que `websearch_to_tsquery` ENTIENDE `OR` y las comillas
+    -- en la cadena de entrada. Eso permite que quien llama reintente con los
+    -- términos en OR cuando el AND no devuelve nada, en vez de tener que
+    -- construir un `tsquery` a mano — que es lo que empuja a concatenar SQL.
+    -- La política de cuándo se ensancha vive en `web/src/lib/consultas.ts`, y
+    -- se DECLARA al usuario; aquí solo se hace posible.
+    select websearch_to_tsquery('spanish', public.immutable_unaccent(consulta)) as tsq
   ),
   proyectos as (
-    select 'proyecto_ley'::public.origen_resultado, p.id, p.titulo,
-           p.numero_senado_canonico, p.estado::text, null::date,
-           ts_rank(p.titulo_tsv, q.tsq), p.url_fuente::text, p.captured_at, p.tier
-    from public.proyecto_ley p, q where p.titulo_tsv @@ q.tsq
+    -- Los ALIAS no son cosmética: `todo` hace `union all` de las tres CTE y
+    -- luego se lee por nombre (`t.origen`, `t.referencia`). Sin `as origen` la
+    -- columna se llamaría `origen_resultado` y la función NO SE PUEDE CREAR.
+    -- Este fichero estuvo un tiempo sin ellos —describía la base sin poder
+    -- reconstruirla— porque `db/schema.test.ts` compara nombres y no cuerpos.
+    select
+      'proyecto_ley'::public.origen_resultado as origen,
+      p.id,
+      p.titulo,
+      p.numero_senado_canonico as referencia,
+      p.estado::text           as estado,
+      null::date               as fecha,
+      ts_rank(p.titulo_tsv, q.tsq) as rank,
+      p.url_fuente::text, p.captured_at, p.tier
+    from public.proyecto_ley p, q
+    where p.titulo_tsv @@ q.tsq
   ),
   providencias as (
-    select 'providencia'::public.origen_resultado, pr.id,
-           nullif(pr.tema, 'Sin información'), pr.sentencia, pr.tipo::text,
-           pr.fecha_publicacion, ts_rank(pr.tema_tsv, q.tsq),
-           pr.url_texto::text, pr.captured_at, pr.tier
-    from public.providencia pr, q where pr.tema_tsv @@ q.tsq
+    select
+      'providencia'::public.origen_resultado,
+      pr.id,
+      -- El tema es el texto descriptivo; la sentencia es la referencia.
+      nullif(pr.tema, 'Sin información') as titulo,
+      pr.sentencia,
+      pr.tipo::text,
+      pr.fecha_publicacion,
+      ts_rank(pr.tema_tsv, q.tsq),
+      pr.url_texto::text, pr.captured_at, pr.tier
+    from public.providencia pr, q
+    where pr.tema_tsv @@ q.tsq
   ),
   normas as (
-    select 'norma'::public.origen_resultado, n.id, n.titulo,
-           n.tipo || ' ' || n.numero || ' de ' || n.anio, null::text,
-           n.fecha_publicacion,
-           ts_rank(to_tsvector('spanish', public.immutable_unaccent(n.titulo)), q.tsq),
-           n.url_fuente::text, n.captured_at, n.tier
+    select
+      'norma'::public.origen_resultado,
+      n.id,
+      n.titulo,
+      n.tipo || ' ' || n.numero || ' de ' || n.anio,
+      null::text,
+      n.fecha_publicacion,
+      ts_rank(
+        to_tsvector('spanish', public.immutable_unaccent(n.titulo)), q.tsq
+      ),
+      n.url_fuente::text, n.captured_at, n.tier
     from public.norma n, q
     where to_tsvector('spanish', public.immutable_unaccent(n.titulo)) @@ q.tsq
   ),
   todo as (
-    select * from proyectos union all select * from providencias union all select * from normas
+    select * from proyectos
+    union all select * from providencias
+    union all select * from normas
   )
-  select t.origen, t.id, t.titulo, t.referencia, t.estado, t.fecha, t.rank,
-         -- La POSICIÓN es lo que RRF consume: 1/(k + posicion). Se devuelve ya
-         -- calculada para que fusionar con el ranking vectorial sea una suma.
-         row_number() over (order by t.rank desc, t.id),
-         t.url_fuente, t.captured_at, t.tier
+  select
+    t.origen, t.id, t.titulo, t.referencia, t.estado, t.fecha, t.rank,
+    -- La POSICIÓN es lo que RRF consume: 1/(k + posicion). Se devuelve ya
+    -- calculada para que fusionar con el ranking vectorial sea una suma.
+    row_number() over (order by t.rank desc, t.id) as posicion,
+    t.url_fuente, t.captured_at, t.tier
   from todo t
   where solo_tipo is null or t.origen = solo_tipo
   order by t.rank desc, t.id

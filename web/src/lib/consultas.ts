@@ -87,7 +87,151 @@ export interface ResultadoBusqueda {
   readonly omitidos: readonly string[];
   /** Vacío NO significa «no existe». Lo dice aquí para que quien llame lo diga. */
   readonly advertencia: string | null;
+  /**
+   * `true` si estas filas salieron de la consulta ENSANCHADA (ver `ensanchar`).
+   *
+   * Se devuelve como campo y no solo dentro de `advertencia` porque quien
+   * consume esto por API o por MCP no lee prosa: un resultado obtenido con
+   * criterio más laxo que el pedido tiene que poder distinguirse en código.
+   */
+  readonly ensanchada: boolean;
 }
+
+/**
+ * El presupuesto de entidades del Q&A. Es el mismo `default` que declara
+ * `contexto_qa` en SQL, repetido aquí porque la UNIÓN estricto+ensanchado se
+ * recorta en TypeScript y necesita saber contra qué. Si cambia en el esquema,
+ * cambia aquí: `consultas.test.ts` lo fija.
+ */
+export const MAX_ENTIDADES_QA = 5;
+
+/**
+ * Recorta a `max` ENTIDADES distintas conservando el orden de llegada, y con
+ * ellas todos sus chunks. Recortar por filas partiría una entidad por la mitad
+ * y dejaría un articulado a medias que se leería como el articulado entero.
+ *
+ * **Las entidades CON texto y los HUECOS llevan cuentas separadas, y esa es la
+ * pieza que hace útil el recorte en vez de contraproducente.** El presupuesto
+ * existe para acotar el tamaño del prompt, y lo que lo engorda son los chunks:
+ * una entidad con articulado aporta hasta `max_chunks_por_entidad` fragmentos,
+ * mientras que un hueco aporta UNA línea —«esta norma casó y su texto no está
+ * capturado»—. Con una sola cuenta, las cinco primeras entidades con texto se
+ * comían el cupo entero y los huecos —que llegan al final, porque son lo que
+ * aporta el ensanchado— desaparecían del contexto: medido, el gold set pasó de
+ * 3 huecos por pregunta a 0. Es decir, el recorte borraba justo aquello para lo
+ * que se construyó la unión, y la respuesta volvía a decir «no consta» sin
+ * mencionar lo que sí consta a medias.
+ */
+function recortarEntidades<T>(filas: readonly T[], max: number): T[] {
+  const conTexto = new Set<string>();
+  const huecos = new Set<string>();
+  const out: T[] = [];
+  for (const f of filas) {
+    const fila = f as { entidad_id?: unknown; chunk_id?: unknown };
+    const id = String(fila.entidad_id);
+    // `== null` y no `=== null`: una fila cuyo `chunk_id` venga AUSENTE —no
+    // nulo— es un hueco igual, y tratarla como entidad con texto le haría
+    // gastar cupo de chunks a algo que no aporta ninguno.
+    const vistas = fila.chunk_id == null ? huecos : conTexto;
+    if (!vistas.has(id)) {
+      if (vistas.size >= max) continue;
+      vistas.add(id);
+    }
+    out.push(f);
+  }
+  return out;
+}
+
+/**
+ * Los términos de la consulta en OR, para reintentar cuando el AND no da nada.
+ *
+ * `websearch_to_tsquery` hace AND de todo, que es correcto para «salud mental»
+ * y ruinoso para una pregunta entera: «¿cuántos proyectos de ley sobre
+ * inteligencia artificial hay en el Senado?» exige que un solo título contenga
+ * los cinco términos y no lo cumple ninguno de los 1.694 — con 13 proyectos que
+ * llevan «INTELIGENCIA ARTIFICIAL» en el título. Medido el 2026-08-20: cero
+ * filas.
+ *
+ * **El ensanchado nunca SUSTITUYE al estricto: se UNE detrás de él.** La versión
+ * anterior de esta documentación decía que solo se usaba «cuando el estricto
+ * devolvió CERO», y ni eso era ya cierto —`buscar()` reintenta también cuando
+ * ninguna fila la encontró el léxico— ni bastaba: el reintento usa otra tsquery
+ * y por tanto otro ranking RRF, así que devolver sus filas a secas BORRABA las
+ * que solo había encontrado el vector. Estricto primero, ensanchado detrás,
+ * deduplicado y recortado al límite pedido.
+ *
+ * Y se declara — un buscador que ensancha en silencio le enseña al usuario
+ * resultados que no pidió y le deja creer que sí. Solo se declara si algo del
+ * ensanchado sobrevivió: anunciar un aporte que se acaba de recortar es avisar
+ * de algo que el lector no tiene delante.
+ *
+ * Devuelve `null` cuando no hay nada que ensanchar (un solo término útil): en
+ * ese caso el OR sería idéntico al AND y reintentar sería gastar una consulta.
+ */
+export function ensanchar(consulta: string): string | null {
+  const terminos = [
+    ...new Set(
+      consulta
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((t) => t.length >= 3 && !ARMAZON_JURIDICO.has(t)),
+    ),
+  ].slice(0, 12);
+  if (terminos.length < 2) return null;
+  // `OR` en mayúscula: es el operador que `websearch_to_tsquery` entiende.
+  return terminos.join(" OR ");
+}
+
+/**
+ * Palabras que forman el ARMAZÓN de una pregunta jurídica, no su asunto.
+ *
+ * Solo se descartan **al ensanchar**. En la consulta estricta no se toca nada:
+ * quien busca «ley 2277 de 2022» quiere exactamente eso.
+ *
+ * No es una lista de intuición, y por eso lleva las cifras al lado. Frecuencia
+ * documental medida en el corpus el 2026-08-20 (proyectos / providencias):
+ *
+ *   ley 418/366 · nacional 217/355 · norma 27/259 · articulo 125/105
+ *   colombia 178/76 · congreso 54/19 · proyecto 16/81 · cuantos 4/177
+ *
+ * Frente a los términos que sí son el asunto: `inteligencia` 16/5,
+ * `artificial` 15/2. Un OR que incluya `ley` hunde a los segundos debajo de
+ * cientos de coincidencias con el primero — que es exactamente lo que pasaba:
+ * la pregunta por los proyectos de IA devolvía providencias de temas ajenos que
+ * casaban «ley» y «nacional».
+ *
+ * `salud` NO está en la lista pese a aparecer en 1.329 providencias. La línea
+ * no es la frecuencia: es si la palabra describe la FORMA de la pregunta o su
+ * CONTENIDO. «Salud» es contenido.
+ */
+const ARMAZON_JURIDICO = new Set([
+  "ley",
+  "leyes",
+  "proyecto",
+  "proyectos",
+  "norma",
+  "normas",
+  "normativa",
+  "articulo",
+  "articulos",
+  "senado",
+  "camara",
+  "congreso",
+  "colombia",
+  "colombiana",
+  "colombiano",
+  "nacional",
+  "cuantos",
+  "cuantas",
+  "cual",
+  "cuales",
+  "existe",
+  "existen",
+  "vigente",
+  "vigentes",
+]);
 
 /**
  * Busca y filtra por egreso.
@@ -98,8 +242,10 @@ export interface ResultadoBusqueda {
 export interface OpcionesBusqueda {
   /**
    * Vector de la consulta, 256 dims re-normalizadas (`embeddings.ts`).
-   * `null` mientras no haya clave de Voyage — y entonces `hybrid_search`
-   * devuelve exactamente lo que devolvía `busqueda_lexica`.
+   * `null` cuando no hay Ollama al alcance — y entonces `hybrid_search`
+   * devuelve exactamente lo que devolvía `busqueda_lexica`. Quien llama tiene
+   * que DECIRLO: sin la mitad semántica no cambia el orden, cambia qué
+   * resultados existen.
    */
   readonly embedding?: readonly number[] | null;
   /** Sesgo a léxico: sube para `"ley 2277 de 2022"`. */
@@ -117,21 +263,57 @@ export async function buscar(
 ): Promise<ResultadoBusqueda> {
   const texto = consulta.trim();
   if (texto === "") {
-    return { filas: [], omitidos: [], advertencia: "consulta vacía" };
+    return { filas: [], omitidos: [], advertencia: "consulta vacía", ensanchada: false };
   }
 
   // Se llama SIEMPRE a `hybrid_search`, también sin vector. Mantener aquí la
   // llamada a `busqueda_lexica` «hasta que haya embeddings» dejaría el camino
-  // de producción distinto del camino probado, y el día que llegara la clave
-  // se estrenarían las dos cosas a la vez.
-  const { filas } = await db.rpc("hybrid_search", {
-    consulta: texto,
+  // de producción distinto del camino probado. Sigue valiendo con embeddings
+  // locales: `embeberConsulta` devuelve `null` si Ollama no está, y entonces
+  // esta misma llamada degrada a la mitad léxica sin cambiar de código.
+  const args = (consultaSql: string) => ({
+    consulta: consultaSql,
     consulta_embedding: opciones.embedding ? `[${opciones.embedding.join(",")}]` : null,
     limite,
     ...(opciones.pesoLexico !== undefined ? { peso_lexico: opciones.pesoLexico } : {}),
     ...(opciones.pesoSemantico !== undefined ? { peso_semantico: opciones.pesoSemantico } : {}),
   });
-  return aplicarEgreso(filas, contexto, texto);
+
+  const { filas } = await db.rpc("hybrid_search", args(texto));
+
+  // LA SEÑAL NO ES «cero filas», y confundirlas deja el fallo escondido.
+  //
+  // Con vector, `hybrid_search` casi siempre devuelve ALGO —lo que encontró la
+  // mitad semántica— aunque la mitad léxica no haya casado nada. El resultado
+  // no está vacío y aun así falta todo lo que solo el texto podía encontrar:
+  // buscar «inteligencia artificial en salud» devolvía la Ley 1616 y NINGUNO de
+  // los 13 proyectos con «INTELIGENCIA ARTIFICIAL» en el título, porque ningún
+  // título tiene además «salud». `posicion_lexica` en NULL en todas las filas
+  // es esa señal, exacta y ya devuelta por la función.
+  const sinLexico =
+    filas.length === 0 ||
+    filas.every((f) => (f as { posicion_lexica?: unknown }).posicion_lexica == null);
+  if (!sinLexico) return aplicarEgreso(filas, contexto, texto, false);
+
+  const laxa = ensanchar(texto);
+  if (laxa === null) return aplicarEgreso(filas, contexto, texto, false);
+
+  const reintento = await db.rpc("hybrid_search", args(laxa));
+  if (reintento.filas.length === 0) return aplicarEgreso(filas, contexto, texto, false);
+
+  // UNIÓN, no sustitución — y la diferencia es que la versión anterior sí podía
+  // quitar resultados pese al comentario que juraba lo contrario. El reintento
+  // usa otra tsquery y por tanto otro ranking RRF: las filas que solo encontró
+  // el vector pueden no volver a salir, y devolver `reintento.filas` a secas las
+  // borraba. Estricto primero —conserva el orden de precisión— y detrás lo que
+  // el ensanchado añade de nuevo, recortado al mismo `limite` que se pidió.
+  const yaVistas = new Set(filas.map((f) => String((f as { id?: unknown }).id)));
+  const nuevas = reintento.filas.filter((f) => !yaVistas.has(String((f as { id?: unknown }).id)));
+  const union = [...filas, ...nuevas].slice(0, limite);
+  // Y se anuncia solo si algo ensanchado sobrevivió al recorte: avisar de un
+  // ensanchado cuyo aporte se acaba de tirar es avisar de algo que no está.
+  const aporta = union.length > filas.length;
+  return aplicarEgreso(union, contexto, texto, aporta);
 }
 
 /**
@@ -158,8 +340,8 @@ export async function contextoQa(
     return { chunks: [], huecos: [], redactados: [], advertencia: "consulta vacía", omitidos: [] };
   }
 
-  const { filas } = await db.rpc("contexto_qa", {
-    consulta: texto,
+  const args = (consultaSql: string) => ({
+    consulta: consultaSql,
     consulta_embedding: opciones.embedding ? `[${opciones.embedding.join(",")}]` : null,
     ...(opciones.maxEntidades !== undefined ? { max_entidades: opciones.maxEntidades } : {}),
     ...(opciones.maxChunksPorEntidad !== undefined
@@ -168,6 +350,44 @@ export async function contextoQa(
     ...(opciones.pesoLexico !== undefined ? { peso_lexico: opciones.pesoLexico } : {}),
     ...(opciones.pesoSemantico !== undefined ? { peso_semantico: opciones.pesoSemantico } : {}),
   });
+
+  // Aquí el ensanchado NO es un reintento, es una UNIÓN — y la diferencia es la
+  // que hace que el Q&A sirva para algo.
+  //
+  // La entrada de esta función es siempre una PREGUNTA, no dos palabras clave,
+  // así que el AND de `websearch_to_tsquery` casi nunca casa y `contexto_qa`
+  // devuelve solo lo que encontró el vector: los chunks que existen. Las
+  // entidades que casan por texto y NO tienen articulado capturado —el HUECO
+  // que esta función existe para devolver— no llegaban nunca, y la respuesta
+  // salía diciendo «no consta» sin mencionar lo que sí consta a medias.
+  //
+  // Estricto primero y ensanchado después, deduplicado por entidad: el orden de
+  // precisión se conserva y la cola trae recobro.
+  const primera = await db.rpc("contexto_qa", args(texto));
+  let filas = primera.filas;
+  let ensanchada = false;
+
+  const laxa = ensanchar(texto);
+  if (laxa !== null) {
+    const extra = await db.rpc("contexto_qa", args(laxa));
+    const yaVistas = new Set(filas.map((f) => String((f as { entidad_id?: unknown }).entidad_id)));
+    const nuevas = extra.filas.filter(
+      (f) => !yaVistas.has(String((f as { entidad_id?: unknown }).entidad_id)),
+    );
+    if (nuevas.length > 0) {
+      // La unión se RECORTA al mismo presupuesto de entidades que se pidió. Sin
+      // esto, quien llama con `max_entidades: 5` recibe hasta 10 —cinco por
+      // llamada— y el prompt del Q&A crece al doble a espaldas del llamador.
+      // Estricto primero: el ensanchado solo ocupa los huecos que sobren.
+      filas = recortarEntidades([...filas, ...nuevas], opciones.maxEntidades ?? MAX_ENTIDADES_QA);
+      // Y se avisa solo si alguna entidad ensanchada SOBREVIVIÓ al recorte:
+      // anunciar un ensanchado cuyo aporte se acaba de tirar sería avisar de
+      // algo que el lector no tiene delante.
+      ensanchada = filas.some(
+        (f) => !yaVistas.has(String((f as { entidad_id?: unknown }).entidad_id)),
+      );
+    }
+  }
 
   const omitidos = new Set<string>();
   const limpias = filas.map((f) => {
@@ -180,7 +400,19 @@ export async function contextoQa(
     return datos as unknown as FilaContexto;
   });
 
-  return { ...agruparContexto(limpias), omitidos: [...omitidos] };
+  const ctx = agruparContexto(limpias);
+  const avisoEnsanchado = ensanchada
+    ? `Parte de este contexto sale de una búsqueda ENSANCHADA sobre «${texto}»: ` +
+      "registros que contienen alguno de los términos, no todos."
+    : null;
+  return {
+    ...ctx,
+    // Las dos advertencias se CONCATENAN en vez de pisarse: «faltan textos por
+    // capturar» y «los términos se ensancharon» son cosas distintas y las dos
+    // cambian cómo hay que leer la respuesta.
+    advertencia: [ctx.advertencia, avisoEnsanchado].filter(Boolean).join(" ") || null,
+    omitidos: [...omitidos],
+  };
 }
 
 /** Vigencia a fecha arbitraria, filtrada igual. */
@@ -197,7 +429,14 @@ export async function vigencia(
     ...(aFecha ? { a_fecha: aFecha } : {}),
   });
 
-  const r = aplicarEgreso(filas, contexto, `${norma.tipo} ${norma.numero} de ${norma.anio}`);
+  const r = aplicarEgreso(
+    filas,
+    contexto,
+    `${norma.tipo} ${norma.numero} de ${norma.anio}`,
+    // La vigencia no se ensancha NUNCA: se consulta por identidad de norma, no
+    // por texto. Ensanchar aquí devolvería la vigencia de otra norma.
+    false,
+  );
   if (r.filas.length === 0) {
     return {
       ...r,
@@ -216,6 +455,7 @@ function aplicarEgreso(
   filas: readonly unknown[],
   contexto: ContextoEgreso,
   consulta: string,
+  ensanchada: boolean,
 ): ResultadoBusqueda {
   const salida: Record<string, unknown>[] = [];
   const omitidos = new Set<string>();
@@ -233,11 +473,16 @@ function aplicarEgreso(
   return {
     filas: salida,
     omitidos: [...omitidos],
+    ensanchada,
     advertencia:
       salida.length === 0
         ? `Sin resultados para «${consulta}». Eso significa que no aparece en lo ` +
           "capturado, no que no exista."
-        : null,
+        : ensanchada
+          ? `Ningún registro contiene TODOS los términos de «${consulta}». Estos ` +
+            "resultados salen de una búsqueda ensanchada: contienen alguno de " +
+            "ellos, no todos."
+          : null,
   };
 }
 
