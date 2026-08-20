@@ -115,19 +115,56 @@ export function urlTexto(rutahtml: unknown): string | null {
   return `${BASE}/${rutahtml.replace(/^\/+/, "")}`;
 }
 
-/** La consulta de backfill de un año. Sin red: solo la petición. */
-export function peticionAnio(anio: number) {
+/** Una ventana de fechas cerrada, en ISO. */
+export interface Ventana {
+  readonly fini: string;
+  readonly ffin: string;
+}
+
+/** La consulta de una ventana. Sin red: solo la petición. */
+export function peticionVentana(v: Ventana) {
   const q = new URLSearchParams({
     accion: "search",
     fuente: "publicacion",
-    fini: `${anio}-01-01`,
-    ffin: `${anio}-12-31`,
+    fini: v.fini,
+    ffin: v.ffin,
     buscar_por: "",
     searchOption: "texto",
     maxprov: String(MAXPROV),
     tipo: "json",
   });
   return { sourceKey: SOURCE_KEY, url: `${BUSCADOR}?${q}`, method: "GET" as const };
+}
+
+/** La consulta de un año entero. */
+export function peticionAnio(anio: number) {
+  return peticionVentana({ fini: `${anio}-01-01`, ffin: `${anio}-12-31` });
+}
+
+/**
+ * Parte una ventana en dos mitades por fecha.
+ *
+ * Hace falta porque `maxprov` trunca EN SILENCIO: medido, 2023 tiene 3.705
+ * providencias y una consulta anual devuelve 2.000 con `HTTP 200`. Sin partir
+ * la ventana se pierden 1.705 y nada avisa — solo el contraste contra
+ * `hits.total.value`, que es exactamente para lo que sirve.
+ *
+ * Se parte por MITADES sucesivas y no en trozos fijos: los años no reparten sus
+ * providencias de forma uniforme, así que un trimestre fijo puede seguir
+ * pasándose mientras otro gasta una petición para traer treinta registros.
+ */
+export function partirVentana(v: Ventana): [Ventana, Ventana] {
+  const ini = new Date(`${v.fini}T00:00:00Z`).getTime();
+  const fin = new Date(`${v.ffin}T00:00:00Z`).getTime();
+  if (!(fin > ini)) throw new Error(`ventana no divisible: ${v.fini}..${v.ffin}`);
+
+  const medio = new Date(ini + Math.floor((fin - ini) / 2));
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const siguiente = new Date(medio.getTime() + 86_400_000);
+  return [
+    { fini: v.fini, ffin: iso(medio) },
+    { fini: iso(siguiente), ffin: v.ffin },
+  ];
 }
 
 /**

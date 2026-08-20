@@ -18,7 +18,8 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm test",
     "collect:senado": "node collectors/src/senado/run-pdly.ts",
     "db:load": "node db/load.ts",
-    "db:load:dry": "node db/load.ts --dry-run"
+    "db:load:dry": "node db/load.ts --dry-run",
+    "collect:corte": "node collectors/src/corte/run-relatoria.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",

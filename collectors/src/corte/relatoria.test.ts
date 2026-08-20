@@ -9,7 +9,15 @@
 
 import { describe, expect, it } from "vitest";
 import fixture from "./fixtures/relatoria-2026-muestra.json" with { type: "json" };
-import { MAXPROV, parseRelatoria, peticionAnio, TIPOS_PROVIDENCIA, urlTexto } from "./relatoria.ts";
+import {
+  MAXPROV,
+  parseRelatoria,
+  partirVentana,
+  peticionAnio,
+  peticionVentana,
+  TIPOS_PROVIDENCIA,
+  urlTexto,
+} from "./relatoria.ts";
 
 const REAL = JSON.stringify(fixture);
 
@@ -130,5 +138,44 @@ describe("peticionAnio", () => {
     expect(p.url).toContain(`maxprov=${MAXPROV}`);
     // 10001 devuelve un fragmento de error con HTTP 200. No acercarse.
     expect(MAXPROV).toBeLessThan(10_001);
+  });
+});
+
+describe("partirVentana — la respuesta al truncamiento silencioso", () => {
+  /**
+   * POR QUÉ EXISTE, con la cifra medida: `maxprov` corta en 2.000 y **no avisa**.
+   * 2023 tiene 3.705 providencias; una consulta anual devuelve 2.000 con HTTP
+   * 200 y aspecto perfectamente sano. En el backfill 2015-2026 eso son **3.158
+   * providencias perdidas en silencio** — 18.503 en vez de 21.661.
+   */
+  it("parte por la mitad dejando ventanas contiguas, sin hueco ni solape", () => {
+    const [a, b] = partirVentana({ fini: "2023-01-01", ffin: "2023-12-31" });
+    expect(a.fini).toBe("2023-01-01");
+    expect(b.ffin).toBe("2023-12-31");
+    // El día siguiente al fin de la primera es el inicio de la segunda: sin
+    // solape (duplicaría providencias) y sin hueco (las perdería).
+    const sig = new Date(`${a.ffin}T00:00:00Z`);
+    sig.setUTCDate(sig.getUTCDate() + 1);
+    expect(b.fini).toBe(sig.toISOString().slice(0, 10));
+  });
+
+  it("se puede aplicar en cascada: una mitad puede seguir pasándose", () => {
+    // Medido: la segunda mitad de 2023 traía 2.199 y hubo que partirla otra vez.
+    const [, segunda] = partirVentana({ fini: "2023-01-01", ffin: "2023-12-31" });
+    const [c, d] = partirVentana(segunda);
+    expect(c.fini).toBe(segunda.fini);
+    expect(d.ffin).toBe(segunda.ffin);
+    expect(c.ffin < d.fini).toBe(true);
+  });
+
+  it("una ventana de un solo día no se parte: falla en vez de bucle infinito", () => {
+    expect(() => partirVentana({ fini: "2023-05-05", ffin: "2023-05-05" })).toThrow(/no divisible/);
+  });
+
+  it("peticionVentana respeta el techo medido de maxprov", () => {
+    const p = peticionVentana({ fini: "2023-01-01", ffin: "2023-06-30" });
+    expect(p.url).toContain("fini=2023-01-01");
+    expect(p.url).toContain("ffin=2023-06-30");
+    expect(p.url).toContain(`maxprov=${MAXPROV}`);
   });
 });
