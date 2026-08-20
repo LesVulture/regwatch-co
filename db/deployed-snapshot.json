@@ -16,7 +16,8 @@
       "09_consultar_vigencia",
       "10_suscripcion",
       "crear_tabla_chunk_rag",
-      "crear_hybrid_search_rrf"
+      "crear_hybrid_search_rrf",
+      "crear_contexto_qa"
     ],
     "nota": "Inventario del estado DESPLEGADO. El test lo compara contra lo que declaran los ficheros de db/schemas/, que es lo que convierte «los ficheros describen la base» en algo comprobado y no en una promesa. Si alguien toca la base a mano o edita un fichero sin desplegar, el test lo dice.",
     "nota_constraints": "constraints_check es el inventario COMPLETO de la instancia, incluidas las dos que Postgres nombra solo (captura_gate_outcome_check, suscripcion_cadencia_check) por venir de un check inline. El test las salta porque no hay `constraint <nombre> check` que encontrar en el SQL, no porque falten."
@@ -140,6 +141,7 @@
     "array_sin_blancos",
     "busqueda_lexica",
     "consultar_vigencia",
+    "contexto_qa",
     "hybrid_search",
     "immutable_unaccent"
   ],

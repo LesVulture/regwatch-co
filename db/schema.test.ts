@@ -27,6 +27,7 @@ const SQL = [
   "06_busqueda",
   "07_suscripcion",
   "08_rag",
+  "09_contexto",
 ]
   .map((f) => readFileSync(new URL(`./schemas/${f}.sql`, import.meta.url), "utf-8"))
   .join("\n");
@@ -41,7 +42,7 @@ function declarados(re: RegExp): string[] {
 describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
   it("el snapshot trae su procedencia", () => {
     expect(snapshot._procedencia.postgres).toBe("17.6");
-    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(13);
+    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(14);
   });
 
   it("las 8 tablas", () => {
@@ -235,5 +236,46 @@ describe("chunk — el contrato de dimensiones con embeddings.ts", () => {
     // dijera el esquema. Se ancla a la PRIMERA columna, que es lo que se quiere
     // comprobar.
     expect(SOLO_SQL).not.toMatch(/create table chunk \(\s*\n\s*id\s+uuid/);
+  });
+});
+
+/**
+ * `contexto_qa`: el puente de la consulta al contexto citable.
+ *
+ * Igual que con RRF, estas son aserciones sobre el TEXTO del SQL y su valor
+ * está en lo que impiden deshacer. Las propiedades se verificaron EJECUTANDO
+ * la función contra la instancia real el 2026-08-20.
+ */
+describe("contexto_qa — el hueco de evidencia viaja dentro de la respuesta", () => {
+  const CTX = SOLO_SQL.slice(SOLO_SQL.indexOf("create or replace function contexto_qa"));
+
+  /**
+   * LA PROPIEDAD CENTRAL. Con INNER JOIN, una norma relevante cuyo articulado
+   * no se ha capturado DESAPARECE del resultado, y el modelo responde como si
+   * no existiera. Con LEFT JOIN sale con `chunk_id` NULL y quien llama no
+   * puede no verla. Medido con `chunk` vacía: la ley 1616 sale igual, con su
+   * procedencia y su tier.
+   */
+  it("LEFT JOIN, no INNER: una entidad sin texto no desaparece", () => {
+    expect(CTX).toMatch(/left join ch/);
+    expect(CTX).not.toMatch(/\n\s*join ch\b/);
+  });
+
+  /** El tope recorta por RELEVANCIA cuando hay vector, no por id. */
+  it("selecciona los mejores pasajes y respeta el tope por entidad", () => {
+    expect(CTX).toMatch(/row_number\(\) over \(\s*\n\s*partition by e\.origen, e\.id/);
+    expect(CTX).toMatch(/ch\.n <= max_chunks_por_entidad/);
+    expect(CTX).toMatch(/c\.embedding operator\(extensions\.<#>\) consulta_embedding/);
+  });
+
+  /** También la fila del hueco tiene que ser verificable. */
+  it("la fila sin chunk hereda la procedencia de la entidad", () => {
+    expect(CTX).toMatch(/coalesce\(ch\.url_fuente, e\.url_fuente\)/);
+    expect(CTX).toMatch(/coalesce\(ch\.captured_at, e\.captured_at\)/);
+    expect(CTX).toMatch(/coalesce\(ch\.tier, e\.tier\)/);
+  });
+
+  it("los huecos salen PRIMERO en su entidad, no escondidos al final", () => {
+    expect(CTX).toMatch(/order by e\.posicion, ch\.chunk_id nulls first/);
   });
 });
