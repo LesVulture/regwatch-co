@@ -41,7 +41,9 @@ describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
 
   it("los 4 enums, con sus valores en orden", () => {
     for (const [nombre, valores] of Object.entries(snapshot.enums)) {
-      const bloque = SOLO_SQL.match(new RegExp(`create type ${nombre} as enum\\s*\\(([^)]*)\\)`, "s"));
+      const bloque = SOLO_SQL.match(
+        new RegExp(`create type ${nombre} as enum\\s*\\(([^)]*)\\)`, "s"),
+      );
       expect(bloque, `falta el enum ${nombre}`).toBeTruthy();
       const leidos = [...(bloque?.[1] ?? "").matchAll(/'([^']+)'/g)].map((m) => m[1]);
       // El ORDEN importa: un enum de Postgres es ordenado y se compara.
