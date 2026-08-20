@@ -1,0 +1,143 @@
+{
+ "area": "ai-apis",
+ "overall": "El stack de IA del PLAN-V2 es el bloque más sólido del plan: verifiqué 16 afirmaciones contra documentación oficial viva (platform.claude.com y docs.voyageai.com el 2026-08-19) y **las 16 están vigentes, sin una sola cifra inventada ni desactualizada**. Ni Anthropic ni Voyage tienen hoy nada que contradiga §8.1-§8.2.\n\nDos notas sobre el método, porque importan para la confianza en este informe. (1) La afirmación más expuesta del plan —«el precio introductorio de Sonnet 5 se volvió permanente»— es exactamente la que mi propio conocimiento cacheado daba por FALSA ($3/$15 desde el 2026-09-01). La página oficial de pricing la confirma con una nota explícita: el aumento programado **no ocurrirá**. El plan tenía razón y mi prior estaba viejo; por eso la cifra va abajo con la cita textual. (2) Un resumen automático de la doc de structured outputs me devolvió que `claude-sonnet-5` NO estaba soportado; al descargar el `.md` crudo resultó ser una alucinación del resumidor — sí está en la lista. Todo lo que reporto abajo viene de texto crudo verificado, no de resúmenes.\n\nLo que sí falta es del otro lado del encargo: **el plan es correcto en lo que afirma, pero deja fuera cinco mecanismos de 2026 que están diseñados para exactamente lo que R2/R4 intentan construir a mano.** El más importante: los bloques `search_result` (GA, sin beta header) hacen que la post-validación de `chunk_id` de R2 sea una búsqueda en vez de una reconstrucción desde offsets de caracteres. Y hay un límite duro que el plan no ve: **Haiku 4.5 tiene 200k de contexto, no 1M** — con normas colombianas con anexos por Batch, eso es un error de request, no un problema de coste.\n\nEl presupuesto de ~$70/mes se sostiene con los precios de hoy.",
+ "findings": [
+  {
+   "item": "Precio de Claude Sonnet 5 ($2/$10)",
+   "plan_dice": "§8.2: «Sonnet 5 ($2/$10 — el precio introductorio se volvió **permanente**)». En el preámbulo lo marca como verificar-al-implementar: «la permanencia del precio de Sonnet 5» es *verificar-al-implementar*, no hecho asentado.",
+   "realidad": "CONFIRMADO textualmente. Nota oficial en la página de pricing: «The $2/$10 per million input/output token pricing for Claude Sonnet 5, announced at launch as introductory pricing through August 31, 2026, is now the standard price. The previously scheduled increase to $3/$15 per million input/output tokens on September 1, 2026 will not occur.» Tabla vigente: Base input $2/MTok · Output $10/MTok · 5m cache write $2.50 · 1h cache write $4 · cache hit $0.20. Contexto 1M, max output 128k. NOTA IMPORTANTE: mi tabla de modelos cacheada (2026-06-24) todavía decía «$3.00 ($2.00 intro through 2026-08-31)» — quien consulte de memoria en vez de la página viva concluirá lo contrario y corregirá el plan hacia el error.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/about-claude/pricing (nota id=claude-sonnet-5-introductory-pricing) + https://platform.claude.com/docs/en/about-claude/models/overview.md",
+   "accion": "Ninguna al número. Quitar «Sonnet 5» de la lista de *verificar-al-implementar* del preámbulo (línea 10) y anotar la fecha de verificación: queda asentado. Si alguien lo «corrige» a $3/$15 citando memoria, es un error — pedir la URL."
+  },
+  {
+   "item": "Batch API de Sonnet 5",
+   "plan_dice": "No lo detalla; el Q&A con Citations (~300/mes) va por endpoint síncrono, lo cual es correcto para latencia interactiva.",
+   "realidad": "Sonnet 5 vía Batch: $1/MTok input · $5/MTok output. (No aplicable al Q&A interactivo, pero sí a la evaluación del gold set de R7, que es offline por naturaleza.)",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/about-claude/pricing#batch-processing",
+   "accion": "Correr las 30-50 preguntas del gold set de R7 (y sus re-corridas de regresión) por Batch: mitad de precio y no hay requisito de latencia."
+  },
+  {
+   "item": "Precio de Claude Haiku 4.5 vía Batch API",
+   "plan_dice": "§8.2: «Pipeline de ingesta (~200 docs/día) | **Haiku 4.5** vía Batch API (50%) + structured outputs | ~$48/mes»",
+   "realidad": "CONFIRMADO. Haiku 4.5 estándar: $1/MTok input · $5/MTok output. Vía Batch: $0.50/MTok input · $2.50/MTok output — exactamente el 50%. Cache: 5m write $1.25 · 1h write $2 · hit $0.10. Sigue siendo el Haiku vigente: no existe Haiku 5; el único otro Haiku de la tabla es 3.5, retirado salvo en Bedrock y Google Cloud.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/about-claude/pricing#model-pricing y #batch-processing",
+   "accion": "Ninguna. Usar el alias `claude-haiku-4-5` (el ID fijado es `claude-haiku-4-5-20251001`)."
+  },
+  {
+   "item": "Ventana de contexto de Haiku 4.5 — límite duro que el plan no registra",
+   "plan_dice": "§8.2 asigna a Haiku 4.5 el pipeline de ingesta de ~200 docs/día sin mencionar techo de contexto. §8.4 asume chunking por artículo pero la ingesta procesa el documento COMPLETO antes de trocearlo.",
+   "realidad": "Haiku 4.5 tiene **200k tokens de contexto** (~150k palabras / ~680k caracteres) y **64k de max output**. NO es 1M como Fable 5 / Opus 5 / Sonnet 5. Una ley colombiana con anexos, un CONPES largo o un decreto reglamentario con tablas supera 200k con facilidad. Además Haiku 4.5 **no soporta adaptive thinking** (usa el `thinking.type: \"enabled\"` clásico con `budget_tokens`), a diferencia de los modelos 5.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/about-claude/models/overview.md (tabla «Latest models comparison»)",
+   "accion": "Añadir a §8.2 el techo de 200k y una regla de ruteo por tamaño: medir tokens con `/v1/messages/count_tokens` ANTES de encolar, y desviar a Sonnet 5 (1M) o a un pre-troceo determinista los documentos que se pasen. Sin esto, los documentos grandes fallan con error de validación dentro del Batch, no se degradan silenciosamente. Corregir también si el plan asumía adaptive thinking en Haiku."
+  },
+  {
+   "item": "Precio de Opus 5",
+   "plan_dice": "§preámbulo",
+   "realidad": "Opus 5: $5/MTok input · $25/MTok output · 5m cache write $6.25 · 1h cache write $10 · cache hit $0.50. Vía Batch $2.50/$12.50. Contexto 1M, max output 128k. Fast mode (research preview, solo Opus 5 / Opus 4.8) cuesta $10/$50 y no está disponible con Batch API.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/about-claude/pricing#model-pricing",
+   "accion": "Ninguna."
+  },
+  {
+   "item": "Citations API — estado GA",
+   "plan_dice": "R2: «Citations API de Anthropic (`char_location`, GA, ...)»",
+   "realidad": "CONFIRMADO GA. No requiere beta header: se activa con `citations: {enabled: true}` en cada bloque `document`. «All active models support citations.» Disponible en Claude API, Claude Platform on AWS, Amazon Bedrock, Google Cloud y Microsoft Foundry. Elegible para ZDR.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/build-with-claude/citations.md (§Compatibility)",
+   "accion": "Ninguna. Detalle operativo para el código: las citations son **todo o nada** por request — si se activan en un documento hay que activarlas en todos."
+  },
+  {
+   "item": "Tipos de localización de cita: char_location / page_location",
+   "plan_dice": "R2 nombra únicamente `char_location`.",
+   "realidad": "CONFIRMADOS y hay DOS más que el plan no considera. Los cuatro: `char_location` (texto plano — `start_char_index`/`end_char_index`, 0-indexed, fin exclusivo); `page_location` (PDF — `start_page_number`/`end_page_number`, **1-indexed**, fin exclusivo); `content_block_location` (custom content — índices de bloque 0-indexed); `search_result_location` (bloques `search_result` — devuelve `source`, `title`, `search_result_index`, `start_block_index`, `end_block_index`). Nota: las citas de IMÁGENES dentro de PDFs no están soportadas — un PDF escaneado sin texto extraíble no es citable, lo que conecta con el router unpdf/OCR de §10.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/build-with-claude/citations.md (§Citation indices, §Document types) + https://platform.claude.com/docs/en/build-with-claude/search-results.md (§Citation fields)",
+   "accion": "Ampliar R2 más allá de `char_location`: el tipo de localización lo determina el tipo de bloque que se envía, y esa elección es de diseño (ver best_practices #1 y #2). Añadir a §10 que un PDF escaneado sin capa de texto NO es citable — el OCR no es solo para búsqueda, es precondición de R2."
+  },
+  {
+   "item": "cited_text no factura como output",
+   "plan_dice": "R2: «`cited_text` no factura output»",
+   "realidad": "CONFIRMADO textualmente, y es mejor de lo que dice el plan. Doc: «The `cited_text` field is provided for convenience and **does not count toward output tokens**.» Y además: «When passed back in subsequent conversation turns, `cited_text` is also **not counted toward input tokens**.» La contrapartida, que el plan no menciona: «Enabling citations incurs a slight increase in input tokens because of system prompt additions and document chunking.»",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/build-with-claude/citations.md (§Token costs)",
+   "accion": "Añadir a R2 las dos precisiones: el ahorro se extiende al input en turnos posteriores (relevante para Q&A multi-turno), y hay un sobrecoste pequeño de input por el system prompt de citations. El neto sigue favoreciendo a Citations frente a pedir comillas por prompt."
+  },
+  {
+   "item": "Citations y structured outputs son incompatibles (400)",
+   "plan_dice": "R3: «Dos llamadas, no una. Citations y structured outputs son incompatibles (400): extracción estructurada y redacción citada son pasos separados»",
+   "realidad": "CONFIRMADO textualmente, con un alcance MÁS AMPLIO del que asume el plan. Doc: «If you enable citations on any user-provided document (`document` blocks **or `search_result` blocks**) and also include the `output_config.format` parameter (or the deprecated `output_format` parameter), the API returns a 400 error.» Razón declarada: «citations require interleaving citation blocks with text output, which is incompatible with the strict JSON schema constraints of structured outputs.» Ojo al nombre del parámetro: hoy es `output_config.format`; `output_format` está deprecado pero sigue funcionando (y sigue disparando el mismo 400).",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/build-with-claude/citations.md (§Feature compatibility, Warning)",
+   "accion": "Ninguna a la regla — R3 es correcta y sigue siendo necesaria. Anotar que la incompatibilidad cubre también los bloques `search_result`, para que la mejora de best_practices #1 no se lea como una vía de escape a R3. Y usar `output_config.format`, no `output_format`, en el código de extracción."
+  },
+  {
+   "item": "Descuento del Batch API (50%)",
+   "plan_dice": "§8.2: «Haiku 4.5 vía Batch API (50%)»",
+   "realidad": "CONFIRMADO: «reducing costs by 50%», sobre input Y output. Todos los modelos activos soportan Batch. Se puede batchear casi todo (visión, tool use, server tools, thinking, la mayoría de betas); NO se admiten `stream: true`, `speed` (fast mode), `store`/`previous_thread_event_id`, `cache_hint`/`context_hint`, `max_tokens: 0`, ni `research_preview_2026_02`. Citations SÍ funciona dentro de Batch («Citations work in conjunction with ... batch processing»), y prompt caching también.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/build-with-claude/batch-processing.md",
+   "accion": "Ninguna. Confirmado que Citations + Batch es combinable, por si se quiere abaratar también alguna redacción citada no interactiva."
+  },
+  {
+   "item": "Límites operativos del Batch API que el plan no registra",
+   "plan_dice": "§8.2 usa Batch para ~200 docs/día sin fijar límites, ventana ni manejo de expiración.",
+   "realidad": "Un batch se limita a **100.000 requests o 256 MB**, lo que llegue primero. «Most batches completing within 1 hour»; los resultados se pueden leer cuando todo termina o **a las 24 horas**, lo que ocurra antes; **los batches expiran si no completan en 24 h**. Los resultados quedan disponibles **29 días**. Cada request necesita `max_tokens >= 1`. Los requests con estado `expired` **no se facturan**. Los resultados llegan en cualquier orden: hay que indexar por `custom_id`, nunca por posición. Extra útil: en Batch, Opus 5 / Sonnet 5 admiten hasta **300k tokens de output** con el beta header `output-300k-2026-03-24` (no aplica a Haiku).",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/build-with-claude/batch-processing.md (§Batch limitations, §What can be batched)",
+   "accion": "Añadir a §8.2/§10: (a) 200 docs/día cabe holgado en un batch diario, pero el backfill inicial de §5.5 hay que partirlo por el tope de 256 MB; (b) implementar reintento para `expired` (24 h) — es un estado esperado bajo demanda alta, no una excepción; (c) indexar resultados por `custom_id`."
+  },
+  {
+   "item": "Prompt caching y su TTL",
+   "plan_dice": "Nada. §8.2 no menciona prompt caching en ninguna de sus cuatro filas de coste.",
+   "realidad": "Dos TTL disponibles: **5 minutos** (write = 1,25× el input base) y **1 hora** (write = 2× el input base). Lectura de caché = **0,1×** el input base en ambos casos. Amortización declarada: el de 5 min se paga con **una** lectura; el de 1 h con **dos**. Los multiplicadores **se acumulan con el descuento de Batch**. La doc de Batch recomienda explícitamente el TTL de 1 h: «Because batches can take longer than 5 minutes to process, consider using the 1-hour cache duration ... for better cache hit rates when processing batches with shared context.» Aviso relevante para R3: cambiar `output_config.format` **invalida** la caché del hilo.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching + https://platform.claude.com/docs/en/build-with-claude/batch-processing.md",
+   "accion": "Añadir prompt caching a §8.2 — ver best_practices #3. Es la única palanca de coste del plan que hoy está en cero."
+  },
+  {
+   "item": "voyage-4 — dimensiones Matryoshka",
+   "plan_dice": "§8.2: «voyage-4 (Matryoshka 256-2048...)». §8.4: «Embeddings voyage-4 a 256 dims» y «pasar a 1024 dims al migrar a Pro es un re-embed».",
+   "realidad": "CONFIRMADO exactamente. voyage-4 soporta **256, 512, 1024 (default) y 2048** dimensiones. Contexto 32.000 tokens. `output_dtype`: float, int8, uint8, binary, ubinary. Misma familia y mismas dimensiones en voyage-4-large, voyage-4-lite, voyage-code-4 y voyage-4-nano (open-weight, en Hugging Face). No existe «voyage-4.5».",
+   "status": "vigente",
+   "fuente": "https://docs.voyageai.com/docs/embeddings",
+   "accion": "Ninguna. La afirmación de §8.4 de que 256→1024 es «un re-embed, no una migración de arquitectura» es correcta: son dimensiones del mismo modelo. Añadir el dato que el plan no usa: contexto de 32k por chunk, holgadísimo para chunking por artículo."
+  },
+  {
+   "item": "voyage-4 — 200M tokens gratis",
+   "plan_dice": "§8.2: «voyage-4 (... **200M tokens gratis** — cubre el bootstrap completo) | $0 inicial». Preámbulo lo marca como verificar-al-implementar.",
+   "realidad": "CONFIRMADO textualmente: «The first 200 million tokens for `voyage-4-large`, `voyage-4`, `voyage-4-lite`, `voyage-context-4`, and `voyage-code-3` ... are free for every account.» Después: voyage-4 a **$0,06/1M tokens** ($0,00006 por millar); voyage-4-large $0,12/1M; voyage-4-lite $0,02/1M; voyage-context-4 $0,12/1M. CAVEAT que el plan debe conocer: los 200M se leen como una **bolsa compartida** entre esos cinco modelos, no 200M por modelo — probar dos modelos en el bake-off consume de la misma bolsa. Y: «Free token credits do **not** apply to Batch API usage.»",
+   "status": "vigente",
+   "fuente": "https://docs.voyageai.com/docs/pricing",
+   "accion": "Ninguna al número. Añadir las dos advertencias: la bolsa es compartida entre modelos de embedding (afecta al bake-off de la Fase 2), y el crédito gratis NO cubre el Batch API de Voyage (ver best_practices #5). Aun agotados los 200M, ~114k chunks × ~1,2 KB re-embebidos cuestan céntimos a $0,06/1M: el riesgo económico aquí es nulo."
+  },
+  {
+   "item": "Voyage rerank-2.5",
+   "plan_dice": "§8.2: «Rerank | voyage rerank-2.5 | incluido»",
+   "realidad": "CONFIRMADO que existe y es el reranker generalista vigente: contexto 32.000 tokens, hasta 1.000 documentos, «optimized for quality with instruction-following and multilingual support» (el multilingüe importa para español jurídico). Existe también **rerank-2.5-lite** (mismos 32k/1.000 docs, prioriza velocidad). rerank-2 y rerank-2-lite quedan como «earlier models» con recomendación de migrar. El «incluido» del plan es MÁS cierto de lo que asume: los rerankers tienen su **propia** bolsa de 200M tokens gratis, separada de la de embeddings — «The first 200 million tokens for `rerank-2.5`, `rerank-2.5-lite`, `rerank-2`, and `rerank-2-lite` are free for each account.» Después: rerank-2.5 a **$0,05/1M**, rerank-2.5-lite a $0,02/1M. La facturación se cuenta como «(tokens de query × nº de documentos) + suma de tokens de todos los documentos» — crece con el tamaño del candidate set, no con el del corpus.",
+   "status": "vigente",
+   "fuente": "https://docs.voyageai.com/docs/reranker + https://docs.voyageai.com/docs/pricing",
+   "accion": "Ninguna. Corregir al alza la nota de §8.2: la bolsa de rerank es independiente de la de embeddings, así que «incluido» no compite con el presupuesto del bootstrap. Añadir la fórmula de facturación (query × docs + docs) al presupuesto de R4: es lo que fija cuántos candidatos pasar del retrieval híbrido al reranker."
+  },
+  {
+   "item": "Structured outputs en Haiku 4.5 (base del pipeline de ingesta)",
+   "plan_dice": "§8.2: «Haiku 4.5 vía Batch API (50%) + structured outputs». R3 depende de que la extracción estructurada funcione en un modelo distinto al de la redacción citada.",
+   "realidad": "CONFIRMADO. Lista oficial de modelos soportados: `claude-fable-5`, `claude-mythos-5`, `claude-mythos-preview`, `claude-opus-5`, `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-6`, **`claude-sonnet-5`**, `claude-sonnet-4-6`, `claude-sonnet-4-5-20250929`, `claude-opus-4-5-20251101`, **`claude-haiku-4-5-20251001`**. Es GA: ya no requiere beta header. Parámetro actual `output_config.format` con `{type: \"json_schema\", schema: {...}}`; el `output_format` antiguo y el header `structured-outputs-2025-11-13` siguen funcionando en transición. ADVERTENCIA de método: un resumen automático de esta misma página me devolvió que `claude-sonnet-5` NO estaba soportado — es falso, está en la lista del `.md` crudo.",
+   "status": "vigente",
+   "fuente": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs.md (línea 9, lista de modelos soportados; descargada en crudo)",
+   "accion": "Ninguna. Anotar que el esquema JSON debe llevar `additionalProperties: false` y `required`, y que **cambiar el esquema invalida la caché de prompt** — otra razón para congelarlo antes de arrancar la ingesta masiva."
+  }
+ ],
+ "best_practices": [
+  "**[LA MÁS IMPORTANTE] Usar bloques `search_result` en vez de bloques `document` para el Q&A — convierte la post-validación de R2 en una búsqueda, no en una reconstrucción.** R2 dice: «post-validar que cada cita resuelva a un `chunk_id` existente». Con bloques `document` eso obliga a reconstruir la identidad del chunk desde `document_index` + offsets de caracteres, y a mantener un mapa paralelo posición→chunk_id que se desincroniza en cuanto cambie el orden de los documentos en el request. Los bloques `search_result` (GA, **sin beta header**, «All active models support search results with citations, with the exception of Claude Haiku 3») están hechos exactamente para RAG: el campo `source` acepta «any stable string works: a URL, or an internal identifier such as `kb://article-1234`» — es decir, se le pasa `chunk://<chunk_id>` directamente. Y la cita **devuelve ese `source` de vuelta**, junto con `title`, `search_result_index`, `start_block_index` y `end_block_index` (tipo `search_result_location`). La validación «¿esta cita resuelve a un chunk_id existente?» pasa de ser aritmética de offsets a ser un `SELECT`. Además el `title` que se envía (p. ej. «Ley 2277 de 2022, art. 54») vuelve en la cita, alimentando gratis el badge de evidencia de R6. Se pueden entregar como contenido de nivel superior en el mensaje de usuario (contenido pre-recuperado, que es el caso del plan) o como retorno de una tool. Ojo: siguen sujetos a R3 — la doc dice explícitamente que activar citations en bloques `search_result` con `output_config.format` también da 400. Editar la línea de R2 en §8.1. Fuente: https://platform.claude.com/docs/en/build-with-claude/search-results.md",
+  "**Decidir explícitamente el tipo de documento, porque determina la granularidad de la cita y hoy el plan lo elige por accidente.** El plan fija «chunking por artículo (nunca por tokens)» (R4) pero no dice qué tipo de bloque envía, y la API re-trocea por su cuenta según el tipo. La doc aborda el caso literal del plan: «if you want Claude to be able to cite specific sentences from your RAG chunks, you should put each RAG chunk into a plain text document. Otherwise, if you do not want any further chunking to be done ... you can put RAG chunks into custom content document(s)». Es decir: **texto plano → re-troceo automático por frases** (Claude puede citar una frase DENTRO del artículo: más preciso para el quote expandible de R6, pero la cita ya no es 1:1 con el chunk_id); **custom content → sin re-troceo**, la cita es el bloque entero que enviaste (granularidad = el artículo, mapeo 1:1 exacto con chunk_id vía `content_block_location`). Para texto jurídico, citar la frase exacta dentro del artículo es probablemente lo deseable para el usuario, y el artículo entero es lo deseable para la validación automática. Las dos son defendibles; elegir sin saberlo no. Documentar la decisión en §8.1 junto a R2. Fuente: https://platform.claude.com/docs/en/build-with-claude/citations.md (§Document types, nota «Automatic chunking vs custom content»)",
+  "**Meter prompt caching en §8.2 — hoy es la única palanca de coste del plan que está literalmente sin usar, y se acumula con el 50% del Batch.** El pipeline de ingesta manda ~200 docs/día contra el MISMO system prompt de extracción y el MISMO esquema JSON; hoy se paga ese prefijo 200 veces al día a precio completo. Con `cache_control` sobre el prefijo estable, la lectura cuesta **0,1×** el input base. Y la doc de Batch recomienda el TTL específico: «Because batches can take longer than 5 minutes to process, consider using the **1-hour cache duration** ... for better cache hit rates when processing batches with shared context» — el write de 1 h cuesta 2× y se amortiza con dos lecturas, trivial con 200 documentos. Tres reglas que hay que escribir junto a la recomendación, porque son invalidadores silenciosos: (a) el orden de render es `tools` → `system` → `messages`, así que lo estable va primero y lo volátil (el documento del día, timestamps, ids) DESPUÉS del último breakpoint; (b) **cambiar `output_config.format` invalida la caché** del hilo — congelar el esquema de extracción antes del backfill; (c) verificar con `usage.cache_read_input_tokens` — si sale 0 en requests repetidos, hay un invalidador escondido. En el Q&A con Citations también aplica: los bloques de cita no se cachean, pero **los documentos fuente sí** («apply `cache_control` to your top-level document content blocks»). Fuentes: https://platform.claude.com/docs/en/about-claude/pricing#prompt-caching · https://platform.claude.com/docs/en/build-with-claude/batch-processing.md · https://platform.claude.com/docs/en/build-with-claude/citations.md (§Using prompt caching with citations)",
+  "**Evaluar `voyage-context-4` en el bake-off de la Fase 2: es el mecanismo que la «Nota sobre contextual retrieval» de §8.2 está construyendo a mano.** El plan razona bien —«para texto jurídico bien estructurado, el header determinista gratuito `[Ley X de YYYY, art. N]` captura la mayor parte del beneficio ... Pagar generación LLM de contexto solo si el gold set demuestra que hace falta»— pero plantea solo dos opciones: header determinista gratis, o generación LLM cara. Hay una tercera que ninguna de las dos considera: `voyage-context-4` produce **embeddings de chunk contextualizados**, es decir embebe cada chunk con conciencia del documento que lo rodea, sin generar texto con un LLM. Especificaciones: 32.000 tokens por chunk, hasta **120.000 tokens de contexto total** con `enable_auto_chunk = true`, mismas dimensiones Matryoshka (256/512/1024/2048), y **sale de la misma bolsa de 200M gratis** que voyage-4. Coste posterior $0,12/1M (2× voyage-4, es decir céntimos a la escala del plan). Encaja justo en lo que §8.4 pide medir en la Fase 2. Salvedad honesta: la doc **no publica benchmarks** que cuantifiquen la ganancia frente a embeber chunks aislados ni frente a la técnica de Anthropic — por eso va al bake-off contra el gold set de R7, no como decisión adoptada. Fuentes: https://docs.voyageai.com/docs/contextualized-chunk-embeddings · https://docs.voyageai.com/docs/pricing",
+  "**Saber que el Batch API de Voyage existe, y que durante el bootstrap NO conviene usarlo.** Voyage tiene endpoint batch con ventana de 12 horas y **33% de descuento**. Pero la doc dice, y es contraintuitivo: «Free token credits do **not** apply to Batch API usage. All successfully processed Batch API tokens are billed at the applicable discounted batch rate and **do not deduct from your free token balance**.» Traducción para el plan: mientras queden 200M gratis, el endpoint síncrono cuesta **$0** y el batch cuesta $0,04/1M — usar batch en el bootstrap sería pagar por lo que es gratis. Solo compensa después de agotar la bolsa. Es exactamente el tipo de dato que nadie vuelve a comprobar y que invierte la intuición de «batch siempre es más barato». Dato adjunto: la Files API de Voyage guarda ficheros 30 días a $0,05/GB/mes. Fuente: https://docs.voyageai.com/docs/pricing",
+  "**Considerar cuantización binaria como palanca real de los 500 MB de §8.4 — pero binaria, NO int8.** §8.4 hace su aritmética solo sobre `halfvec(256)` = 512 B y concluye ~114k chunks de suelo. Hay una palanca que no evalúa: voyage-4 acepta `output_dtype` en {float, int8, uint8, **binary**, ubinary}. Verifiqué el lado de Postgres antes de recomendarlo, y el resultado corrige la intuición obvia: **pgvector no tiene tipo int8** — solo `vector` (4×dims+8 B), `halfvec` (2×dims+8 B), `bit` (dims/8+8 B) y `sparsevec`. Así que int8 no compra nada del lado de la DB. `binary` sí: a 256 dims, `bit(256)` ocupa **40 B** frente a los **520 B** de `halfvec(256)` — 13×. pgvector indexa `bit` con HNSW y distancia Hamming (`<~>`) o Jaccard (`<%>`). El patrón estándar es binario para la pasada ANN gruesa y **rerank sobre el top-N**, y el plan **ya tiene el reranker presupuestado y gratis** (rerank-2.5). Salvedad seria: la cuantización binaria pierde recall, y en español jurídico eso no está medido — esto va al gold set de R7 (que ya separa *correctness* de *groundedness*), no a la arquitectura por decreto. Si sobrevive a la medición, el cuello de botella de §8.4 pasa a ser el texto en exclusiva y los 45 temas dejan de estar descartados de entrada. Fuentes: https://docs.voyageai.com/docs/embeddings · https://github.com/pgvector/pgvector (§storage per type)",
+  "**Verificar capacidades en runtime con la Models API en vez de fijarlas en prosa.** El propio plan admite que sus versiones son «verificar-al-implementar». `GET /v1/models` y `GET /v1/models/{id}` devuelven hoy `max_input_tokens`, `max_tokens` y un objeto `capabilities` con banderas por feature (`citations.supported`, `structured_outputs.supported`, `batch.supported`, `effort`, `thinking`, `context_management`...). Un check de arranque que compare lo que el código asume contra lo que la API declara convierte «Haiku 4.5 tiene 200k» de nota en prosa —que envejece— en aserción ejecutable, y es coherente con el espíritu de R1 (los hechos duros no salen del LLM). Fuente: https://platform.claude.com/docs/en/about-claude/models/overview.md (Tip final) + https://platform.claude.com/docs/en/api/beta (esquema de `capabilities`)"
+ ]
+}

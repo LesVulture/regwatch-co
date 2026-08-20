@@ -1,0 +1,145 @@
+{
+ "area": "supabase-features",
+ "overall": "Verificación en vivo contra docs oficiales de Supabase, pricing, pgvector y PostgreSQL 17 (todo refetcheado el 2026-08-19; no heredé ningún `verified: true` de `research/supabase.json`). El plan aguanta bien en lo estructural —Postgres 17, halfvec, HNSW sobre IVFFlat, la receta RRF, esquemas declarativos, $25 de Pro, 500 MB de Free— y falla en dos sitios que cuestan implementación real. (1) LA PREGUNTA CLAVE queda **más acotada pero no cerrada**: la doc define la inactividad como «user database activity / user queries / a few user requests to the database each day», NO como tráfico de API — o sea que el temor concreto de §8.4 L353 («si la métrica es tráfico de API») no se sostiene; pero pg_cron no aparece en ninguna de las dos páginas relevantes (pausa y Cron), así que la sub-pregunta «¿cuenta un cron interno?» sigue sin respuesta documental. La salida limpia ya está en el plan sin que el plan lo sepa: §7 orquesta con GitHub Actions, que llega desde FUERA; basta con exigir que ese job hable con Supabase a diario y el riesgo de pausa se cierra sin cambiar de plan. (2) El «cambiando dos líneas» de §8.3 es falso y tiene un bloqueo duro: `unaccent(text)` está declarada STABLE en contrib de PG17 y las columnas generadas exigen funciones IMMUTABLE — la tabla del §8.3 **no se crea**. Además la receta oficial hoy usa `vector_ip_ops`/`<#>` (producto interno), no coseno, lo que obliga a una decisión sobre normalización que el plan no toma. Dos hallazgos adicionales que el plan no ve: el Free no es solo 500 MB de disco, es una instancia **Nano de CPU compartida con hasta 0,5 GB de RAM** (segundo techo, de latencia no de capacidad); y la regla dura de §8.4 L355 («el texto completo va a Storage o a git») choca con el Free, que da **1 GB de Storage y 50 MB por archivo** — los ~4.200 PDFs de CONPES no caben, lo que empuja a leer esa regla como «a git», no «a Storage». Ninguno de estos hallazgos tumba la decisión de intentarlo en Free; todos cambian qué hay que escribir antes de la Fase 0.",
+ "findings": [
+  {
+   "item": "Pausa del plan Free tras 7 días de inactividad — qué cuenta como actividad (LA PREGUNTA CLAVE)",
+   "plan_dice": "§8.4 L353: «Sobre la pausa por inactividad — inferencia, no hecho verificado. Presumo que no aplica, porque un cron diario que escribe en la base debería contar como actividad; pero el corpus no define qué cuenta como actividad, y hay razón para dudar: si la métrica es tráfico de API, un pg_cron que corre dentro de Postgres podría no registrarse. Verificar contra la documentación de pausa de Supabase antes de la Fase 0.»",
+   "realidad": "La doc SÍ define el criterio, y NO es tráfico de API — lo cual invalida el temor concreto del plan pero no cierra la duda. Verbatim: «A Free plan project is considered inactive if it does not receive sufficient **user database activity** over the past week. Projects with too few **user queries** during that window are the clearest candidates for pausing. […] Typically a few **user requests to the database** each day over the previous week is enough to keep the project from being paused.» Los dos únicos remedios que enumera la página son: (a) visitar el proyecto desde el Dashboard, (b) «Generate a sufficient amount of activity by making API calls to your project or sending requests via your connected application». **pg_cron no aparece en ninguna parte de esa página**, y la guía de Supabase Cron tampoco dice nada sobre el plan Free ni sobre la pausa — ese silencio es parte de la evidencia. Conclusión: el criterio documentado (actividad de base de datos / consultas de usuario) es más amplio que «tráfico de API» y apunta a favor de la presunción del plan, pero la doc no resuelve si un job interno de pg_cron computa como «user query». Datos nuevos que el plan no recoge: aviso por email ~1 semana ANTES de la pausa + email de confirmación; **ventana de 90 días** para restaurar desde Studio (pasada esa ventana el proyecto ya no se restaura en plataforma, porque los backups estáticos no se pueden actualizar a cambios de plataforma); los proyectos de plan pago no se pausan nunca; el límite es de 2 proyectos Free activos y los pausados no cuentan.",
+   "status": "no_verificable",
+   "accion": "NO apoyar la viabilidad del Free en que pg_cron cuente — la doc no lo dice. La mitigación ya existe en el plan sin que el plan la reclame: §7 L273 orquesta la ingesta diaria con **GitHub Actions cron en repo público**, que golpea Supabase desde fuera. Convertir eso en requisito explícito del contrato de colector: «todo colector escribe su fila de `source_runs` vía PostgREST/pooler en cada corrida diaria» — eso es inequívocamente «user requests to the database» bajo la definición citada, y cierra el riesgo de pausa sin migrar a Pro. Añadir además a §10/§12 la ventana de 90 días: para un producto cuya promesa es frescura visible por fuente y heartbeat público, una pausa no es downtime, es ruptura del contrato — y los dumps semanales a git de §4 son su seguro real, conviene decir que ese es su segundo papel.",
+   "fuente": "https://supabase.com/docs/guides/platform/free-project-pausing + https://supabase.com/docs/guides/cron + https://supabase.com/docs/guides/deployment/going-into-prod"
+  },
+  {
+   "item": "Free = instancia Nano (CPU compartida, hasta 0,5 GB de RAM) — el segundo techo que el plan no cuenta",
+   "plan_dice": "§8.4 razona toda la aritmética del Free contra un único límite: los 500 MB de base de datos. «Reservando 250 MB para vectores+índice salen entre 114k y 179k chunks». Ni una mención de RAM ni de CPU en toda la sección.",
+   "realidad": "El Free corre en la instancia **Nano**: CPU «Shared», memoria «Up to 0.5 GB» (Micro, el default de Pro, ya son 2 cores compartidos y 1 GB). Son dos techos distintos, no uno: los 500 MB de disco limitan **cuánto cabe**; los 0,5 GB de RAM compartida limitan **si se puede consultar con latencia usable**. Con el presupuesto del propio plan, el working set (≈58 MB de vectores halfvec(256)×114k, más el grafo HNSW, más texto+GIN) se acerca a los 300-400 MB contra 0,5 GB compartidos: no es un fallo de capacidad, es caché frío y lecturas a disco en cada consulta híbrida. Las docs de producción de IA de Supabase lo dicen de frente: usar índices «will require additional RAM to make use of Postgres Caching», y recomiendan pre-calentar con `pg_prewarm` y 10.000-50.000 consultas de calentamiento antes de producción.",
+   "status": "desactualizado",
+   "accion": "Añadir a §8.4 el segundo techo con esas palabras: 500 MB de disco = cuánto cabe, 0,5 GB de RAM compartida = si se siente usable. La medición entregable de la Fase 2 («tamaño medio de artículo») debe traer compañía: latencia p95 de `hybrid_search` sobre el corpus real en Nano. Si esa latencia no sirve para la PWA, la respuesta es Pro/Micro ($25 + $10 de créditos), no un chunking más agresivo — igual que ya concluye §13 decisión #3 por el lado del volumen.",
+   "fuente": "https://supabase.com/docs/guides/platform/compute-and-disk + https://supabase.com/docs/guides/ai/going-to-prod"
+  },
+  {
+   "item": "«hybrid_search adaptada al español cambiando dos líneas» — y el bloqueo IMMUTABLE de unaccent",
+   "plan_dice": "§8.3 L322: «Receta oficial de Supabase (hybrid_search con RRF, k=50, pesos configurables), adaptada al español **cambiando dos líneas**: to_tsvector('spanish', unaccent(...)) y halfvec.»",
+   "realidad": "La receta oficial existe y está viva (RRF con `rrf_k int = 50`, `full_text_weight`/`semantic_weight` = 1, FULL OUTER JOIN de las dos CTEs) — eso es correcto. Lo de «dos líneas» no. Hoy la receta declara `embedding extensions.vector(512)`, indexa con `hnsw (embedding vector_ip_ops)` y consulta con `<#>` (producto interno), no coseno. Adaptarla toca **6-7 puntos en 5 sitios**: (a) `to_tsvector('english', content)` → `to_tsvector('spanish', <wrapper>(content))`; (b) `websearch_to_tsquery(query_text)`, que aparece **dos veces** (en el WHERE y dentro de `ts_rank_cd`), necesita el argumento `'spanish'` en ambas; (c) tipo de la columna → `halfvec(256)`; (d) tipo del parámetro `query_embedding` de la función → `halfvec(256)`; (e) opclass del índice → `halfvec_ip_ops` o `halfvec_cosine_ops`; (f) si se pasa a coseno, el operador `<#>` → `<=>`. **Y hay un bloqueo duro que el plan no anticipa:** `unaccent(text)` está declarada `LANGUAGE C STABLE STRICT PARALLEL SAFE` en `contrib/unaccent/unaccent--1.1.sql` de PG17, y la doc de PostgreSQL sobre columnas generadas dice verbatim «The generation expression can only use immutable functions» — así que `fts tsvector generated always as (to_tsvector('spanish', unaccent(texto))) stored` **falla al crear la tabla**. Hace falta `create extension unaccent` explícito más un wrapper IMMUTABLE propio, y esquema-cualificado (`extensions.unaccent('unaccent', $1)`) para que el dump/restore no se rompa. Ni la receta de hybrid search ni la guía de Full Text Search de Supabase mencionan `unaccent` en ningún momento — el plan lo está añadiendo por su cuenta.",
+   "status": "desactualizado",
+   "accion": "Reescribir §8.3 con el diff real (5 sitios) y meter el wrapper IMMUTABLE en la Fase 0 como parte del esquema declarativo, no como descubrimiento de la Fase 4. Añadir la decisión que el plan no toma: la receta usa producto interno, que las propias docs de producción solo recomiendan **si los vectores están normalizados** — y voyage-4 truncado por Matryoshka a 256 dims deja de estar normalizado. Hay que elegir: re-normalizar en escritura y quedarse con `halfvec_ip_ops`/`<#>`, o pasar a `halfvec_cosine_ops`/`<=>`. Un desajuste entre opclass y operador degrada el ranking en silencio, que es justo el modo de fallo que este proyecto no puede permitirse.",
+   "fuente": "https://supabase.com/docs/guides/ai/hybrid-search + https://raw.githubusercontent.com/postgres/postgres/REL_17_STABLE/contrib/unaccent/unaccent--1.1.sql + https://www.postgresql.org/docs/17/ddl-generated-columns.html + https://supabase.com/docs/guides/database/full-text-search"
+  },
+  {
+   "item": "Tope de 30 resultados cableado en la receta oficial de hybrid_search",
+   "plan_dice": "§8.3 la adopta tal cual («receta oficial […] pesos configurables»); §8.1 R4 exige «híbrido léxico/vectorial + **rerank**».",
+   "realidad": "La función oficial tiene `limit least(match_count, 30)` cableado en el SELECT final y `limit least(match_count, 30) * 2` en cada CTE: devuelve como máximo 30 filas y evalúa a lo sumo 60 candidatas por rama, pase lo que pase en `match_count`.",
+   "status": "vigente",
+   "accion": "Subir ese tope conscientemente y decirlo en §8.3. Un reranker (R4) alimentado con 30 candidatas está muerto de hambre: el estándar es rerankear 50-200. Es un cambio de una línea, pero si se copia la receta sin leerla, R4 queda incumplida sin que nada falle.",
+   "fuente": "https://supabase.com/docs/guides/ai/hybrid-search"
+  },
+  {
+   "item": "Ratio de tamaño del índice HNSW extrapolado de 1024 a 256 dims",
+   "plan_dice": "§8.4 tabla L336: «Índice HNSW (m=16) | 1,5–3× los vectores — cifra del corpus, medida sobre halfvec(1024); **extrapolarla a 512 B es conservador (el coste fijo por nodo no escala con las dimensiones)** | 800–1.600 B». De ahí sale el rango 114k–179k chunks.",
+   "realidad": "La premisa entre paréntesis es correcta y la conclusión que saca de ella va al revés. Si el coste fijo por nodo (la lista de vecinos: ~2m enlaces en la capa 0 con m=16, más las capas superiores) NO escala con las dimensiones, entonces al bajar el vector de 2.048 B (halfvec 1024) a 512 B (halfvec 256) ese coste fijo pesa **cuatro veces más en proporción**: el ratio índice:vector **sube**, no baja. Con un coste fijo del orden de 300-400 B por nodo, 256 dims da ~860 B de índice sobre 512 B de vector ≈ 1,7× — que sigue **dentro** de la banda 1,5–3× del plan. O sea: el rango del plan aguanta y su número de planeación (~114k, del extremo de 2,2 KB/chunk) es correcto; lo que no aguanta es la justificación y el extremo optimista de 1,4 KB/chunk que produce los 179k. pgvector no publica los bytes por nodo, así que la cifra exacta no es verificable documentalmente — el mecanismo sí.",
+   "status": "desactualizado",
+   "accion": "Borrar el paréntesis «extrapolarla a 512 B es conservador» y sustituirlo por lo contrario: a menos dimensiones, el ratio sube. Mantener ~114k como techo de planeación (esa parte está bien) y **no volver a citar 179k**. Medirlo de verdad en la Fase 2 con `pg_relation_size` sobre el índice de 5-10k chunks reales antes de comprometer la Fase 4 — es una consulta, no un proyecto.",
+   "fuente": "https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes + https://github.com/pgvector/pgvector#hnsw"
+  },
+  {
+   "item": "halfvec: límite de dimensiones indexables",
+   "plan_dice": "§8.4 asume halfvec(256) indexable con HNSW sin comentario.",
+   "realidad": "Vigente y con holgura enorme. Desde pgvector 0.7.0: `vector` hasta 2.000 dims, `halfvec` hasta **4.000**, `bit` hasta 64.000. 256 dims no roza el límite ni con la migración prevista a 1.024.",
+   "status": "vigente",
+   "fuente": "https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes"
+  },
+  {
+   "item": "HNSW vs IVFFlat",
+   "plan_dice": "§8.4 asume HNSW (m=16) sin justificarlo.",
+   "realidad": "Es la recomendación oficial vigente: «We recommend using HNSW because of its performance and robustness against changing data» y «HNSW should be your default choice when creating a vector index». Además: «Unlike IVFFlat indexes, you are safe to build an HNSW index immediately after the table is created» — relevante para un corpus que crece a diario, que es exactamente el caso de regwatch. Defaults confirmados: m=16, ef_construction=64, ef_search=40.",
+   "status": "vigente",
+   "fuente": "https://supabase.com/docs/guides/ai/going-to-prod + https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes"
+  },
+  {
+   "item": "hnsw.iterative_scan para búsqueda vectorial filtrada",
+   "plan_dice": "El plan no lo menciona en ninguna parte, pese a que §5.2 exige consultas de vigencia a fecha arbitraria, §5.5 define 45 temas y §13 decisión #3 propone un piloto vertical de 2 temas.",
+   "realidad": "Existe desde pgvector 0.8.0 y Supabase lo documenta: la GUC `hnsw.iterative_scan` viene **`off` por defecto**, con dos modos activables — `strict_order` (preserva el orden exacto de distancia entre iteraciones) y `relaxed_order` (permite ligero reordenamiento a cambio de mejor recall) — acotados por `hnsw.max_scan_tuples` (default 20.000) y `hnsw.scan_mem_multiplier` (default 1). La doc explica el modo de fallo textualmente: «an HNSW scan returns the top k rows by distance, and if most of those are filtered out you can end up with fewer rows than your LIMIT».",
+   "status": "vigente",
+   "accion": "Es exactamente el modo de fallo del piloto vertical: filtrar a 2 de 45 temas y además por vigencia sobre un índice HNSW devuelve menos filas que el LIMIT, en silencio, y el Q&A responde con menos evidencia de la que hay. Meterlo en §8.3 como parte de la receta (`set hnsw.iterative_scan = relaxed_order` en la función, o a nivel de rol) y en el gold set de R7 como caso de prueba con filtro selectivo.",
+   "fuente": "https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes"
+  },
+  {
+   "item": "Postgres 17 como motor",
+   "plan_dice": "§4 L128: «Supabase (Postgres 17 + pgvector + FTS español)».",
+   "realidad": "Vigente. Las releases del repo `supabase/postgres` al 2026-08-19 son todas de la rama 17: las cinco últimas son `17.9.0.019-orioledb-bench-1-x86` (19 ago), `17.9.0.019-orioledb-bench-1` (19 ago), `17.9.0.018-orioledb-x86` y `17.9.0.018-orioledb` (18 ago), `17.9.0.017-orioledb-x86` (18 ago). **No hay builds de Postgres 18** en la plataforma a esta fecha.",
+   "status": "vigente",
+   "accion": "Confirmar con `show server_version` al crear el proyecto: la página de upgrading no declara cuál es el default de proyectos nuevos.",
+   "fuente": "https://github.com/supabase/postgres/releases"
+  },
+  {
+   "item": "Versión instalada de pgvector (todo lo de iterative_scan depende de ella)",
+   "plan_dice": "El plan no fija versión de pgvector; asume las capacidades de 0.8.x implícitamente al usar halfvec y HNSW.",
+   "realidad": "Supabase documenta las funciones de 0.7.0 (límites de dims) y 0.8.0 (iterative scans) como disponibles, pero **no publica el número instalado** en ninguna página; la propia doc manda comprobarlo: «You can check your current pgvector version by running: SELECT * FROM pg_extension WHERE extname = 'vector';».",
+   "status": "vigente",
+   "accion": "Convertirlo en gate explícito de la Fase 0, junto al `show server_version` y al `select name from pg_available_extensions where name='unaccent'`: tres consultas, dos minutos, y de ellas depende que §8.3 y el iterative_scan sean implementables tal como están escritos.",
+   "fuente": "https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes"
+  },
+  {
+   "item": "Esquemas declarativos y migraciones",
+   "plan_dice": "§11 Fase 0 L391: «Esquema declarativo con migraciones.» Sin más detalle.",
+   "realidad": "El flujo está vigente y **no está marcado beta**: definir en `supabase/schemas/*.sql` → `supabase db diff -f <nombre>` → `supabase migration up` (local) → `supabase db push` (remoto), con los ficheros de esquema como fuente de verdad (los cambios hechos a mano en Studio los ignora el diff). La lista actual de lo que el diff **NO** captura es más larga que la que traía el corpus: DML (`insert`/`update`/`delete`); ownership y grants de vistas; `security invoker` en vistas; vistas materializadas; recreación de vistas al alterar tipos de columna; **`alter policy` (políticas RLS)**; privilegios a nivel de columna; privilegios de esquema; comentarios; particiones; adición de tablas a publicaciones; sentencias de dominio; grants duplicados heredados de default privileges.",
+   "status": "vigente",
+   "accion": "Dos consecuencias que el roadmap debe escribir, no descubrir. (1) La Fase 5 es «Auth + RLS»: las políticas RLS van como **migraciones explícitas versionadas**, porque el diff no ve `alter policy`. (2) Los grants de vistas y el `security invoker` tampoco se diffean, y §10 expone superficies públicas de cobertura al rol `anon` — un grant que se pierde entre entornos es deriva de seguridad, no cosmética. Si las vistas de «frescura por fuente» de §10 acaban siendo materializadas, tampoco entran en el diff.",
+   "fuente": "https://supabase.com/docs/guides/local-development/declarative-database-schemas"
+  },
+  {
+   "item": "Edge Functions: CPU y runtime",
+   "plan_dice": "El plan **no las menciona**. §7 L273 orquesta con GitHub Actions y reserva Supabase a «pg_cron/pg_net solo para fan-out, refresh de vistas y la alarma de fuente muerta».",
+   "realidad": "Límites vigentes hoy: **CPU 2 s por request** («Amount of actual time spent on the CPU per request - does not include async I/O»), wall-clock **150 s en Free / 400 s en planes pagos**, memoria **256 MB**, idle timeout 150 s (devuelve 504), bundle **20 MB** con CLI local o **5 MB** con bundling en servidor, **100 funciones por proyecto en Free / 1.000 en Pro** (el corpus decía 500 en Pro — corregido), 100 secretos por proyecto (nombres ≤256 chars, 48 KiB por secreto), log de 10.000 caracteres y 100 eventos por 10 s, llamadas recursivas ~5.000 req/min. Cuota de invocaciones: el Free incluye **500.000** (el corpus reportó que no estaba especificada — hoy sí lo está) y el Pro 2M, luego $2/M. La versión de Deno del Edge Runtime **no está publicada** en las docs; el repo `supabase/edge-runtime` va por v1.74.3 (2026-07-31).",
+   "status": "vigente",
+   "accion": "Mantener `plan_dice` como está: el plan no depende de esto hoy. Pero los 2 s de CPU se vuelven vinculantes en el momento en que se adopte el patrón oficial `automatic-embeddings` (pg_cron → pg_net → Edge Function) que el especialista recomendaba: descargar un PDF es I/O y cabe; parsear una gaceta de 300 páginas es CPU y no. Si §7 mantiene GitHub Actions para el parseo, el conflicto no existe — conviene decirlo explícitamente en §7 para que nadie mueva el parseo a Edge Functions más adelante creyendo que es equivalente. La versión de Deno queda como no verificable documentalmente.",
+   "fuente": "https://supabase.com/docs/guides/functions/limits + https://supabase.com/pricing + https://github.com/supabase/edge-runtime/releases"
+  },
+  {
+   "item": "pgmq / Supabase Queues",
+   "plan_dice": "El plan **no lo menciona**. §7 usa GitHub Actions + SHA-256 + UPSERT idempotente para la detección de cambios y el reintento.",
+   "realidad": "La guía oficial está viva y garantiza «Exactly Once Message Delivery» — el mensaje llega al consumidor exactamente una vez **dentro de una ventana de visibilidad configurable** —, durabilidad y archivado de mensajes, y autorización granular por políticas RLS si se exponen vía PostgREST. No pude confirmar en la doc si está GA o beta, ni si hay restricciones por plan (incluido si funciona en Free).",
+   "status": "no_verificable",
+   "accion": "No hace falta para el plan tal como está: la idempotencia por URL canónica + hash de §7 cubre el mismo problema sin añadir superficie. Si en la Fase 4 se adopta el patrón de embeddings asíncronos, pgmq es la pieza que lo hace reintentable; en ese caso hay que verificar disponibilidad en Free contra un proyecto vivo, no contra la doc.",
+   "fuente": "https://supabase.com/docs/guides/queues"
+  },
+  {
+   "item": "pg_cron: límites operativos",
+   "plan_dice": "§7 L273: «Supabase pg_cron/pg_net solo para fan-out, refresh de vistas y la alarma de fuente muerta.»",
+   "realidad": "Vigente y compatible con ese uso acotado: granularidad «from every second to once a year», con recomendación oficial de no más de **8 jobs concurrentes** y no más de **10 minutos por ejecución**. La guía no dice nada sobre disponibilidad en el plan Free ni sobre su relación con la pausa por inactividad.",
+   "status": "vigente",
+   "accion": "Añadir el detalle operativo que sí está documentado y que muerde en 500 MB: **pg_cron no purga `cron.job_run_details`** («does not automatically clean up historical records. This can lead to extremely large cron.job_run_details tables if the records are not regularly pruned»). En un proyecto Free con 500 MB de presupuesto total, un historial de cron sin podar se come el margen que §8.4 calcula al kilobyte. Programar la poda desde el día 1.",
+   "fuente": "https://supabase.com/docs/guides/cron + https://supabase.com/docs/guides/platform/upgrading"
+  },
+  {
+   "item": "Storage del Free vs. la regla dura de §8.4 («el texto completo nunca a columna de la DB»)",
+   "plan_dice": "§8.4 L355: «Reglas duras que se derivan: el texto completo de las normas va a **Storage o a git**, nunca a columna de la DB; el chunk guarda el fragmento y el puntero.» §6.2 prevé ~4.200 PDFs de CONPES; §7 prevé gacetas escaneadas.",
+   "realidad": "El Free da **1 GB de Storage** y **50 MB de tamaño máximo por archivo**. Los ~4.200 PDFs de CONPES por sí solos superan 1 GB con holgura, y las gacetas escaneadas pueden rozar o pasar los 50 MB por fichero. Pro sube a 100 GB (luego $0.0213/GB) con tamaño de archivo configurable.",
+   "status": "desactualizado",
+   "accion": "Desambiguar el «o» de esa regla dura: en Free la rama viable es **git** (dumps y caché crudo en el repo commons de la Capa 1, que §4 ya define), no Storage. Reservar el bucket `evidence/` de Storage para el snapshot probatorio de lo que de verdad ancla una arista, no para el corpus completo — y contarlo dentro del presupuesto del piloto vertical, igual que §8.4 hace con los chunks.",
+   "fuente": "https://supabase.com/pricing + https://supabase.com/docs/guides/storage/uploads/file-limits"
+  },
+  {
+   "item": "Precios y cuotas Free/Pro",
+   "plan_dice": "§8.4 y §12: Free 500 MB; Pro $25/mes (L351, L420, L431).",
+   "realidad": "Vigente al 2026-08-19. **Free ($0):** 500 MB de base de datos por proyecto, 5 GB de egress, 1 GB de Storage, 50.000 MAU, «Limit of 2 active projects», 500.000 invocaciones de Edge Functions, y la nota «Free projects are paused after 1 week of inactivity» (sin definición de inactividad en esa página). **Pro:** desde $25/mes con «$10/month in compute credits, which covers one Micro instance»; disco 8 GB incluidos, luego $0.125/GB; egress 250 GB, luego $0.09/GB; Storage 100 GB, luego $0.0213/GB; Edge Functions 2M incluidas, luego $2 por millón. **Compute add-ons:** Micro $10, Small $15, Medium $60, Large $110 al mes. Ningún precio del plan ha cambiado.",
+   "status": "vigente",
+   "fuente": "https://supabase.com/pricing"
+  }
+ ],
+ "best_practices": [
+  "**Dos techos, no uno, en el Free.** Los 500 MB de disco dicen cuánto cabe; los 0,5 GB de RAM compartida de la instancia Nano dicen si se puede consultar. §8.4 solo mide el primero. El entregable de medición de la Fase 2 debe traer latencia p95 de `hybrid_search` sobre corpus real, no solo tamaño medio de artículo.",
+  "**`maintenance_work_mem` y la construcción del HNSW.** pgvector es explícito: «Index build times are significantly faster when the graph fits within the maintenance_work_mem allocation» — si no cabe, los tiempos se disparan. Construir el índice sobre 0,5 GB compartidos es el paso más frágil de la Fase 4: subir `maintenance_work_mem` a mano para el build, crear el índice DESPUÉS de cargar los datos (no antes), y estar dispuesto a bajar `m` y `ef_construction` si no converge.",
+  "**`hnsw.iterative_scan = relaxed_order` para toda consulta con filtro.** Viene `off` por defecto. Sin él, filtrar por tema (2 de 45 en el piloto) o por vigencia sobre HNSW devuelve menos filas que el LIMIT sin avisar. Acotarlo con `hnsw.max_scan_tuples`.",
+  "**Índices HNSW parciales por tema** (`create index ... using hnsw (...) where tema in ('salud','ia-y-transformacion-digital')`) como alternativa —o complemento— al iterative scan mientras el piloto sea vertical: índice más pequeño, mejor recall, menos RAM. Encaja exactamente con la decisión abierta #3 y con el presupuesto de 250 MB de §8.4.",
+  "**Wrapper IMMUTABLE esquema-cualificado para `unaccent`**, más `create extension unaccent` explícito. Sin él la tabla de §8.3 no se crea; sin la cualificación de esquema, el dump/restore se rompe. Va en el esquema declarativo de la Fase 0.",
+  "**Decidir normalización vs. opclass antes de embeber nada.** La receta oficial usa producto interno; las docs solo lo recomiendan con vectores normalizados, y truncar voyage-4 por Matryoshka a 256 dims los desnormaliza. O se re-normaliza en escritura, o se usa `halfvec_cosine_ops`/`<=>`. El desajuste degrada el ranking en silencio.",
+  "**Cuantización binaria como palanca documentada si los 500 MB aprietan:** `binary_quantize` + `bit(256)` deja el vector en 32 bytes (frente a 512 B de halfvec) — recuperar candidatos con el índice binario y rerankear exacto sobre el halfvec. Está en pgvector, no en el plan, y es una alternativa real al «Pro o recortar temas» que §13 plantea como única disyuntiva.",
+  "**Políticas RLS como migraciones explícitas versionadas** (y también los grants de vistas y el `security invoker`): `supabase db diff` no ve `alter policy` ni el resto. La Fase 5 depende de esto y hoy el roadmap no lo dice.",
+  "**Podar `cron.job_run_details` desde el día 1.** pg_cron no lo hace solo y la propia doc de Supabase avisa de tablas «extremely large». En 500 MB de presupuesto contado al kilobyte, es una fuga que nadie mira.",
+  "**Pre-calentar la caché antes de medir o de exponer el Q&A:** `pg_prewarm` sobre el índice vectorial y 10.000-50.000 consultas de calentamiento, según la guía de producción de IA de Supabase. Un benchmark con caché frío en Nano medirá el disco, no el sistema.",
+  "**Explotar los 2 proyectos Free activos.** Los pausados no cuentan contra la cuota. Da un entorno de staging real sin pagar branching (que requiere plan pago) — útil justo porque los preview branches quedan fuera del alcance del Free.",
+  "**Tratar la ventana de 90 días de restauración como riesgo de producto, no de infraestructura.** Pasada esa ventana el proyecto no se restaura desde Studio. Para un sistema cuya promesa (§10) es frescura visible por fuente y heartbeat público, los dumps semanales a git de §4 son la póliza real: conviene decir en el plan que ese es su segundo papel, no solo el «seguro de vida» frente al bus factor."
+ ]
+}

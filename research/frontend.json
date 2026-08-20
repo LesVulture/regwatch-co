@@ -1,0 +1,211 @@
+{
+ "recommendations": [
+  {
+   "component": "Framework web (PWA)",
+   "recommended": "Next.js 16.3.1 (App Router) con cacheComponents: true y partialPrefetching: true desde el día 1",
+   "version_or_state_2026_08": "next@16.3.1 (npm latest, publicado 2026-08-13). Next 16.0 salió el 21-oct-2025; 16.3 anunciado en agosto 2026 (frontmatter del post: 'August 3rd 2026'). Turbopack es bundler por defecto y estable desde 16.0; disk cache en dev y build por defecto en 16.3. Cache Components ('use cache' + PPR) y Partial Prefetching son OPT-IN vía flags top-level y serán default en la próxima major. Nuevo en 16.3: experimental.useOffline + hook useOffline (resiliencia de red), catchError boundaries con retry(), root params, import.meta.glob, soporte de TypeScript 7 en next build. Requiere Node >=20.9 y React ^19.",
+   "why": "Es la opción con mejor encaje para este caso: PWA instalable con manifest nativo (app/manifest.ts), guía oficial de PWA con web-push+VAPID vía Server Actions, integración de primera clase con AI SDK 7 y AI Elements para el chat con citas, streaming SSR para resultados de búsqueda, y el nuevo experimental.useOffline cubre parte del 'offline básico' sin escribir service worker propio. Cache Components encaja con el patrón de regwatch: shell estático + datos normativos que cambian a diario (cacheLife/cacheTag para invalidar tras cada ingesta).",
+   "verified": true,
+   "docs_source": "https://nextjs.org/blog/next-16-3 + https://nextjs.org/blog (línea temporal 15.x→16.x) + Context7 /vercel/next.js (cacheComponents reemplaza experimental.ppr y experimental.useCache; unstable_cache queda reemplazado por 'use cache') + npm registry (peerDeps: react ^19, node >=20.9)",
+   "alternatives_considered": [
+    "TanStack Start 1.168.48 — su propio sitio lo declara 'RC', no v1 estable (verificado en https://tanstack.com/start/latest el 2026-08-19); excelente type-safety pero inmaduro para producción hoy",
+    "React Router 8.3.0 framework mode — publicado 2026-07-22; peerDeps muy agresivas (react >=19.2.7, node >=22.22.0); menos integración PWA/AI out-of-the-box",
+    "SvelteKit 2.70.3 — sólido, pero pierdes AI Elements/shadcn y el ecosistema React del AI SDK UI",
+    "Astro 7.2.3 — ideal para contenido estático, peor encaje para app de búsqueda interactiva con chat",
+    "Nuxt 4.5.2 — mismo argumento: el ecosistema elegido (shadcn, AI Elements, TanStack Query) es React-first"
+   ],
+   "caveats": "Cache Components sigue siendo opt-in (no default) en 16.3: actívalo desde el inicio para no migrar después, pero asume que la semántica puede ajustarse hasta la próxima major. next lint está deprecado desde 15.5 (empuja hacia Biome o ESLint directo). La fecha exacta del post 16.3 tiene una discrepancia menor entre el frontmatter (3-ago) y el índice del blog (18-ago).",
+   "cost": "OSS, $0. Hosting: ver cost_estimate global"
+  },
+  {
+   "component": "React",
+   "recommended": "React 19.2.8 + react-dom 19.2.8",
+   "version_or_state_2026_08": "react@19.2.8 (npm latest, publicado 2026-07-21). La línea 19.2 trae View Transitions, useEffectEvent() y <Activity/> según el anuncio de Next.js 16. React Compiler es estable e integrado en Next 16 (reactCompiler: true); en 16.3 hay port Rust experimental dentro de Turbopack (experimental.turbopackRustReactCompiler).",
+   "why": "Es la versión que exigen las piezas del stack: @ai-sdk/react pide ^19.2.1 en su rama actual, react-router 8 pide >=19.2.7, Next 16 pide ^19. View Transitions mejora la sensación de app nativa en la PWA.",
+   "verified": true,
+   "docs_source": "npm registry (versión y fecha) + https://nextjs.org/blog (Next.js 16: 'React 19.2: View Transitions, useEffectEvent(), <Activity/>'; React Compiler stable)",
+   "alternatives_considered": [
+    "Ninguna razonable: todo el ecosistema elegido asume React 19.x"
+   ],
+   "caveats": "Activar reactCompiler: true elimina memoización manual, pero el port Rust es experimental — usar la vía Babel estable en producción."
+  },
+  {
+   "component": "TypeScript",
+   "recommended": "TypeScript 7.0.2 (compilador nativo)",
+   "version_or_state_2026_08": "typescript@7.0.2 (npm latest, publicado 2026-07-08). TS 7.0 anunciado el 8-jul-2026 en el blog oficial de TypeScript: es el port nativo (Go) '10x más rápido'. TS 6.0 (23-mar-2026) fue la última versión sobre el código JavaScript. Next.js 16.3 soporta TS 7 para type checking en next build (pnpm add -D typescript@^7).",
+   "why": "Type checking 10x más rápido en CI y editor; Next 16.3 lo integra explícitamente. Para un monorepo con tipos generados de Supabase (archivos grandes), la diferencia de velocidad es tangible.",
+   "verified": true,
+   "docs_source": "https://devblogs.microsoft.com/typescript/ (Announcing TypeScript 7.0, 8-jul-2026) + https://nextjs.org/blog/next-16-3 §Faster type checking with TypeScript 7 + npm registry",
+   "alternatives_considered": [
+    "Quedarse en TS 6.0 (última rama JS-based) si alguna herramienta del ecosistema aún no soporta la API del compilador nativo"
+   ],
+   "caveats": "TS 7 es reciente (5 semanas a la fecha de captura): si algún plugin de editor o herramienta de codegen falla, TS 6.0 es el fallback documentado por Microsoft. Verificar que el codegen de tipos de Supabase y Biome no tengan fricciones antes de fijarlo."
+  },
+  {
+   "component": "CSS / sistema de diseño",
+   "recommended": "Tailwind CSS 4.3.3 + shadcn/ui (CLI shadcn@4.18.0, base Radix o Base UI)",
+   "version_or_state_2026_08": "tailwindcss@4.3.3 (npm latest). Tailwind v4.3 anunciado el 8-may-2026 (scrollbar styling, propiedades lógicas, zoom/tab-size, mejor @variant); v4.0 salió el 22-ene-2025. shadcn CLI 4.18.0 (publicado 2026-08-13); su changelog 2026: React Aria como tercera base de componentes de primera clase junto a Base UI y Radix (jul-2026), componente Toast (jul-2026), Questionnaire y @shadcn/helpers para AI SDK (ago-2026), registries con búsqueda server-side. Soporte Tailwind v4 desde feb-2025 y React 19 desde oct-2024: la compatibilidad Tailwind v4 + React 19 + shadcn lleva ~18 meses madura.",
+   "why": "shadcn/ui es hoy el prerequisito de AI Elements (la librería de componentes AI de Vercel está construida sobre shadcn) — elegirlo no es solo estética, habilita el chat con citas casi gratis. Tailwind v4 con su engine CSS-first es el estándar de facto del ecosistema.",
+   "verified": true,
+   "docs_source": "https://tailwindcss.com/blog (v4.3, 8-may-2026) + https://ui.shadcn.com/docs/changelog + npm registry",
+   "alternatives_considered": [
+    "Base UI o React Aria como base de componentes en vez de Radix (el CLI 4.x permite elegir; Radix sigue siendo la opción con más recorrido)",
+    "Mantine/HeroUI — descartados: rompen la vía directa a AI Elements"
+   ],
+   "caveats": "El caveat histórico shadcn+Tailwind v4 ya no existe (resuelto desde feb-2025). Elegir UNA base (Radix vs Base UI vs React Aria) al inicio: cambiarla después implica regenerar componentes."
+  },
+  {
+   "component": "PWA (service worker, manifest, push)",
+   "recommended": "Serwist 9.5.12 (@serwist/next) + app/manifest.ts nativo de Next + web-push con VAPID para notificaciones",
+   "version_or_state_2026_08": "serwist@9.5.12 y @serwist/next@9.5.12 (publicados 2026-07-22). peerDeps: next >=14 (compatible con 16.x), TS >=5. Tiene guía y ejemplo oficiales para Turbopack (next-turbo-basic) además de webpack. next-pwa está MUERTO: última publicación 5.6.0 el 23-ago-2022 — no usarlo. La guía oficial de PWA de Next.js (actualizada 2026-07-30) recomienda: manifest vía app/manifest.ts, push con la librería web-push + claves VAPID + Server Actions, y nombra a Serwist como la opción para offline caching completo; añade el experimental useOffline de 16.3 para resiliencia de red sin SW propio.",
+   "why": "Es la única integración SW mantenida para Next con soporte Turbopack documentado (crítico: Turbopack es el bundler por defecto de Next 16, y next-pwa era un plugin webpack). Para regwatch: precache del shell + runtime caching de resultados recientes = offline básico real.",
+   "verified": true,
+   "docs_source": "https://serwist.pages.dev/docs/next/getting-started + https://nextjs.org/docs/app/guides/progressive-web-apps (lastUpdated 2026-07-30) + npm registry (fechas y peerDeps)",
+   "alternatives_considered": [
+    "next-pwa — descartado: abandonado desde 2022 y basado en webpack",
+    "Solo experimental.useOffline sin SW — insuficiente para offline de contenido, pero buen complemento",
+    "Workbox directo — Serwist ES el fork moderno de Workbox con integración Next"
+   ],
+   "caveats": "iOS (verificado en datos caniuse, capturado 2026-08-19): iOS Safari 26.0–26.5 soporta Push API solo con la app AÑADIDA A PANTALLA DE INICIO ('Requires website to first be added to the Home Screen'), y NO existe beforeinstallprompt en iOS — la propia guía de Next.js confirma que no funciona en Safari iOS y muestra el patrón de instrucciones manuales de instalación ('Share > Add to Home Screen'). En Android/Chrome el prompt de instalación y el push funcionan sin fricción. Consecuencia de producto: para alertas normativas en iOS, ofrecer email/digest como canal de respaldo."
+  },
+  {
+   "component": "Capa de IA (chat con citas, streaming)",
+   "recommended": "Vercel AI SDK 7: ai@7.0.68 + @ai-sdk/react@4.0.71 + AI Elements (registry shadcn)",
+   "version_or_state_2026_08": "ai@7.0.68 (npm latest, publicado 2026-08-18; cadencia de releases casi diaria). AI SDK 7 anunciado el 25-jun-2026: enfoque en agentes (tool approvals con HMAC, WorkflowAgent durable en @ai-sdk/workflow, HarnessAgent experimental, timeouts granulares, registerTelemetry, experimental_useRealtime, generación de video). useChat sigue siendo la API de UI: useChat + DefaultChatTransport, mensajes basados en 'parts' (verificado en Context7 /websites/ai-sdk_dev). Migración automatizada: npx @ai-sdk/codemod v7. AI Elements (elements.ai-sdk.dev): 29+ componentes sobre shadcn/ui en 4 grupos (Chatbot: Message/Conversation/Prompt Input/Suggestions; Code: Artifact/Code Block; Voice; Workflow). peerDeps de ai@7: zod ^3.25.76 || ^4.1.8; Node >=22.",
+   "why": "Para «¿qué normas afectan la adopción de IA en salud?» con citas ancladas: useChat con message.parts permite renderizar tool-calls que devuelven fuentes primarias como bloques de cita tipados, y AI Elements da la UI de conversación/fuentes lista sobre el mismo tema shadcn. El contrato de evidencia de regwatch (URL checkeable + fecha) se implementa como tool del lado servidor que solo responde desde la base Supabase.",
+   "verified": true,
+   "docs_source": "https://vercel.com/blog/ai-sdk-7 (25-jun-2026) + https://ai-sdk.dev/docs/introduction + https://elements.ai-sdk.dev/overview + Context7 /websites/ai-sdk_dev (useChat/DefaultChatTransport) + npm registry (peerDeps)",
+   "alternatives_considered": [
+    "LangChain.js — más pesado, sin ventaja para RAG-con-citas sobre Postgres propio",
+    "assistant-ui — buena librería, pero AI Elements comparte tema shadcn y mantenimiento de Vercel"
+   ],
+   "caveats": "ai@7 exige Node >=22 (usar Node 24 LTS). AI Elements no declara en su página el requisito exacto de versión del SDK (no verificado). El costo del LLM es aparte y depende del proveedor elegido — fuera del alcance frontend."
+  },
+  {
+   "component": "Data fetching cliente / estado servidor",
+   "recommended": "TanStack Query 5.101.4",
+   "version_or_state_2026_08": "@tanstack/react-query@5.101.4 (npm latest a 2026-08-19). peerDeps: react ^18 || ^19 — compatible con React 19.2. La rama v5 sigue siendo la estable (no existe v6).",
+   "why": "Para la parte 'monitor' (listas de proyectos de ley, filtros, paginación, refetch al volver a la app) TanStack Query da caché cliente, deduplicación y refetchOnWindowFocus que los Server Components solos no cubren en una PWA que se abre y cierra constantemente en móvil. Convive bien con App Router (hidratación inicial desde RSC, interactividad después).",
+   "verified": true,
+   "docs_source": "npm registry (versión + peerDeps)",
+   "alternatives_considered": [
+    "SWR — más simple pero menos potente para caché estructurada e invalidación",
+    "Solo RSC + Server Actions — suficiente para lecturas iniciales, insuficiente para la UX de monitor con polling/refetch"
+   ],
+   "caveats": "No duplicar: lo que se renderice en servidor con 'use cache' no necesita pasar además por Query; usar Query solo para interacciones cliente (búsqueda incremental, filtros, infinite scroll)."
+  },
+  {
+   "component": "Validación",
+   "recommended": "Zod 4.4.3",
+   "version_or_state_2026_08": "zod@4.4.3 (npm latest, publicado 2026-05-04). Zod 4 es la rama estable madura; ai@7 declara soporte explícito de zod ^4.1.8 en peerDeps (y mantiene compat con ^3.25.76).",
+   "why": "Esquemas compartidos entre tools del AI SDK (inputSchema), validación de respuestas de la API y de parámetros de búsqueda. Es la lingua franca del ecosistema: AI SDK, formularios y Edge Functions la comparten.",
+   "verified": true,
+   "docs_source": "npm registry (versión, fecha, y peerDeps de ai@7 que la referencian)",
+   "alternatives_considered": [
+    "Valibot — más liviano en bundle, pero el AI SDK y la mayoría del ecosistema están estandarizados en Zod; Standard Schema mitiga el lock-in de todos modos"
+   ],
+   "caveats": "Usar Zod 4 desde el inicio (no la rama 3.x de compatibilidad) para evitar la migración después."
+  },
+  {
+   "component": "Acceso a datos (Supabase)",
+   "recommended": "supabase-js 2.112.3 + tipos generados con supabase CLI 2.115.0 (npx supabase gen types typescript) para el frontend; decisión de ORM para ingestión diferida a que Drizzle 1.0 salga de RC",
+   "version_or_state_2026_08": "@supabase/supabase-js@2.112.3 y supabase (CLI) 2.115.0 (npm latest). Flujo de tipos verificado en docs oficiales: npx supabase gen types typescript --project-id X --schema public (o --local) → createClient<Database>(...), con helpers Tables<'tabla'>, QueryData/QueryError y overrideTypes<T>(); desde supabase-js v2.48.0 hay inferencia mejorada para campos JSON/JSONB con operadores -> y ->>. Docs recomiendan regenerar tipos con GitHub Action programada. Drizzle: latest sigue en 0.45.2 (27-mar-2026) con drizzle-kit 0.31.10, y la 1.0 está en 1.0.0-rc.5 (dist-tag rc) — verificado en dist-tags npm el 2026-08-19. Kysely 0.29.5 sigue pre-1.0.",
+   "why": "Para el frontend, supabase-js tipado cubre todo: consultas con RLS, realtime si se quiere, y el chat responde vía tools del servidor que consultan Postgres (búsqueda híbrida FTS+pgvector la define el especialista de backend). Un ORM en el cliente web no aporta: la lógica SQL compleja vive en funciones RPC/vistas de Postgres. Para los workers de ingestión (fuera de mi alcance) Drizzle es atractivo pero su 1.0 está literalmente en RC esta semana — fijar 0.45.2 o esperar.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/api/rest/generating-types + npm registry (versiones y dist-tags de drizzle-orm)",
+   "alternatives_considered": [
+    "Drizzle ORM 0.45.2 / 1.0.0-rc.5 — mejor para los workers de ingestión con migraciones; en RC ahora mismo",
+    "Kysely 0.29.5 — query builder excelente y hay codegen desde Supabase, pero añade una segunda vía de acceso sin necesidad",
+    "Prisma — descartado: peso y fricción en edge/serverless sin ventaja aquí"
+   ],
+   "caveats": "Regenerar tipos tras CADA migración (automatizar en CI o el drift de tipos es silencioso). Usar la publishable key nueva (las docs ya usan SUPABASE_PUBLISHABLE_KEY en vez de anon key)."
+  },
+  {
+   "component": "Estructura de repo y tooling",
+   "recommended": "Monorepo pnpm 11.22.0 workspaces + Turborepo 2.10.11 (apps/web + packages/ingest + packages/shared con tipos de DB y esquemas Zod) sobre Node 24 LTS",
+   "version_or_state_2026_08": "pnpm@11.22.0 y turbo@2.10.11 (npm latest a 2026-08-19). Node: 24.19.0 es la LTS actual ('Krypton', 2026-08-03); 22.23.2 LTS 'Jod' sigue viva; latest 26.7.0 (verificado en nodejs.org/dist/index.json). Los requisitos más exigentes del stack: ai@7 pide Node >=22, react-router 8 pide >=22.22 — Node 24 LTS los cubre todos.",
+   "why": "regwatch-co v2 tiene como mínimo dos artefactos (web app + pipeline de ingestión diaria) que comparten los tipos de la base y los esquemas Zod del contrato de evidencia. Un workspace pnpm evita duplicar ese contrato; Turborepo cachea builds/tests. Si el pipeline de ingestión acabara viviendo solo en Edge Functions de Supabase, degradar a repo simple es trivial; el camino inverso duele más.",
+   "verified": true,
+   "docs_source": "npm registry + https://nodejs.org/dist/index.json (líneas LTS, capturado 2026-08-19)",
+   "alternatives_considered": [
+    "Repo simple con una sola app Next (válido si TODA la ingestión vive en Supabase Edge Functions dentro del mismo repo /supabase)",
+    "Nx — más potente y más pesado de lo necesario"
+   ],
+   "caveats": "Empezar con 2-3 paquetes máximo; un monorepo prematuro con 8 paquetes es deuda, no arquitectura."
+  },
+  {
+   "component": "Testing",
+   "recommended": "Vitest 4.1.11 (unit/integración) + Playwright 1.62.1 (E2E, con el helper instant() de @next/playwright para regresiones de navegación)",
+   "version_or_state_2026_08": "vitest@4.1.11 (publicado 2026-08-18 — la rama 4.x es la estable actual) y @playwright/test@1.62.1 (npm latest). Next.js 16.3 introdujo el helper instant() en @next/playwright para asertar qué contenido es visible instantáneamente en una navegación (verificado en el blog de 16.3). Nota: next declara @playwright/test ^1.51.1 como peer optional — 1.62 lo satisface.",
+   "why": "Vitest es el default del ecosistema Vite/Next para unit tests; Playwright ya es herramienta conocida del usuario (career-ops lo usa para liveness) y el helper instant() protege exactamente lo que a una PWA de monitoreo le importa: que las navegaciones no se degraden.",
+   "verified": true,
+   "docs_source": "npm registry + https://nextjs.org/blog/next-16-3 §Playwright test helper",
+   "alternatives_considered": [
+    "Jest — sin ventaja alguna sobre Vitest en 2026",
+    "Cypress — Playwright ganó esta guerra"
+   ],
+   "caveats": "Testear el service worker de Serwist en Playwright requiere contexto con SW habilitado; los ejemplos de Serwist lo cubren."
+  },
+  {
+   "component": "Lint / format",
+   "recommended": "Biome 2.5.9 (lint + format en una herramienta)",
+   "version_or_state_2026_08": "@biomejs/biome@2.5.9 (npm latest, publicado 2026-08-17; la rama 2.x es la estable — 1.9.x quedó como nightly legacy). Contexto relevante: next lint está deprecado desde Next 15.5 (verificado en el resumen del blog de Next.js), así que Next ya no te regala la configuración ESLint.",
+   "why": "Una sola herramienta, órdenes de magnitud más rápida, cero fricción de plugins. Para un proyecto greenfield de una persona, el costo histórico de Biome (menos reglas que typescript-eslint) pesa menos que mantener la pareja ESLint 10.8.1 + Prettier 3.9.6 + plugins sincronizados.",
+   "verified": true,
+   "docs_source": "npm registry (versiones y dist-tags de biome, eslint 10.8.1, prettier 3.9.6)",
+   "alternatives_considered": [
+    "ESLint 10.8.1 + Prettier 3.9.6 — la opción conservadora si se quieren reglas type-aware exhaustivas de typescript-eslint o los plugins específicos de React/Next"
+   ],
+   "caveats": "No verifiqué en el blog de Biome el alcance actual de su linting type-aware a 2026 — si las reglas con información de tipos son requisito duro, validar antes o elegir ESLint. Las reglas específicas de Next (eslint-plugin-next) no tienen equivalente 1:1 en Biome."
+  },
+  {
+   "component": "Cliente TUI/CLI adicional",
+   "recommended": "CLI mínima sí (scripts de operación contra la misma API/DB); TUI Ink solo si de verdad se quiere una vista de operación diaria en terminal",
+   "version_or_state_2026_08": "ink@7.1.1 (npm latest). Es exactamente el stack del TUI de career-ops (Node + Ink), así que el usuario ya lo domina. Dato curioso verificado: AI SDK 7 trae su propia TUI para testing de agentes (runAgentTUI en @ai-sdk/tui, del anuncio oficial).",
+   "why": "Para regwatch el valor operativo está en comandos de verificación (¿corrió la ingesta de hoy?, ¿cuántos registros nuevos?, ¿hay URLs muertas?) — eso es una CLI plana consumiendo la API o supabase-js directo, no una TUI. Ink 7 queda como opción si el uso diario lo justifica después; no es parte del MVP.",
+   "verified": true,
+   "docs_source": "npm registry (ink@7.1.1) + https://vercel.com/blog/ai-sdk-7 (@ai-sdk/tui)",
+   "alternatives_considered": [
+    "Sin cliente adicional (todo por la PWA) — razonable para el MVP",
+    "TUI Ink completa día 1 — sobreingeniería antes de que exista la API"
+   ],
+   "caveats": "Si la CLI comparte tipos con la web, es un paquete más del workspace — otro argumento para el monorepo."
+  },
+  {
+   "component": "Nativo (Expo/React Native) vs PWA",
+   "recommended": "PWA primero; NO construir app nativa ahora. Reevaluar Expo solo si el push en iOS sin instalación manual se vuelve requisito duro de producto",
+   "version_or_state_2026_08": "expo@57.0.14 (npm latest, publicado 2026-08-17 — SDK 57 es la rama actual; no verifiqué su changelog en detalle). Estado PWA en iOS verificado vía caniuse (datos crudos, capturados 2026-08-19): en iOS Safari 26.0–26.5 el Push API funciona SOLO con la web app añadida a pantalla de inicio, y no hay beforeinstallprompt. Safari está en 26.6 con Safari 27 en beta (blog de WebKit); no encontré ningún anuncio de que iOS 26 elimine el requisito de instalación para push.",
+   "why": "El caso de uso (buscar, leer fichas normativas, recibir alertas) no usa nada exclusivo de nativo: ni cámara, ni background sync agresivo, ni widgets como requisito. Una PWA bien hecha cubre Android completo y iOS con la fricción conocida del Add to Home Screen. Mantener un solo codebase es decisivo para un proyecto personal: la app nativa duplicaría superficie de mantenimiento para ganar, esencialmente, push nativo en iOS y presencia en App Store.",
+   "verified": true,
+   "docs_source": "https://raw.githubusercontent.com/Fyrd/caniuse/main/features-json/push-api.json (stats ios_saf 26.x, nota #7) + https://webkit.org/blog/ + npm registry (expo@57)",
+   "alternatives_considered": [
+    "Expo SDK 57 con expo-router — el camino correcto SI se decide nativo: reutilizaría TanStack Query, Zod, supabase-js y los tipos del workspace",
+    "Capacitor envolviendo la PWA — punto medio para llegar a las stores sin reescribir"
+   ],
+   "caveats": "Mitigación del hueco iOS sin ir a nativo: alertas también por email (Resend/Edge Function) y UI de onboarding que enseñe a instalar en iOS (patrón exacto en la guía PWA oficial de Next.js)."
+  }
+ ],
+ "cost_estimate": "Licencias del stack frontend: $0/mes (todo OSS: Next.js, React, Tailwind, shadcn/ui, AI Elements, AI SDK, Serwist, Vitest, Playwright, Biome). Hosting de la web app — pricing de Vercel verificado en https://vercel.com/pricing el 2026-08-19: plan Hobby $0/mes (incluye 1M invocaciones de funciones/mes, 100 GB de transferencia/mes, 1M edge requests/mes; sin posibilidad de comprar excedentes) y plan Pro $20/mes con $20 de crédito de recursos incluido (excedentes: transferencia desde $0.15/GB, invocaciones $0.60/M tras 1M, CPU activo desde $0.128/h). SUPUESTOS: proyecto personal/beta con <5.000 visitas/mes y búsqueda servida desde Supabase → Hobby ($0) alcanza; si se hace público con tráfico real o se quiere dominio de equipo/analytics → Pro ($20/mes). NO incluidos en esta estimación (fuera del alcance frontend): Supabase (base, pgvector, Edge Functions — lo estima el especialista de backend), tokens del LLM para el chat con citas (depende de proveedor y volumen; es el costo variable dominante del sistema), y dominio (~$10-15/año). Total frontend/hosting realista: $0/mes en beta, $20/mes en producción pública.",
+ "gaps": [
+  "El presupuesto de WebSearch de la sesión estaba agotado (200/200): toda la verificación se hizo vía WebFetch a docs oficiales, Context7 y el registro npm directo — sin triangulación por buscador. Las conclusiones citan fuente primaria, pero no hubo segunda fuente independiente para cada afirmación.",
+  "Expo SDK 57: solo verifiqué versión y fecha en npm (expo@57.0.14, 2026-08-17); no revisé su changelog ni el estado de New Architecture/expo-router a agosto 2026. Irrelevante para la recomendación (PWA primero), pero si se reabre la decisión nativa hay que investigarlo.",
+  "AI Elements no declara en su página el requisito mínimo de versión del AI SDK; asumo compatibilidad con ai@7 por ser productos hermanos de Vercel bajo el mismo dominio, pero no está verificado explícitamente.",
+  "Biome 2.5.9: versión verificada en npm, pero NO verifiqué el alcance actual de su linting type-aware ni la paridad con eslint-plugin-next — si eso es requisito duro, validar antes de descartar ESLint 10 + Prettier 3.9.6.",
+  "Discrepancia menor sin resolver en la fecha del release Next.js 16.3: el frontmatter del post dice 'August 3rd 2026' y el índice del blog mostró 18 de agosto; npm registra next@16.3.1 el 2026-08-13. No afecta la recomendación.",
+  "No ejecuté una instalación real de la combinación Next 16.3 + @serwist/next 9.5.12 con Turbopack (sesión de solo lectura): la compatibilidad se afirma desde docs y el ejemplo oficial next-turbo-basic del repo de Serwist, no desde una build reproducida.",
+  "iOS: el requisito de instalación para Web Push está verificado hasta iOS Safari 26.5 vía datos de caniuse; no consulté una página de Apple/WebKit que lo confirme textualmente para la 26.6 actual (el índice del blog de WebKit no mencionaba cambios de PWA/push).",
+  "Los datos de caniuse llegan hasta iOS Safari 26.5 mientras Safari desktop va por 26.6 — puede haber un pequeño lag del dataset frente al último minor.",
+  "Costo de tokens del LLM para el chat con citas: sin estimar — depende del proveedor/modelo que decida otro especialista y del volumen de preguntas."
+ ],
+ "key_insights": [
+  "Turbopack es el bundler por defecto y estable desde Next 16 (oct-2025), y eso reordena el ecosistema PWA: next-pwa (plugin webpack, muerto desde ago-2022) queda fuera de juego y Serwist es la única integración de service worker mantenida, con guía Turbopack oficial. La guía PWA de la propia documentación de Next.js (actualizada 2026-07-30) lo nombra como LA opción de offline caching.",
+  "Cache Components ('use cache' + PPR) sigue siendo OPT-IN en Next 16.3 pero Vercel anuncia que será el default de la próxima major ('dynamic by default, with no hidden or implicit caching'): un proyecto greenfield en agosto 2026 debe nacer con cacheComponents: true y partialPrefetching: true para no migrar dos veces. unstable_cache y experimental.ppr ya están reemplazados/eliminados.",
+  "TypeScript 7 (compilador nativo en Go, 10x, liberado 8-jul-2026) ya es utilizable en producción y Next 16.3 lo integra en next build — es la mejora de DX más grande del año y está a un pnpm add -D typescript@^7 de distancia.",
+  "En iOS nada cambió donde más duele: hasta iOS Safari 26.5 (dato caniuse capturado 2026-08-19) el Web Push sigue exigiendo la app instalada en pantalla de inicio y no existe beforeinstallprompt. Para un monitor de alertas normativas esto es decisión de PRODUCTO, no solo técnica: el canal de alertas en iOS necesita respaldo por email, y el onboarding iOS necesita instrucciones manuales de instalación.",
+  "AI SDK 7 (25-jun-2026) giró hacia agentes (tool approvals, WorkflowAgent durable, HarnessAgent) pero la capa UI que este proyecto necesita —useChat + DefaultChatTransport + mensajes por 'parts'— está estable, y AI Elements (29+ componentes sobre shadcn/ui: Conversation, Message, Prompt Input, fuentes) hace que el chat con citas ancladas sea mayormente ensamblaje, no desarrollo. Elegir shadcn/ui no es cosmético: es el prerequisito de AI Elements.",
+  "El ecosistema se movió a mínimos de runtime altos y hay que planear el repo para eso: ai@7 exige Node >=22 y react-router 8 exige Node >=22.22 y React >=19.2.7 — Node 24 LTS (24.19.0) es la base correcta hoy.",
+  "Las alternativas de framework no alcanzan a Next para ESTE caso: TanStack Start sigue oficialmente en RC (su propio sitio, verificado 2026-08-19) y Drizzle ORM tiene su 1.0 en rc.5 esta misma semana — dos piezas que suenan atractivas pero que un proyecto con contrato de evidencia y cadencia diaria no debería apostar hoy.",
+  "El costo frontend de arrancar es $0 real: todo el stack es OSS y el plan Hobby de Vercel (1M invocaciones, 100 GB/mes, verificado hoy) cubre una beta personal; el primer costo fijo que aparecerá será el LLM del chat, no el hosting."
+ ],
+ "recommendation": "Stack frontend recomendado para regwatch-co v2 a agosto de 2026 (todas las versiones son el 'latest' de npm verificado el 2026-08-19): Next.js 16.3.1 (App Router, con cacheComponents + partialPrefetching activados desde el día 1 y experimental.useOffline para resiliencia de red) sobre React 19.2.8, TypeScript 7.0.2 (compilador nativo, integrado en next build) y Node 24 LTS. UI: Tailwind CSS 4.3.3 + shadcn/ui (CLI 4.18.0, base Radix) — elección instrumental porque habilita AI Elements, la librería de componentes AI de Vercel construida sobre shadcn. Capa de preguntas en lenguaje natural con citas: AI SDK 7 (ai@7.0.68 + @ai-sdk/react@4.0.71, useChat con DefaultChatTransport y mensajes por 'parts' para renderizar citas ancladas a fuente primaria como tool-results tipados) + AI Elements. PWA: manifest nativo (app/manifest.ts) + Serwist 9.5.12 (@serwist/next, con la guía Turbopack — next-pwa está abandonado desde 2022, no usarlo) + web-push con VAPID vía Server Actions según la guía oficial de Next; asumir que en iOS (Safari 26.x) el push SOLO funciona tras Add to Home Screen y no hay beforeinstallprompt, así que las alertas críticas necesitan respaldo por email. Datos: supabase-js 2.112.3 tipado con supabase gen types typescript (CLI 2.115.0) y helpers Tables<>/QueryData — sin ORM en el frontend; TanStack Query 5.101.4 para el estado servidor interactivo (filtros, búsqueda incremental, refetch); Zod 4.4.3 como contrato compartido (tools del AI SDK + validación de API). Repo: monorepo pnpm 11.22.0 + Turborepo 2.10.11 con apps/web, packages/ingest y packages/shared (tipos de DB + esquemas Zod del contrato de evidencia). Testing: Vitest 4.1.11 + Playwright 1.62.1 (incluido el helper instant() de Next 16.3 para regresiones de navegación). Lint/format: Biome 2.5.9 (con la reserva anotada sobre reglas type-aware; next lint está deprecado). Cliente adicional: CLI mínima de operación en el workspace; Ink 7.1.1 solo si después se justifica una TUI. Nativo: NO por ahora — el caso de uso no usa nada exclusivo de nativo y la PWA cubre Android completo; reevaluar Expo (SDK 57) únicamente si el push iOS sin instalación manual se convierte en requisito duro. Descartados con motivo: TanStack Start (oficialmente en RC), React Router 8 framework mode (peers agresivos, menos integración PWA/AI), Drizzle en el frontend (su 1.0 está en RC; decidirlo solo para los workers de ingestión), next-pwa (muerto). Costo de arranque: $0/mes en Vercel Hobby; $20/mes en Pro cuando sea público."
+}

@@ -1,0 +1,152 @@
+{
+ "especialidad": "ai-layer (capa de IA: Anthropic API, embeddings, rerank, eval, SDK)",
+ "verdicts": [
+  {
+   "claim": "«El precio 'introductorio' de Sonnet 5 ($2/$10 por MTok) se volvió PERMANENTE — la subida a $3/$15 del 1-sep-2026 fue cancelada oficialmente» (key_insights[0])",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://platform.claude.com/docs/en/about-claude/pricing → nota verbatim: «The $2/$10 per million input/output token pricing for Claude Sonnet 5, announced at launch as introductory pricing through August 31, 2026, is now the standard price. The previously scheduled increase to $3/$15 per million input/output tokens on September 1, 2026 will not occur.» Tabla: Claude Sonnet 5 | $2 / MTok | ... | $10 / MTok. IMPORTANTE: la tabla cacheada del skill claude-api (2026-06-24) dice «$3.00 ($2.00 intro through 2026-08-31)» — el caché está viejo y el informe tiene razón.",
+   "severity": "high"
+  },
+  {
+   "claim": "«Haiku 4.5: $1 in / $5 out por MTok; Batch API $0.50/$2.50; cache read 0.1x, cache write 5m 1.25x / 1h 2x» y «Batch API 50% de descuento»",
+   "verdict": "confirmed",
+   "evidence": "Misma página. Tabla de modelos: «Claude Haiku 4.5 | $1 / MTok | $1.25 / MTok | $2 / MTok | $0.10 / MTok | $5 / MTok». Tabla de batch: «Claude Haiku 4.5 | $0.50 / MTok | $2.50 / MTok» y «Claude Sonnet 5 | $1 / MTok | $5 / MTok». Texto: «The Batch API allows asynchronous processing of large volumes of requests with a 50% discount on both input and output tokens.» Multiplicadores de caché: «5-minute cache write | 1.25x base input price», «1-hour cache write | 2x», «Cache read (hit) | 0.1x».",
+   "severity": "high"
+  },
+  {
+   "claim": "«Sonnet 5 usa el tokenizer nuevo (~30% más tokens por el mismo texto que Sonnet 4.6/Haiku 4.5) — ya incluido en la estimación» (rec[1].caveats)",
+   "verdict": "confirmed",
+   "evidence": "Pricing, nota verbatim: «Claude 4.7 and later models and Claude Mythos Preview use a newer tokenizer... This tokenizer produces approximately 30% more tokens for the same text. The exact increase depends on the content and workload shape. Claude Sonnet 4.6 and earlier models use the previous tokenizer.» Sonnet 5 es posterior a 4.6 → tokenizer nuevo; Haiku 4.5 no está en «4.7 and later» → tokenizer viejo. El informe aplica +30% solo a Sonnet 5 y 0% a Haiku: correcto.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«INCOMPATIBILIDAD CLAVE verificada: citations + structured outputs = error 400» (rec[1].caveats, key_insights[1])",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://platform.claude.com/docs/en/build-with-claude/citations → <Warning> verbatim: «**Citations and structured outputs are incompatible**. Citations cannot be used together with structured outputs. If you enable citations on any user-provided document (`document` blocks or `search_result` blocks) and also include the `output_config.format` parameter (or the deprecated `output_format` parameter), the API returns a 400 error. This is because citations require interleaving citation blocks with text output, which is incompatible with the strict JSON schema constraints of structured outputs.» ADVERTENCIA HONESTA: no reproduje el 400 en vivo — no hay ANTHROPIC_API_KEY ni `ant` CLI en este entorno (`which ant` → not found; $ANTHROPIC_API_KEY vacío). Es verificación documental de fuente primaria, no empírica.",
+   "severity": "high"
+  },
+  {
+   "claim": "«Citations existe y es GA a 2026-08: la soportan TODOS los modelos activos, en Claude API, Bedrock, Vertex y Foundry. Devuelve char_location (texto plano), page_location (PDF, 1-indexed) y content_block_location»",
+   "verdict": "confirmed",
+   "evidence": "Misma página: «All [active models](.../models/overview) support citations.» Compatibility: «Platforms: Claude API, Claude Platform on AWS, Amazon Bedrock, Google Cloud, Microsoft Foundry». Ejemplos verbatim: `{\"type\":\"char_location\", ..., \"start_char_index\":0, // 0-indexed, \"end_char_index\":50 // exclusive}`; `{\"type\":\"page_location\", ..., \"start_page_number\":1, // 1-indexed, \"end_page_number\":2 // exclusive}`; `{\"type\":\"content_block_location\", ..., \"start_block_index\":0}`. Sin beta header en el ejemplo cURL (solo anthropic-version).",
+   "severity": "medium"
+  },
+  {
+   "claim": "«cited_text NO cuenta como output tokens (ni como input al re-enviarlo), así que citar es más barato que pedir quotes por prompt» (rec[1].why)",
+   "verdict": "confirmed",
+   "evidence": "Citations doc, sección de costes, verbatim: «Enabling citations incurs a slight increase in input tokens because of system prompt additions and document chunking. However, the citations feature is very efficient with output tokens... The `cited_text` field is provided for convenience and does not count toward output tokens. When passed back in subsequent conversation turns, `cited_text` is also not counted toward input tokens.» Las DOS mitades, incluida la del paréntesis, están documentadas. También confirma el «ligero overhead de input» que el informe declara en `cost`.",
+   "severity": "low"
+  },
+  {
+   "claim": "rec[2] (PDF de ingesta): «Con citations habilitado sobre PDF se obtiene page_location — la cita queda anclada a la página exacta de la gaceta» — dentro de una ingesta que rec[0] define como Haiku 4.5 + structured outputs",
+   "verdict": "refuted",
+   "evidence": "Contradicción interna del propio informe, cerrada por el <Warning> ya citado: si la ingesta usa `output_config.format` (rec[0]) y además `citations:{enabled:true}` sobre el `document` block, «the API returns a 400 error». Los tres bloques del informe —rec[0] structured outputs, rec[1] el 400, rec[2] page_location en ingesta— no pueden ser ciertos a la vez para el mismo request. El informe declara la separación en dos rutas para «extracción vs Q&A» pero no ve que la rompió dentro de la propia ingesta.",
+   "correction": "La extracción de metadatos de PDF NO puede devolver page_location en el mismo request. O extrae JSON estructurado sin anclaje de página, o cita con anclaje pero sin JSON. Si se quiere lo dos, son DOS pasadas sobre el mismo PDF — y la sensibilidad de visión del informe (+$22,50/mes al 30% de docs) está calculada para UNA.",
+   "severity": "high"
+  },
+  {
+   "claim": "rec[2]: PDF nativo de Claude (visión) para «escaneados/gacetas con tablas», con citations dando page_location sobre esa gaceta",
+   "verdict": "refuted",
+   "evidence": "Citations doc, verbatim: «Only text citations are currently supported. Image citations are not yet possible.» Y en el paso «Documents get processed»: «**For PDFs:** Text is extracted as described in [PDF support] and content is chunked into sentences. **Citing images from PDFs is not currently supported.**» La página de PDF support no menciona nunca «scan», «OCR» ni «text layer» (grep sobre el volcado completo: 0 hits para los tres).",
+   "correction": "INFERENCIA MÍA, no una frase de la doc: si el PDF es escaneado no tiene capa de texto que extraer, y las citas se construyen troceando el TEXTO EXTRAÍDO en oraciones; las imágenes no son citables. Luego para la gaceta escaneada —el caso exacto que rec[2] reserva a visión— el mecanismo de citations no tiene material que anclar. Esto SOBREVIVE a arreglar el punto anterior: aunque se hiciera una pasada solo-citations sin structured outputs, el escaneado sigue sin producir page_location. El contrato de evidencia para esa clase de documento necesita otra fuente de anclaje (offsets del parser local, o el número de página que ponga el harness de ingesta), decisión que el plan no toma.",
+   "severity": "high"
+  },
+  {
+   "claim": "«Structured outputs es GA sin beta header y soporta Haiku 4.5»; «no admite esquemas recursivos ni constraints numéricos (minimum/maximum) ni minLength/maxLength»; «grammar cache (TTL 24h)»",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://platform.claude.com/docs/en/build-with-claude/structured-outputs → «The `output_format` parameter has moved to `output_config.format`, and beta headers are no longer required.» Supported models verbatim incluye `claude-haiku-4-5-20251001` (y `claude-sonnet-5`). Not supported verbatim: «Recursive schemas; Complex types within enums; External `$ref`; Numerical constraints (such as `minimum`, `maximum`, `multipleOf`); String constraints (`minLength`, `maxLength`); Array constraints beyond `minItems` of 0 or 1; `additionalProperties` set to anything other than `false`». Caching: «Compiled grammars are cached for 24 hours from last use».",
+   "severity": "medium"
+  },
+  {
+   "claim": "Composición nunca probada por el informe: ¿se puede usar structured outputs (output_config.format) DENTRO de un request del Batch API? Toda la ingesta (~$48/mes) depende de eso",
+   "verdict": "confirmed",
+   "evidence": "La página de structured outputs no menciona batch ni una sola vez. La de batch-processing sí resuelve: «Yes, the Message Batches API supports nearly all features available in the Messages API, including most beta features. A small number of parameters (`stream`, `speed`, `store`, `previous_thread_event_id`, `cache_hint`, `context_hint`, `max_tokens: 0`, and `research_preview_2026_02`) are not supported.» `output_config` NO está en esa lista de exclusión. Además «All active models support the Message Batches API». Evidencia por ausencia en una lista cerrada + afirmación general: fuerte, pero no es una frase afirmativa explícita ni un request ejecutado.",
+   "severity": "high"
+  },
+  {
+   "claim": "«Batch API (50%) + prompt caching (lecturas a 0.1x) apilan» (key_insights[2], rec[0].why)",
+   "verdict": "partially",
+   "evidence": "Apilan en tarifa, sí: pricing dice «These multipliers stack with other pricing modifiers, including the Batch API discount» y el FAQ «Batch API and prompt caching discounts can be combined». PERO batch-processing añade lo que el informe omite: «you can use prompt caching with Message Batches API. However, because asynchronous batch requests can be processed concurrently and in any order, **cache hits are provided on a best-effort basis**.» Y un Tip: «Because batches can take longer than 5 minutes to process, consider using the [1-hour cache duration] with prompt caching for better cache hit rates when processing batches with shared context.»",
+   "correction": "El ahorro de caché en batch es best-effort, no garantizado, y para conseguirlo hay que pagar escritura a 1h (2x base) en vez de 5m (1.25x). Impacto real bajo porque los $48/mes del informe NO aplican caché (60M×$0,50 + 7,2M×$2,50 = $48 exacto): la caché era upside, no base. El número aguanta; el razonamiento que lo acompaña está incompleto.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«Límites verificados: 32 MB por request, 600 páginas (100 si el contexto del request es <1M tokens), PDF estándar sin password... 1.500-3.000 tokens/pág... Sin fee adicional por PDF»",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://platform.claude.com/docs/en/build-with-claude/pdf-support → tabla verbatim: «Maximum request size | 32 MB»; «Maximum pages per request | 600 (100 when the request's context window is under 1M tokens)»; «Format | Standard PDF (no passwords/encryption)». Y: «Text token costs: Each page typically uses 1,500–3,000 tokens per page depending on content density. Standard API pricing applies with no additional PDF fees.» La formulación del informe («100 si el contexto del request es <1M tokens») es literalmente la de la doc, no una paráfrasis floja.",
+   "severity": "low"
+  },
+  {
+   "claim": "«Haiku 4.5 tiene contexto 200K (dato de referencia cacheada 2026-06-24, no re-verificado hoy)» — el informe lo declara como gap",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://platform.claude.com/docs/en/about-claude/models/overview → fila «Context window» para Claude Haiku 4.5: «200k tokens» (tooltip «~150k words / ~680k unicode characters»). Max output 64k. El gap que el informe se autoimputa era innecesario: el dato es correcto.",
+   "severity": "low"
+  },
+  {
+   "claim": "«familia voyage-4... todas con 200M tokens gratis» + key_insights[3] «200M tokens GRATIS por modelo»",
+   "verdict": "partially",
+   "evidence": "WebFetch https://docs.voyageai.com/docs/pricing, verbatim: «The first 200 million tokens for `voyage-4-large`, `voyage-4`, `voyage-4-lite`, `voyage-context-4`, and `voyage-code-3`, or the first 50 million tokens for `voyage-multilingual-2`, `voyage-finance-2`, `voyage-law-2`, and `voyage-code-2`, are free for every account.» Y para rerankers: «The first 200 million tokens for `rerank-2.5`, `rerank-2.5-lite`, `rerank-2`, and `rerank-2-lite` are free for each account.»",
+   "correction": "NO es «por modelo»: es un pool de 200M compartido entre los cinco modelos de embedding, por CUENTA y de una sola vez («the first... tokens»), más otro pool de 200M separado para los rerankers. Ojo: la aritmética del informe ya usaba implícitamente el pool compartido (50M bootstrap + 75M/mes × 2 = 200M → «~2 meses»), así que el runway declarado AGUANTA y no se mueve nada aguas abajo. El error es solo la prosa de key_insights[3]. Los $0,06/$0,12/$0,02/$0,12 y rerank-2.5 $0,05 / lite $0,02 están confirmados verbatim.",
+   "severity": "low"
+  },
+  {
+   "claim": "«voyage-4 (1024 dims default, Matryoshka 256/512/2048, contexto 32k tokens, cuantización int8/binary)... declara optimización 'general-purpose and multilingual'» y «voyage-law-2... contexto 16k, 1024 dims fijas»",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://docs.voyageai.com/docs/embeddings → voyage-4: contexto 32.000, dims 1024 (default) + 256/512/2048, cuantización int8/uint8/binary/ubinary, descripción «Optimized for general-purpose and multilingual retrieval quality». voyage-law-2: contexto 16.000, dims 1024 únicamente, «Optimized for legal retrieval and RAG». Nota: voyage-context-4 NO aparece en la tabla de esa página — exactamente el gap que el informe se autoimputa.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«Cohere... su página pública de pricing solo muestra Model Vault (instancias dedicadas: Rerank 4 Pro $5/hora ó $3,250/mes)... instancias dedicadas $2,500-6,500/mes» (rec[4], gaps[1], key_insights[4])",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://cohere.com/pricing → solo instancias Model Vault, sin PAYG por token ni por search unit. Embed 4 Small $4,00/hora ó $2.500/mes; Embed 4 Medium $5,00 / $3.250; Rerank 4 Fast (Medium) $5,00 / $3.250; Rerank 4 Pro (Medium) $5,00 / $3.250; Rerank 4 Pro (Large) $10,00 / $6.500. «Pricing is determined per instance based on the selected model and its performance tier.» El rango $2.500-6.500 y la cifra de Rerank 4 Pro son exactos.",
+   "severity": "low"
+  },
+  {
+   "claim": "«Contextual retrieval... -35% failure rate solo embeddings contextuales, -49% con BM25 híbrido, -67% añadiendo reranking; coste ~$1.02/M tokens» y «failure rate 2.9%→1.9%»",
+   "verdict": "confirmed",
+   "evidence": "WebFetch https://www.anthropic.com/news/contextual-retrieval → «reduced the top-20-chunk retrieval failure rate by 35%» (5.7%→3.7%); «by 49%» (5.7%→2.9%); con reranking «by 67%» (5.7%→1.9%); «the one-time cost to generate contextualized chunks is $1.02 per million document tokens». Post publicado y fechado 2024-09-19 — el informe ya avisa de que las cifras de coste son a precios 2024 de Claude 3 Haiku.",
+   "severity": "low"
+  },
+  {
+   "claim": "«promptfoo activo (24.4k stars, CLI open source, MIT)»; «Braintrust: free tier $0 con 10k scores/mes + 1GB datos, Pro $249/mes»; «Vercel AI SDK va por v7»",
+   "verdict": "confirmed",
+   "evidence": "curl api.github.com/repos/promptfoo/promptfoo → stars 24380, license MIT, pushed_at 2026-08-19T14:23:18Z, archived false. WebFetch braintrust.dev/pricing → Starter «$0 / month», «10k scores», «1 GB processed data», «14-day retention»; Pro «$249 / month», «50k scores», «5 GB», «30-day retention». WebFetch ai-sdk.dev/docs/introduction → selector de versión «v7 (Latest)», «AI SDK 7.x». La página de intro NO menciona bloques de citación de Anthropic — el gap[4] del informe sigue abierto y bien declarado.",
+   "severity": "low"
+  },
+  {
+   "claim": "cost_estimate: «PIPELINE... Haiku 4.5 estándar $96/mes, con Batch API (50%) $48/mes; Sonnet 5 estándar ~$250/mes... Q&A ~$12.50/mes... TOTAL RECOMENDADO ~$66-75/mes»",
+   "verdict": "confirmed",
+   "evidence": "Aritmética reproducida sobre los supuestos declarados y los precios verificados hoy: 6.000 docs × 10k in = 60M; × 1,2k out = 7,2M. Haiku estándar 60×$1 + 7,2×$5 = $96 ✓; batch $48 ✓. Sonnet 5 con +30%: 78M×$2 + 9,36M×$10 = $249,6 ≈ $250 ✓; batch $125 ✓ (y $125/$48 = 2,6x, la cifra de rec[0].alternatives ✓). Q&A: 300×12k×1,3 = 4,68M×$2 + 0,3M×$10 = $12,36 ≈ $12,50 ✓. Embeddings 50M×$0,06 = $3 ✓; 75M×$0,06 = $4,50 ✓. Rerank 6M×$0,05 = $0,30 ✓. Suma 48+12,5+4,5+0,3+5 = $70,30, dentro del rango declarado ✓.",
+   "severity": "medium"
+  },
+  {
+   "claim": "key_insights[2]: «TODO el proyecto (pipeline + Q&A + embeddings + rerank + eval) cabe en ~$70/mes»",
+   "verdict": "partially",
+   "evidence": "El propio cost_estimate dice: «No incluye Supabase ni hosting» y «Sensibilidad: si 30% de docs requieren PDF nativo por visión (~25k tokens/doc), +$22.50/mes en Haiku batch». Pero rec[2] RECOMIENDA esa vía de visión como parte del diseño, no como escenario adverso — las gacetas del Congreso colombiano escaneadas son el caso normal, no el excepcional.",
+   "correction": "El titular de $70/mes excluye un componente que la propia recomendación incluye. Con visión al 30% el régimen es ~$93/mes, y si además hay que hacer doble pasada por el conflicto citations/structured outputs (veredicto anterior), más. El rango honesto para el plan tal como está escrito es ~$70 (sin visión) a ~$95-115 (con visión, una o dos pasadas). No es un error de aritmética: es un titular que se come su propio caveat.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«verified: true» en las 8 recomendaciones y «Verificado el 2026-08-19» en todo el informe",
+   "verdict": "partially",
+   "evidence": "Todo lo que pude contrastar contra fuente primaria salió correcto o casi (ver arriba). Pero `verified: true` significa aquí «leí la página oficial», no «ejecuté el request»: no hay una sola llamada a la API en el informe, ni la puede haber habido para el 400 y para output_config-dentro-de-batch, que son afirmaciones de COMPOSICIÓN. En este entorno tampoco existen credenciales (`which ant` → not found; $ANTHROPIC_API_KEY vacío), así que yo tampoco pude ejecutar nada.",
+   "correction": "Marcar en el plan qué está verificado documentalmente y qué está verificado empíricamente. Los dos que más pesan y nadie ha corrido: (a) `output_config.format` dentro de un request de Batch con Haiku 4.5; (b) un PDF escaneado real de la Gaceta del Congreso con citations habilitado, para ver si devuelve algún bloque de cita. Son 30 minutos y una API key, y deciden la arquitectura de ingesta.",
+   "severity": "medium"
+  }
+ ],
+ "omissions": [
+  "**Reintento de lotes expirados: la única omisión con mordida operativa.** batch-processing dice verbatim: «Batches expire if processing does not complete within 24 hours» y «processing may be slowed down based on current demand and your request volume. In that case, you may see more requests expiring after 24 hours». Un pipeline diario de 200 documentos que pierde en silencio requests a las 24h necesita un camino de re-envío y una marca de estado por documento. El informe cita el turnaround como gap («margen sobra igualmente») pero no diseña el reintento.",
+  "**Prueba empírica de las dos afirmaciones de COMPOSICIÓN de las que cuelga la ingesta.** Nadie ha ejecutado (a) structured outputs dentro de Batch, ni (b) citations sobre un PDF escaneado real. Ambas son verificables en una tarde con una API key y cambian la arquitectura si fallan.",
+  "**Rate limits del tier de la cuenta.** 200 docs/día × 10k tokens = ~2M tokens de input/día, más el bootstrap de embeddings. batch-processing avisa: «Rate limits apply to both Batches API HTTP requests and the number of requests within a batch waiting to be processed». El informe no mira en qué tier hay que estar ni si Start tier aguanta el arranque.",
+  "**Rate limits y requisitos de cuenta de Voyage AI para el bootstrap.** Embeber 100k chunks (~50M tokens) de golpe contra la API de Voyage tiene límites de RPM/TPM que el informe no consulta; el free tier de 200M no dice nada sobre a qué velocidad se puede consumir. Es el paso más caro de revertir del plan y el único con un cuello de botella de throughput sin medir.",
+  "**El anclaje de evidencia para documentos escaneados queda sin fuente.** Cerrados los dos caminos vía API (citations+structured outputs = 400; citations no cita imágenes), el plan no dice de dónde sale el número de página de una gaceta escaneada. Es una decisión de diseño, no un detalle: el contrato de evidencia de regwatch depende de ella.",
+  "**Coste del re-embebido.** El informe advierte «cambiar de modelo = re-embeber todo» y propone un benchmark propio antes de embeber, pero no cifra el coste del escenario en que el benchmark falle a mitad de operación (re-embeber 100k+ chunks fuera ya del free tier). Con voyage-4 son ~$3-10, trivial — pero conviene decirlo para que la «única decisión cara de revertir» quede dimensionada de verdad.",
+  "**Haiku 4.5 no tiene adaptive thinking** (models overview: fila «Adaptive thinking» → No; «Extended thinking (thinking.type: enabled)» → Yes). Irrelevante para clasificación/extracción, pero si algún documento complejo necesitara razonamiento, el routing a Sonnet 5 que el informe propone es obligatorio, no opcional."
+ ],
+ "architecture_changing": [
+  "**La ingesta no puede extraer JSON y anclar la página en el mismo request.** rec[0] manda structured outputs para la ingesta, rec[2] promete page_location vía citations para el PDF de esa misma ingesta, y rec[1] documenta que las dos juntas devuelven 400 («If you enable citations on any user-provided document... and also include the `output_config.format` parameter... the API returns a 400 error»). El plan tiene que elegir: extracción estructurada SIN anclaje, o cita anclada SIN JSON, o dos pasadas sobre el mismo PDF — y las dos pasadas duplican el coste de visión que la sensibilidad del informe calculó para una.",
+  "**Y arreglar lo anterior no basta: para la gaceta ESCANEADA no hay nada que citar.** «Only text citations are currently supported. Image citations are not yet possible» y «For PDFs: Text is extracted... and content is chunked into sentences. Citing images from PDFs is not currently supported». Las citas se construyen troceando el texto extraído; un escaneado sin capa de texto no lo tiene (inferencia mía, no una frase de la doc, pero se sigue de las dos citas). O sea: el caso que rec[2] reserva justamente para visión es el único donde citations no puede entregar page_location por ninguna ruta que el plan describa. El anclaje de esos documentos tiene que venir del harness de ingesta o del parser local, y eso es una pieza de arquitectura que el plan no tiene.",
+  "**El presupuesto del plan y el diseño del plan no describen la misma ingesta.** rec[2] recomienda la vía de visión como parte del diseño; cost_estimate la saca del total y la deja como «sensibilidad». Si las gacetas escaneadas son el caso normal en Colombia —y el informe asume que lo son al recomendar visión para ellas—, el régimen no es ~$70/mes sino ~$93/mes, y con doble pasada por el punto 1, más. Hay que decidir la vía de PDF ANTES de fijar el presupuesto, no después."
+ ],
+ "overall": "Informe LEÍDO COMPLETO (25.937 bytes, 148 líneas al formatearlo; sin truncar) y contrastado contra fuente primaria en 9 páginas oficiales: pricing, citations, structured-outputs, batch-processing, pdf-support y models/overview de platform.claude.com; docs.voyageai.com pricing y embeddings; cohere.com/pricing; anthropic.com/news/contextual-retrieval; ai-sdk.dev; braintrust.dev/pricing; y la API de GitHub para promptfoo.\n\n**El titular honesto no es «encontré errores», es cuáles claims de carga sobrevivieron.** Este informe es sustancialmente mejor que sus cuatro hermanos. De 20 veredictos, 13 salen `confirmed` verbatim, 5 `partially` y solo 2 `refuted` —y los dos refutados son la misma costura, localizada en un componente. Ninguna cifra de precio, ningún límite de API y ninguna aritmética falló. Cuando el informe no pudo verificar algo, lo declaró en `gaps` con precisión quirúrgica (MTEB, precio PAYG de Cohere, specs de voyage-context-4, citations en AI SDK v7) — y dos de esos gaps eran innecesarios porque el dato sí era correcto (contexto de Haiku 4.5 = 200k; turnaround de batch = «most batches completing within 1 hour», expiración a 24h).\n\n**Mención especial al precio de Sonnet 5, porque es donde yo esperaba pillarlo y salió al revés.** La tabla cacheada del skill `claude-api` (2026-06-24) dice «$3.00 ($2.00 intro through 2026-08-31)», lo que a 12 días del 1-sep-2026 habría hecho caducar el presupuesto entero. La página viva desmiente el caché con una nota explícita: «The previously scheduled increase to $3/$15... on September 1, 2026 **will not occur**». El informe tenía razón y mi prior estaba viejo. Lo mismo con `cited_text` no facturando ni como output ni como input al reenviarlo: sonaba a extensión inventada y está documentado literalmente, las dos mitades.\n\n**Lo que sí rompe, y rompe de verdad, es una sola cosa con dos capas.** El informe descubre y declara bien la incompatibilidad citations↔structured outputs para separar extracción de Q&A... y acto seguido la viola dentro de su propio componente de ingesta de PDF, prometiendo `page_location` en un pipeline que corre con `output_config.format`. Cuando cierras esa puerta, se abre la segunda: para gacetas ESCANEADAS —el caso exacto que el informe reserva a visión— citations no cita imágenes y trocea solo texto extraído, así que ni siquiera una pasada solo-citations entregaría anclaje. El contrato de evidencia de regwatch para esa clase de documento se queda sin fuente de página, y eso es una pieza de arquitectura, no un dato que corregir.\n\n**Lo que NO pude verificar, y lo digo sin adornarlo.** No hay credenciales de Anthropic en este entorno (`which ant` → not found; `$ANTHROPIC_API_KEY` vacío), así que **no ejecuté ni una sola llamada a la API**: ni reproduje el 400 de citations+structured outputs, ni probé `output_config.format` dentro de un request de Batch, ni pasé un PDF escaneado real con citations habilitado. Los tres son afirmaciones de COMPOSICIÓN —features que la doc describe por separado y que nadie ha combinado— y son exactamente el tipo de cosa que en los informes hermanos devolvía HTTP 200 con basura dentro. El `output_config` dentro de batch lo doy por confirmado por ausencia en una lista cerrada de exclusiones («A small number of parameters (`stream`, `speed`, `store`, `previous_thread_event_id`, `cache_hint`, `context_hint`, `max_tokens: 0`, and `research_preview_2026_02`) are not supported») más la afirmación general de que soporta «nearly all features» — evidencia fuerte, pero no un request ejecutado. Tampoco verifiqué benchmarks de retrieval en español (mismo muro que el informe: MTEB es una app JS), ni los rate limits de Voyage, ni el tier de cuenta necesario. La condición previa que el informe se autoimpone —benchmark propio de ~200 pares pregunta→artículo antes de embeber— sigue siendo, en mi lectura, la decisión más sensata de todo el documento, y ninguna de mis correcciones la toca."
+}

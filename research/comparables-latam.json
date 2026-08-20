@@ -1,0 +1,420 @@
+{
+ "projects": [
+  {
+   "name": "Congreso Visible (Universidad de los Andes)",
+   "url": "https://congresovisible.uniandes.edu.co/",
+   "country": "Colombia",
+   "status": "active — datos de la legislatura Jul 2026 - Jul 2027 ya cargados (proyectos 160/26, 135/26 vistos el 2026-08-19); blog editorial congelado en feb-2022",
+   "scope": "Congreso colombiano desde 1998: perfiles de congresistas, proyectos de ley (~15.100; 1.008 páginas de 15), votaciones nominales, comisiones, control político, conflictos de interés",
+   "stack": "Frontend JS (los scrapers de terceros usan Selenium porque no carga sin JS); backend Laravel v8.61.0 / PHP 8.0.3 en apicongresovisible.uniandes.edu.co",
+   "license": "no declarada; sin descargas bulk visibles (la ruta /datos/ devuelve 404)",
+   "data_model_notes": "Proyecto = título + número {num}/{año-2dígitos} + números separados de Cámara y Senado + cuatrienio + legislatura + tipo de iniciativa (Legislativa/Gubernamental) + tipo de proyecto (Ley / Acto Legislativo) + autores + estado. Filtros por corporación, cuatrienio, legislatura, iniciativa, tema, tipo y estado. Congresistas modelados como entidades persistentes desde 1998 con historial",
+   "features": [
+    "seguimiento de trámite por legislatura",
+    "votaciones nominales",
+    "perfiles históricos de congresistas",
+    "agenda de comisiones",
+    "conflictos de interés"
+   ],
+   "what_works": [
+    "27+ años de continuidad gracias al anclaje institucional (Depto. de Ciencia Política, Uniandes)",
+    "modelo de datos de trámite maduro: separar número de Cámara y de Senado del mismo proyecto es la decisión correcta",
+    "cobertura histórica que nadie más tiene"
+   ],
+   "what_fails": [
+    "NO hay API pública: apicongresovisible.uniandes.edu.co responde la página de bienvenida de Laravel (verificado 2026-08-19) — la infraestructura existe pero solo sirve al frontend",
+    "sin descargas bulk (/datos/ = 404)",
+    "frontend JS-only que obliga a terceros a Selenium",
+    "la capa editorial (blog) murió en 2022 aunque los datos siguen"
+   ],
+   "lessons_for_us": [
+    "El número de proyecto NO es un identificador único: modelar {número-Cámara, número-Senado, cuatrienio, legislatura} como claves del mismo expediente",
+    "Publicar API y dumps desde el día 1 — CV demuestra que sin eso el ecosistema entero degenera en scrapers Selenium desechables",
+    "El anclaje institucional es lo que da longevidad; un proyecto personal necesita minimizar costo de mantenimiento para sobrevivir",
+    "CV es fuente institucional (secundaria para vigencia, útil para trámite y votaciones): candidata a fuente de enriquecimiento, no primaria"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: home activa con calendario ago-sep 2026 y cifras del cuatrienio (339 leyes sancionadas, 2.610 proyectos); /proyectos-de-ley/ muestra legislatura Jul2026-Jul2027 con proyectos 160/26 y 135/26; apicongresovisible.uniandes.edu.co devuelve página de bienvenida Laravel v8.61.0",
+   "confidence": "high"
+  },
+  {
+   "name": "Observatorio Legislativo — Instituto de Ciencia Política Hernán Echavarría Olózaga (ICP)",
+   "url": "https://www.icpcolombia.org/observatorio-legislativo/",
+   "country": "Colombia",
+   "status": "active — última publicación vista del 2026-03-07; análisis de reforma a la salud (sep-2025) y jurisdicción agraria (nov-2025)",
+   "scope": "Análisis cualitativo de proyectos de ley seleccionados en el Congreso colombiano, con metodología de semáforo (IALE); publicaciones varias veces al mes",
+   "stack": "WordPress editorial; no es plataforma de datos",
+   "license": "no declarada",
+   "data_model_notes": "No hay modelo de datos: son PDFs/artículos de análisis por proyecto. La metodología IALE (semáforo de evaluación de iniciativas) es su único artefacto estructurado",
+   "what_works": [
+    "análisis experto con posición explícita y metodología declarada (semáforo)",
+    "constancia editorial desde hace años"
+   ],
+   "what_fails": [
+    "nada es machine-readable ni reutilizable",
+    "cobertura selectiva, no exhaustiva"
+   ],
+   "lessons_for_us": [
+    "Una capa de evaluación con criterio explícito (tipo semáforo) sobre los datos crudos es un diferenciador barato y defendible — pero debe vivir COMO DATO estructurado, no como PDF",
+    "El análisis selectivo complementa pero no sustituye la cobertura exhaustiva: regwatch debe ser exhaustivo en captura y selectivo en análisis"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: página activa, última entrada 2026-03-07 (riesgo de captura criminal del Estado, con Fundación Colombia 2050); menciona metodología IALE de semáforo",
+   "confidence": "high"
+  },
+  {
+   "name": "Cuestión Pública",
+   "url": "https://cuestionpublica.com/",
+   "country": "Colombia",
+   "status": "active — artículos de agosto de 2026 visibles",
+   "scope": "Periodismo investigativo de datos (secciones EscarbaData, Data Pública); contratos y presupuesto más que trámite legislativo. NO tiene tracker legislativo",
+   "lessons_for_us": [
+    "La prensa investigativa colombiana es señal temprana y contexto, nunca fuente de estado normativo — exactamente el nivel «secundaria» de la jerarquía probatoria heredada de v1",
+    "Su modelo (investigación puntual profunda) no compite con un monitor exhaustivo: son complementarios y potencial usuario final de regwatch"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: home activa con cobertura de agosto 2026; secciones Cuestión Poder, EscarbaBajo, EscarbaData, La Tribuna; sin base de datos legislativa visible",
+   "confidence": "high"
+  },
+  {
+   "name": "Datasketch",
+   "url": "https://www.datasketch.co/",
+   "country": "Colombia",
+   "status": "active (inferido) — publicaciones y herramientas recientes en datasketch.news y GitHub Pages; no fetché el sitio principal",
+   "scope": "Plataforma de datos y periodismo: herramienta de monitoreo de proyectos de ley sobre derechos de las mujeres/equidad de género, Queremos Datos (derechos de petición a 6.000+ entidades), visualizaciones sobre transparencia del Congreso",
+   "lessons_for_us": [
+    "El monitoreo TEMÁTICO (un dominio: género) es un patrón viable y acotado — regwatch puede ofrecer «lentes» temáticos (ej. IA en salud) sobre el corpus completo en lugar de un producto por tema",
+    "Sostenibilidad vía empresa de servicios de datos + gran público: otro modelo distinto al institucional"
+   ],
+   "verified_by_fetch": false,
+   "evidence": "Solo resultados de búsqueda (2026-08-19): UNCAC Coalition la describe; datasketch.news publicó «Las mejoras del Congreso en la transparencia legislativa»; herramienta de monitoreo legislativo de género documentada en exploralat.am. Sin fetch directo del portafolio actual",
+   "confidence": "medium"
+  },
+  {
+   "name": "MOE — Seguimiento Legislativo (Misión de Observación Electoral)",
+   "url": "https://moe.org.co/en/justicia-electoral/seguimiento-legislativo/",
+   "country": "Colombia",
+   "status": "active — publicó «Informe de seguimiento legislativo: primer periodo Legislatura 2025–2026»",
+   "scope": "Monitoreo de proyectos político-electorales en el Congreso; informes por periodo legislativo, no plataforma de datos",
+   "lessons_for_us": [
+    "Otro caso de monitoreo temático acotado (solo lo político-electoral) sostenido por una ONG con misión clara",
+    "El formato «informe por periodo» es la salida editorial natural de un monitor: regwatch puede generarlo automáticamente desde los datos"
+   ],
+   "verified_by_fetch": false,
+   "evidence": "Resultados de búsqueda 2026-08-19: página de seguimiento legislativo e informe del primer periodo 2025-2026 listados en moe.org.co. Sin fetch directo",
+   "confidence": "medium"
+  },
+  {
+   "name": "Vigía / Ojo al Congreso",
+   "url": "(no encontrada)",
+   "country": "Colombia",
+   "status": "unknown — no encontré rastro con esos nombres en búsquedas de 2026; probablemente proyectos muertos, renombrados o nombres imprecisos",
+   "scope": "desconocido",
+   "lessons_for_us": [
+    "Si existieron, desaparecieron sin dejar huella indexada — el destino típico del tracker cívico colombiano sin institución detrás; refuerza el patrón de mortalidad"
+   ],
+   "verified_by_fetch": false,
+   "evidence": "Búsqueda «Ojo al Congreso» OR «Vigía del Congreso» Colombia 2025-2026 (2026-08-19): cero resultados con esos nombres; los resultados devuelven Congreso Visible, MOE y Extituto",
+   "confidence": "low"
+  },
+  {
+   "name": "Ecosistema de scrapers legislativos colombianos en GitHub (histórico)",
+   "url": "https://github.com/john-guerra/datatonSenadoColombia",
+   "country": "Colombia",
+   "status": "dead — john-guerra/datatonSenadoColombia último push 2019-04-26; davidlvargas/ColCongress 2020-02-28; DanielCifuentesG/Proyectos-de-Ley... 2019-05-27; dav009/congresovisible 2014-11-15",
+   "scope": "Dumps y scrapers puntuales: 7.000+ leyes del Senado desde los 90 (dataton), 3.338 votaciones de ambas cámaras 2014-2018 (ColCongress), 625 proyectos 2018-2019 scrapeados con Selenium desde Senado/Cámara/Congreso Visible",
+   "stack": "Python/Selenium, R; datasets CSV estáticos",
+   "license": "varía por repo",
+   "data_model_notes": "ColCongress demuestra que las votaciones nominales de ambas cámaras SÍ son extraíbles a escala (3.338 votos en 4 años); el dataton demuestra que el histórico del Senado desde los 90 es scrapeable",
+   "what_works": [
+    "prueban viabilidad técnica de cada extracción que regwatch necesita"
+   ],
+   "what_fails": [
+    "todos murieron en menos de 2 años: eventos puntuales (datatones, tesis) sin pipeline de actualización",
+    "dumps estáticos que envejecieron el día que se publicaron"
+   ],
+   "lessons_for_us": [
+    "La diferencia entre un dump y un monitor es el pipeline diario idempotente — el valor está en la actualización, no en la foto",
+    "Reusar su conocimiento de extracción (qué páginas, qué estructura) aunque el código esté muerto",
+    "Selenium contra Congreso Visible es evitable: ir a las fuentes oficiales directamente"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "gh api 2026-08-19: pushed_at de los 4 repos entre 2014 y 2020, ninguno archivado pero todos inactivos 6+ años",
+   "confidence": "high"
+  },
+  {
+   "name": "acastroaraujo/ccc — Corte Constitucional de Colombia (paquete R + datasets)",
+   "url": "https://github.com/acastroaraujo/ccc",
+   "country": "Colombia",
+   "status": "active — último push 2026-07-22; repo hermano cccLLM (datasets para LLM) push 2026-01-10",
+   "scope": "Búsqueda y descarga de sentencias directamente del sitio de la Corte Constitucional (corteconstitucional.gov.co) + datasets curados para análisis cuantitativo; complemento: manumarp/sentencias-corte-cons-colombia-1992-2021 (23.750 sentencias texto completo, estático)",
+   "stack": "R (paquete con R-CMD-check en CI), scraping del buscador oficial de la CC",
+   "license": "paquete R público en GitHub (citable, autor Andrés Castro Araújo, 2024)",
+   "data_model_notes": "Sentencia como unidad con metadatos de la relatoría; el corpus completo 1992-2021 ya existe empaquetado por terceros",
+   "what_works": [
+    "scraping de la relatoría de la CC probado y mantenido en 2026",
+    "CI que detecta cuando la Corte cambia el sitio"
+   ],
+   "what_fails": [
+    "solo sentencias: no conecta la sentencia con la norma cuya vigencia afecta — ese cruce no lo hace nadie"
+   ],
+   "lessons_for_us": [
+    "La pieza «sentencias que afectan vigencia» de regwatch es técnicamente viable hoy y hay código vivo de referencia",
+    "Poner CI que vigile el scraper (como su R-CMD-check) es la práctica anti-rotura correcta",
+    "El eslabón sentencia→norma-afectada es el hueco: la relatoría lo dice en el texto, nadie lo estructura"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "gh api 2026-08-19: pushed_at 2026-07-22, 6 stars, README leído (funciones de búsqueda/descarga contra corteconstitucional.gov.co + datasets integrados)",
+   "confidence": "high"
+  },
+  {
+   "name": "MCP servers de normativa colombiana (fenómeno 2026)",
+   "url": "https://github.com/Angelthebestone/Normativa-colombiana-MCP",
+   "country": "Colombia",
+   "status": "active — Normativa-colombiana-MCP push 2026-08-12; MCP-Corte-Constitucional (sebastian09781) push 2026-05-23; zotero-suin-juriscol push 2026-03-21",
+   "scope": "Servidores MCP para consultar el Gestor Normativo de Función Pública y la relatoría de la Corte Constitucional desde agentes tipo Claude; traductor Zotero para citar normas desde SUIN-Juriscol",
+   "stack": "MCP (Model Context Protocol)",
+   "lessons_for_us": [
+    "Hay demanda emergente y desatendida de acceso AGÉNTICO a la normativa colombiana — exponer regwatch-co v2 como MCP server además de PWA es una superficie de producto barata y diferenciadora",
+    "Confirman que el Gestor Normativo de Función Pública (funcionpublica.gov.co/eva/gestornormativo) es la fuente de vigencia que la comunidad usa cuando SUIN falla"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "gh api search 2026-08-19: tres repos con pushes de marzo-agosto 2026 apuntando a Función Pública, relatoría CC y SUIN-Juriscol",
+   "confidence": "high"
+  },
+  {
+   "name": "SUIN-Juriscol (Ministerio de Justicia) — fuente oficial de vigencia",
+   "url": "https://www.suin-juriscol.gov.co/",
+   "country": "Colombia",
+   "status": "unknown/caído al verificar — inaccesible el 2026-08-19 desde esta red: HTTPS ECONNREFUSED y HTTP sin respuesta (curl -sI vacío). Puede ser caída temporal o bloqueo, pero un monitor no puede depender de su uptime",
+   "scope": "Sistema Único de Información Normativa: leyes y decretos con notas de vigencia y afectaciones jurisprudenciales — la fuente primaria natural de «vigente/derogado» en Colombia",
+   "lessons_for_us": [
+    "La fuente oficial de vigencia colombiana se cae: OBLIGATORIO cachear copia cruda con fecha de captura (el contrato de evidencia v1 ya lo exige) y tener fuente primaria alterna (Gestor Normativo de Función Pública) con reconciliación entre ambas",
+    "Monitorear el uptime de las fuentes es parte del producto: «no pude verificar hoy» es un estado del dato"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "curl 2026-08-19: https://www.suin-juriscol.gov.co/ → ECONNREFUSED en 443; http:// → sin respuesta antes del timeout de 20s. WebFetch previo: ECONNREFUSED 186.86.242.143:443",
+   "confidence": "high"
+  },
+  {
+   "name": "Ley Chile — Biblioteca del Congreso Nacional (BCN)",
+   "url": "https://www.bcn.cl/leychile/",
+   "country": "Chile",
+   "status": "active — la API XML devolvió la Constitución con fechaVersion 2026-04-16 (verificado 2026-08-19); el portal web falló en fetch sin JS pero el servicio de datos responde",
+   "scope": "Toda la normativa chilena consolidada y versionada: leyes, decretos, texto refundido, historia de la ley; más datos.bcn.cl con SPARQL/RDF (normas, sesiones parlamentarias, biografías, presupuesto)",
+   "stack": "API XML propia (leychile.cl/Consulta/obtxml?opt=7&idNorma=N); linked data RDF/OWL con endpoint SPARQL en datos.bcn.cl; ontologías publicadas",
+   "license": "datos abiertos públicos de la BCN",
+   "data_model_notes": "EL modelo de referencia para normas: <Norma normaId fechaVersion derogado='no derogado'> con <Identificador> (tipo, número, fecha promulgación, organismo), <Metadatos> (título, materias como tags, nombres de uso común), <EstructurasFuncionales> jerárquicas (capítulos→artículos) donde CADA ARTÍCULO lleva su propia fechaVersion y referencias a las leyes modificatorias. Es decir: versionado a nivel de artículo, estado de vigencia como atributo, y trazabilidad de qué norma modificó qué",
+   "features": [
+    "consolidación de texto vigente por fecha (time-travel normativo)",
+    "historia de la ley (expediente completo del trámite)",
+    "SPARQL endpoint",
+    "materias/tags"
+   ],
+   "what_works": [
+    "30 años de sostenibilidad como órgano de la Biblioteca del Congreso",
+    "la API XML simple sobrevive intacta mientras el frontend se rehace",
+    "versionado por artículo resuelve la pregunta «¿qué decía esta norma el día X?»"
+   ],
+   "what_fails": [
+    "el portal web depende de JS y se degrada mal",
+    "el linked data (SPARQL) es potente pero de adopción marginal — la API simple es la que usa todo el mundo"
+   ],
+   "lessons_for_us": [
+    "COPIAR ESTE MODELO DE DATOS: norma → versiones fechadas → artículos versionados → afectaciones (modificada-por, derogada-por, declarada-inexequible-por) con fecha y fuente. Mapea directo a Postgres/Supabase",
+    "«Vigente» no es un booleano: es una función de la fecha de consulta — regwatch debe guardar intervalos de vigencia",
+    "Ofrecer la API aburrida y estable (JSON simple) antes que la sofisticada (SPARQL): la simple es la que genera ecosistema"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19 de leychile.cl/Consulta/obtxml?opt=7&idNorma=242302: XML válido de la Constitución, normaId=242302, fechaVersion=2026-04-16, derogado='no derogado', artículos con fechaVersion propia y citas a leyes modificatorias. datos.bcn.cl/es/ activo con SPARQL, ontologías y datasets nuevos de presupuesto",
+   "confidence": "high"
+  },
+  {
+   "name": "Câmara dos Deputados — Dados Abertos",
+   "url": "https://dadosabertos.camara.leg.br/",
+   "country": "Brasil",
+   "status": "active — el endpoint /api/v2/proposicoes devolvió proposiciones con dataApresentacao del 2026-08-19 (el mismo día de la verificación)",
+   "scope": "API REST completa de la Cámara: 10 colecciones — diputados, partidos, bloques, órganos, frentes, legislaturas, eventos, proposiciones, votaciones, referencias",
+   "stack": "API REST JSON/XML con Swagger/OpenAPI público, URIs estables por recurso, paginación con links (self/next/first/last)",
+   "license": "datos abiertos",
+   "data_model_notes": "Recursos separados y enlazados por URI: proposición {id, siglaTipo, codTipo, numero, ano, ementa, dataApresentacao, uri} → votaciones → votos individuales → diputados. La referencia regional de diseño de API legislativa. Ojo: campo ano=0 en algunos registros recientes — hasta la mejor API de la región tiene anomalías de calidad",
+   "what_works": [
+    "Swagger público + tutoriales por nivel = ecosistema enorme de reuso",
+    "separar catálogos de referencia (tipos, situaciones) como colección propia",
+    "paginación hipermedia"
+   ],
+   "what_fails": [
+    "anomalías de datos (ano=0) sin validación aguas arriba",
+    "noticias del portal congeladas en 2021 aunque la API sigue viva — la comunicación envejece antes que el servicio"
+   ],
+   "lessons_for_us": [
+    "Diseñar el esquema Supabase espejando este patrón de colecciones: proposiciones/votaciones/votos/actores/órganos/eventos + tablas de referencia de estados y tipos",
+    "Validar a la entrada: el campo ano=0 muestra que ni la mejor API garantiza consistencia — el contrato de evidencia de regwatch (nada sin fuente+fecha) es también un contrato de calidad",
+    "Documentación ejecutable (OpenAPI) desde el día 1 si se expone API"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: portal con Swagger y 10 colecciones; /api/v2/proposicoes?ordem=DESC devolvió JSON con proposiciones del 2026-08-19 (deepfakes, etc.), links de paginación",
+   "confidence": "high"
+  },
+  {
+   "name": "Senado Federal — Dados Abertos Legislativos",
+   "url": "https://legis.senado.leg.br/dadosabertos/",
+   "country": "Brasil",
+   "status": "active — /senador/lista/atual devolvió XML con Versao 19/08/2026 11:34:12 y mandatos con fechas de 2026",
+   "scope": "API del Senado: senadores (con mandatos, titularidad/suplencia, licencias), materias legislativas, votaciones; documentación Swagger en /dadosabertos/docs/ (requiere JS)",
+   "stack": "API XML-first (JSON disponible por Accept header), Swagger UI",
+   "data_model_notes": "Modela el MANDATO como entidad separada del parlamentario: periodos de ejercicio, licencias, suplencias con fechas — imprescindible para atribuir votos correctamente en el tiempo",
+   "lessons_for_us": [
+    "Separar persona ↔ mandato ↔ curul: en Colombia las suplencias, sillas vacías y reemplazos hacen que atribuir una votación a «el senador X» sin dimensión temporal sea un error de datos",
+    "Metadato de versión con timestamp en cada respuesta (Versao 19/08/2026) = procedencia barata que regwatch debería imitar en su API"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: XML ListaParlamentarEmExercicio con Metadados/Versao 19/08/2026 11:34:12, 81 senadores, mandatos con ejercicio iniciando 2026-03-31",
+   "confidence": "high"
+  },
+  {
+   "name": "Directorio Legislativo",
+   "url": "https://directoriolegislativo.org/",
+   "country": "Argentina (regional: AR, MX, CO, LATAM y Caribe)",
+   "status": "active — contenido de julio-agosto 2026 (legislatura argentina, nuevo presidente de Colombia)",
+   "scope": "ONG fundada en 2000: directorio de legisladores, monitoreo regulatorio en tiempo real (ejecutivo + legislativo), alertas, informes de escenario político, PEPs (personas expuestas políticamente + beneficiarios finales + contratos), red OPeN de parlamento abierto",
+   "license": "mixto: herramientas públicas + servicios de monitoreo para clientes (modelo consultoría que financia la misión)",
+   "what_works": [
+    "26 años de vida: el monitoreo regulatorio B2B (asuntos públicos corporativos) financia la parte cívica — el único modelo no-institucional longevo de la región",
+    "cobertura multi-país con metodología uniforme"
+   ],
+   "what_fails": [
+    "los datos finos (alertas, monitoreo diario) no son públicos: el valor se captura en el servicio, no en el commons"
+   ],
+   "lessons_for_us": [
+    "El mercado dispuesto a pagar por monitoreo legislativo existe (government affairs corporativo — exactamente el perfil profesional de Daniel): regwatch tiene un caso de sostenibilidad freemium si algún día lo necesita",
+    "Monitorear ejecutivo (decretos, resoluciones) junto al legislativo es lo que los usuarios profesionales realmente compran — valida el alcance amplio de regwatch v2"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: home activa con artículos jul-ago 2026; productos listados (Directorio de Legisladores, monitoreo regulatorio en tiempo real, PEPs, OPeN)",
+   "confidence": "high"
+  },
+  {
+   "name": "Borde Político",
+   "url": "https://www.bordepolitico.com/",
+   "country": "México",
+   "status": "dead — el dominio no resuelve (DNS ENOTFOUND, verificado 2026-08-19)",
+   "scope": "Fue una plataforma cívica de seguimiento de votaciones y legisladores mexicanos",
+   "what_fails": [
+    "muerto sin sucesor: dominio abandonado — el archivo de sus datos se perdió con él"
+   ],
+   "lessons_for_us": [
+    "Los datos de un monitor muerto desaparecen con su hosting: publicar dumps versionados fuera de la plataforma (GitHub/Zenodo) es el seguro de vida del commons",
+    "Plataforma cívica sin modelo de sostenibilidad ≈ 5-10 años de vida"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch 2026-08-19: getaddrinfo ENOTFOUND www.bordepolitico.com",
+   "confidence": "high"
+  },
+  {
+   "name": "Curul 501",
+   "url": "https://curul501.org/",
+   "country": "México",
+   "status": "dead — el servidor rechaza conexiones (ECONNREFUSED 52.207.245.221:443, verificado 2026-08-19)",
+   "scope": "Fue una plataforma de participación ciudadana frente a la Cámara de Diputados mexicana («la curul 501» = el ciudadano); un gist de 2012 documenta que terceros la scrapeaban para datos de congresistas",
+   "what_fails": [
+    "mismo patrón: proyecto cívico mexicano de la ola open-gov 2011-2015, muerto sin archivo"
+   ],
+   "lessons_for_us": [
+    "La ola regional de trackers cívicos 2011-2015 murió casi entera (Borde, Curul 501, scrapers CO): sobrevivieron los anclados a instituciones (BCN, cámaras, universidades) y el híbrido ONG-consultora (Directorio Legislativo). Elegir modelo de sostenibilidad ANTES de acumular usuarios"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch 2026-08-19: connect ECONNREFUSED 52.207.245.221:443",
+   "confidence": "high"
+  },
+  {
+   "name": "Congreso de Perú — Portal de Proyectos de Ley (spley)",
+   "url": "https://wb2server.congreso.gob.pe/spley-portal/",
+   "country": "Perú",
+   "status": "active — el SPA responde (título «Proposiciones Legislativas») pero requiere JS; la ruta antigua /proyectosdeley/ da 404",
+   "scope": "Buscador oficial de proyectos de ley del Congreso peruano con expedientes digitales",
+   "stack": "SPA (Angular) contra servicios REST internos no documentados (wb2server.congreso.gob.pe/spley-portal-service/, típicamente vía POST)",
+   "what_fails": [
+    "API interna sin documentar ni versionar: cada rediseño rompe a los reutilizadores (la ruta histórica ya es 404)",
+    "sin datos abiertos formales"
+   ],
+   "lessons_for_us": [
+    "El patrón «SPA oficial + API interna reversible» es el caso típico de fuente colombiana también (Senado/Cámara): scrapear la API interna es más estable que scrapear HTML, pero hay que monitorear roturas y cachear crudo"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: spley-portal responde solo el título del SPA (JS requerido); congreso.gob.pe/proyectosdeley/ → HTTP 404",
+   "confidence": "medium"
+  },
+  {
+   "name": "Asamblea Nacional del Ecuador",
+   "url": "https://www.asambleanacional.gob.ec/es",
+   "country": "Ecuador",
+   "status": "active — noticias del 2026-08-18; Agenda Parlamentaria 2026-2027 presentada (34 leyes propuestas)",
+   "scope": "Sitio oficial con Consulta de Proyectos de Ley, Votaciones del Pleno y de Comisiones, Sistema de Consulta de Datos Parlamentarios, catálogo «Estado Abierto» y programa de Parlamento Abierto",
+   "what_works": [
+    "publica votaciones de comisiones (no solo plenario) — granularidad rara en la región"
+   ],
+   "what_fails": [
+    "sin API documentada visible; los sistemas de consulta son aplicaciones web cerradas"
+   ],
+   "lessons_for_us": [
+    "Las votaciones EN COMISIÓN son donde muere o se transforma la mayoría de proyectos: regwatch debe capturarlas para Colombia (actas de comisisiones de Senado y Cámara), no solo plenarias"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: home activa, noticias del 18-ago-2026, CAL calificando 9 proyectos nuevos, secciones de votaciones de pleno y comisiones",
+   "confidence": "high"
+  },
+  {
+   "name": "ParlAmericas",
+   "url": "https://parlamericas.org/",
+   "country": "Regional (hemisferio)",
+   "status": "active — noticias del 2026-08-12 y eventos programados para octubre 2026",
+   "scope": "Red interparlamentaria: diálogo político, herramienta de compromisos de parlamento abierto, dashboards temáticos (igualdad de género, ambiente); NO es plataforma de datos legislativos",
+   "lessons_for_us": [
+    "Sus marcos de parlamento abierto son útiles como rúbrica de qué debería publicar el Congreso colombiano (y por tanto qué huecos llenará regwatch), no como fuente de datos"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19 de parlamericas.org (la ruta /es/default.aspx dio 404): noticias 12-ago-2026, Open Parliament Commitment Tool, dashboards temáticos",
+   "confidence": "high"
+  },
+  {
+   "name": "Red Latinoamericana por la Transparencia Legislativa (RLTL)",
+   "url": "https://www.transparencialegislativa.org/",
+   "country": "Regional (15 países; coordina Fundación Ciudadanía y Desarrollo, Ecuador)",
+   "status": "stale/semi-activa — sitio en pie, pero su producto principal (Índice de Transparencia Legislativa) tiene última edición 2023 (anteriores: 2011, 2014, 2016, 2018, 2020)",
+   "scope": "Red de OSC (CIPPEC, ADC y otras 30+); publica el Índice de Transparencia Legislativa y fichas de buenas prácticas",
+   "lessons_for_us": [
+    "El Índice es la métrica externa contra la cual evaluar la transparencia del Congreso colombiano: útil para documentar QUÉ datos oficiales faltan y justificar el diseño de captura de regwatch",
+    "Cadencia bienal incumplida (2023→2026 sin edición nueva) = señal de financiamiento débil del ecosistema regional"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Fetch 2026-08-19: sitio activo, miembros por país listados, última edición del índice: 2023",
+   "confidence": "high"
+  }
+ ],
+ "patterns": [
+  "MODELO DE DATOS — la norma es un objeto versionado en el tiempo, no un documento: Ley Chile (verificado) modela <Norma normaId fechaVersion derogado> con versionado POR ARTÍCULO y referencias explícitas a la norma modificatoria. «Vigente» es función de la fecha de consulta → en Postgres: tabla de normas + tabla de versiones con intervalos [desde, hasta) + tabla de afectaciones (modificada/derogada/inexequible-por, con fecha y fuente).",
+  "MODELO DE DATOS — el trámite es un expediente con identidad compuesta: Congreso Visible confirma que un proyecto colombiano vive con número de Cámara Y número de Senado distintos, dentro de un cuatrienio y una legislatura; Brasil separa proposición/votación/voto/actor/órgano/evento como colecciones enlazadas por URI; el Senado brasileño separa persona↔mandato (suplencias y licencias con fechas) para atribuir votos correctamente.",
+  "MORTALIDAD — sobreviven los anclados: BCN-Chile (biblioteca del Congreso, 30 años), Câmara/Senado BR (órganos oficiales), Congreso Visible (universidad, 27 años), Directorio Legislativo (híbrido ONG-consultora, 26 años). Mueren los cívicos independientes: Borde Político (DNS muerto), Curul 501 (servidor caído), los 4 scrapers colombianos de GitHub (último push 2014-2020). La diferencia no es técnica: es quién paga el mantenimiento del año 3 en adelante.",
+  "ANTI-FRAGILIDAD — las fuentes oficiales colombianas se caen o cambian sin aviso: SUIN-Juriscol inaccesible el día de la verificación (ECONNREFUSED); la ruta histórica de proyectos del Congreso peruano ya es 404; el portal web de Ley Chile falla sin JS mientras su API XML vieja sigue perfecta. Consecuencia de diseño: cachear la respuesta cruda con fecha de captura (el contrato de evidencia v1 ya lo exige), tener fuente alterna de vigencia (Gestor Normativo de Función Pública además de SUIN) y tratar «no verificable hoy» como estado explícito del dato.",
+  "PROCEDENCIA — los mejores publican metadatos de versión en el dato mismo: Senado BR estampa <Versao 19/08/2026 11:34:12> en cada respuesta; Ley Chile estampa fechaVersion por artículo. Y aun así hay ruido (Câmara BR devuelve ano=0 en registros de 2026): la validación a la entrada es parte del contrato de calidad, no un extra.",
+  "UX/PRODUCTO — nadie en Colombia une las cuatro capas (trámite en Congreso + vigencia consolidada + jurisprudencia que afecta vigencia + CONPES) ni ofrece búsqueda semántica o preguntas en lenguaje natural; el monitoreo temático acotado (Datasketch-género, MOE-electoral, ICP-semáforo) demuestra que los usuarios consumen «lentes» sobre el corpus, no el corpus entero.",
+  "SEÑAL 2026 — acceso agéntico: en marzo-agosto de 2026 aparecieron 3 repos colombianos de MCP servers para Función Pública, relatoría de la CC y SUIN-Juriscol. La demanda de consumir normativa colombiana desde agentes LLM existe y nadie la sirve con datos estructurados de calidad."
+ ],
+ "gaps": [
+  "No existe API pública de datos del Congreso colombiano: ni oficial (Senado/Cámara) ni de Congreso Visible (su subdominio api* es una página Laravel vacía). Todo el ecosistema scrapeó HTML/JS y murió haciéndolo.",
+  "Nadie estructura el eslabón sentencia→norma-afectada: la relatoría de la CC es scrapeable (acastroaraujo/ccc, activo 2026) y SUIN anota vigencias, pero el cruce machine-readable «esta sentencia declaró inexequible este artículo desde esta fecha» no lo publica nadie.",
+  "No hay vigencia consolidada versionada al estilo Ley Chile para Colombia: SUIN-Juriscol es la fuente primaria natural pero es frágil (caído al verificar) y sin API; Función Pública es la alterna de facto.",
+  "CONPES no aparece en NINGÚN comparable: ningún monitor los integra con el resto del corpus normativo.",
+  "No pude verificar: Vigía / Ojo al Congreso (sin rastro indexado con esos nombres), la existencia actual de descargas bulk de Congreso Visible (/datos/ da 404), el portafolio actual de Datasketch (solo evidencia indirecta), ni el detalle de la API interna del Congreso peruano (requiere POST/JS). El presupuesto de WebSearch de la sesión se agotó a mitad de la investigación; todo lo posterior se verificó solo con fetch directo y gh CLI.",
+  "México quedó sin comparable vivo verificado (Borde Político y Curul 501 muertos); no alcancé a verificar el SIL de Gobernación como sustituto oficial."
+ ],
+ "key_insights": [
+  "El modelo de datos ya está inventado y verificado en producción: Ley Chile para el corpus normativo (norma→versiones por artículo→afectaciones con fecha y fuente; «vigente» como intervalo, no booleano) y Câmara/Senado BR para el trámite (colecciones REST enlazadas: proposición/votación/voto/persona/mandato/órgano/evento + tablas de referencia). Regwatch-co v2 debe copiarlos, no diseñar desde cero.",
+  "La ventaja competitiva de regwatch no es capturar más, es UNIR lo que nadie une: trámite (Congreso) + vigencia (SUIN/Función Pública) + jurisprudencia (relatoría CC) + CONPES (DNP) en un solo grafo con procedencia. Cada capa por separado ya tiene quién la scrapee; el cruce no existe.",
+  "El contrato de evidencia heredado de v1 (URL checkeable + fecha de captura + jerarquía probatoria + incertidumbre declarada) coincide exactamente con lo que separa a los sobrevivientes de los muertos, y la fragilidad es real y medible: la propia fuente oficial de vigencia (SUIN) estaba caída el día de esta verificación.",
+  "Todos los trackers cívicos independientes de la ola 2011-2015 están muertos; los longevos tienen institución o modelo de ingresos. Para un proyecto personal la implicación es: minimizar costo de mantenimiento (pipelines idempotentes, alertas de rotura tipo CI como acastroaraujo/ccc, alcance acotado) y publicar dumps fuera de la plataforma como seguro de vida de los datos.",
+  "Hay dos superficies de producto infravaloradas que los comparables no ofrecen y regwatch puede tener casi gratis: (1) lentes temáticos sobre el corpus completo (el patrón Datasketch-género/MOE-electoral generalizado — la pregunta «IA en salud» es un lente), y (2) un MCP server sobre la misma base Supabase, donde ya hay demanda demostrada por 3 repos colombianos de 2026."
+ ],
+ "recommendation": "Construir regwatch-co v2 como «Ley Chile + Dados Abertos para Colombia, con capa de cruce»: (1) esquema Supabase copiado de los dos modelos verificados — normas con versiones por intervalo de fechas y tabla de afectaciones (modificada/derogada/inexequible-por, con fecha, fuente y URL), y trámite como colecciones enlazadas (expediente con números de Cámara Y Senado, votación, voto, persona↔mandato, comisión, evento) con tablas de referencia de estados/tipos; (2) captura con caché crudo obligatorio (HTML/XML/JSON tal cual + fecha de captura) porque las fuentes oficiales colombianas demostraron caerse durante esta misma investigación (SUIN inaccesible el 2026-08-19), con Función Pública como fuente primaria alterna de vigencia y reconciliación explícita entre ambas; (3) el diferenciador es el grafo que une trámite + vigencia + sentencias (scrapeando la relatoría de la CC, viabilidad probada por acastroaraujo/ccc, activo jul-2026) + CONPES, que ningún comparable regional hace; (4) sostenibilidad de proyecto personal: pipelines idempotentes con CI que avise cuando una fuente cambie, dumps versionados publicados fuera de la plataforma (la lección de Borde Político y Curul 501: los datos mueren con el hosting), y alcance inicial acotado (proyectos en trámite + leyes/decretos con vigencia + sentencias de constitucionalidad antes que resoluciones ministeriales); (5) exponer desde el inicio la API JSON simple y aburrida (la XML de Ley Chile sobrevivió 20 años; el SPARQL casi no se usa) y un MCP server sobre la misma base — demanda ya demostrada por tres repos colombianos de 2026 — además de la PWA con búsqueda híbrida."
+}

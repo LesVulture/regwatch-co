@@ -1,0 +1,689 @@
+{
+ "legislative_process": "PROCESO LEGISLATIVO COLOMBIANO — verificado artículo por artículo (fetch 2026-08-19).\n\n**1. Calendario (¡CORRECCIÓN CRÍTICA — no confiar en memoria!).** CP art. 138, **modificado por el Acto Legislativo 2 de 2023**: dos periodos por año que constituyen UNA legislatura. Primer periodo **20 jul–16 dic**; segundo periodo **16 de FEBRERO–20 jun** (antes 16 de marzo). Además: «Entre el 16 de febrero y el 15 de marzo no podrán tramitarse proyectos de leyes estatutarias ni reformas a la Constitución»; en el periodo con elecciones al Congreso, el periodo inicia el 16 de marzo. Sesiones **extraordinarias**: por convocatoria del Gobierno, solo asuntos que el Gobierno someta, salvo control político. ⚠️ **Ley 5 art. 224 sigue diciendo «desde el 16 de marzo»** (texto no reformado): hay contradicción vigente entre la CP reformada y la ley orgánica sin actualizar. El modelo de datos DEBE versionar el calendario por legislatura y marcar que prevalece la CP.\n\n**2. Iniciativa y radicación.** Ley 5 art. 139: presentación en Secretaría General de las Cámaras o en plenarias (art. 222 para actos legislativos, modificado por Ley 2390/2024: admite medios digitales). Ley 5 art. 140 (mod. art. 13 Ley 974/2005): 11 sujetos de iniciativa (congresistas y bancadas, Gobierno vía ministros, Corte Constitucional, CSJudicatura, CSJ, Consejo de Estado, CNE, Procurador, Contralor, Fiscal, Defensor). Art. 141 iniciativa popular (5% censo electoral / 30% concejales / 30% diputados). Art. 142: iniciativa privativa del Gobierno (17 materias: PND, estructura de la administración, presupuesto, Banco de la República, comercio exterior, exenciones tributarias…). Art. 143 **cámara de origen**: tributos y presupuesto → Cámara; relaciones internacionales → Senado.\n\n**3. Publicación y reparto.** Ley 5 art. 144 (mod. art. 5 Ley 2390/2024): recibido el proyecto, la Secretaría ordena su publicación en la **Gaceta del Congreso** y el Presidente lo reparte a la Comisión Permanente respectiva; original + 2 copias físicas o electrónicas (una cifrada no editable, otra editable) con exposición de motivos. Requisito CP art. 157-1: publicación oficial ANTES de darle curso en comisión.\n\n**4. Reparto a comisión.** Ley 3 de 1992 art. 2 (mod. art. 1 Ley 754/2002; parágrafos por Ley 1921/2018 y Ley 2267/2022): 7 comisiones constitucionales permanentes por cámara, con materias tasadas (ver norm_types y taxonomy). Parágrafo 1: conflictos de competencia se resuelven por el **principio de especialidad**; parágrafo 2: si la materia no está claramente adscrita, decide el Presidente de la Cámara.\n\n**5. Ponencia y primer debate.** Art. 150 (mod. art. 6 Ley 2390/2024): designación de ponentes por la mesa directiva de la comisión; siempre hay **ponente coordinador**. Art. 153 (mod. art. 14 Ley 2390/2024): plazo de **5 a 15 días calendario**, prorrogable; incumplimiento → reemplazo y publicación del nombre en la Gaceta. Art. 156 (mod. art. 7 Ley 2390/2024): informe por escrito o digital; **publicación en Gaceta dentro de los 3 días siguientes**. Art. 157 (mod. art. 8 Ley 2390/2024): el primer debate no inicia antes de la publicación del informe; si el ponente propone archivar, esa propuesta se debate y vota primero. Arts. 159–164: ordenación del debate, enmiendas (a la totalidad art. 161; al articulado art. 162), suficiente ilustración (art. 164, tras discutir en dos sesiones). Art. 165 (mod. art. 9 Ley 2390/2024): texto aprobado firmado por Presidente, Ponente Coordinador y Secretario de Comisión. Art. 166: **apelación de proyecto negado** ante la Plenaria; si se acoge, va a OTRA comisión constitucional. Art. 167: constancia de votos disidentes. Art. 155: **retiro por el autor** solo antes de presentada ponencia para primer debate y si es de iniciativa congresional.\n\n**6. Tiempos entre debates.** CP art. 160 y Ley 5 art. 168: entre primero y segundo debate **≥8 días**; entre aprobación en una cámara e inicio del debate en la otra **≥15 días** (Ley 5 art. 183; salvo sesión conjunta de comisiones, que permite simultaneidad del segundo debate).\n\n**7. Segundo debate (plenaria).** Arts. 174 (mod. art. 15 Ley 974/2005, plazo 5–15 días), 175 (la ponencia debe consignar TODAS las propuestas rechazadas en comisión, so pena de imposibilitar la consideración), 176 (mod. art. 16 Ley 974/2005), 177 (no pueden introducirse asuntos nuevos no aprobados en comisión), 178 (modificaciones, CP art. 160 inc. 2), 185 (procedimiento similar al primer debate).\n\n**8. Tránsito a la otra cámara.** Art. 183: aprobado por una cámara, su Presidente lo remite con antecedentes a la otra. Art. 184: **votado negativamente en plenaria → rechazado y archivado**. Tercer y cuarto debate = repetición de comisión + plenaria en la cámara revisora (CP art. 157-2 y 157-3).\n\n**9. Conciliación.** CP art. 161 (mod. art. 9 AL 1 de 2003): ante discrepancias ambas cámaras integran **comisiones de conciliadores** con igual número de senadores y representantes; reunidos conjuntamente concilian y, de no ser posible, **definen por mayoría**; el texto escogido se publica con **≥1 día** de anticipación y se somete a las plenarias. «Si después de la repetición del segundo debate persiste la diferencia, se considera negado el proyecto.» Ley 5 art. 186 (comisiones accidentales) y art. 189.\n\n**10. Sanción, objeciones, promulgación.** CP art. 157-4 + Ley 5 art. 196: aprobado por ambas cámaras pasa al Gobierno para sanción. CP art. 166 / Ley 5 art. 198: plazo de objeción **6 días** (≤20 artículos), **10 días** (21–50), **20 días** (>50); vencido sin objeción, el Presidente DEBE sancionar. Ley 5 art. 197: objeción parcial → Comisión Permanente; total → Plenaria de cada Cámara. Art. 199: objeción por **inconstitucionalidad** → si las cámaras insisten, pasa a la Corte Constitucional, que decide en 6 días (fallo obliga a sancionar; si inexequible, se archiva; si parcialmente inexequible, se rehace). Art. 200: si una cámara halla infundadas las objeciones y la otra fundadas → **se archiva**. CP art. 168 / Ley 5 art. 201: si el Presidente no sanciona, **sanciona y promulga el Presidente del Congreso**. Publicación en **Diario Oficial** (promulgación).\n\n**11. Control previo — leyes estatutarias.** CP art. 152 (materias: derechos fundamentales; administración de justicia; partidos y estatuto de oposición y funciones electorales; participación ciudadana; estados de excepción; igualdad electoral presidencial —lit. f, AL 2/2004). CP art. 153: **mayoría absoluta** + **una sola legislatura** + **revisión previa obligatoria** por la Corte Constitucional, con intervención ciudadana. Ley 5 arts. 207–208 (mismas 3 condiciones + prohibición de facultades extraordinarias). **Ley 5 art. 190 excluye expresamente a las estatutarias del tránsito de legislatura.**\n\n**12. Vicios.** Ley 5 art. 202: la Corte devuelve por vicios **subsanables**; se subsana en 30 días y vuelve a la Corte. Art. 203: proyectos declarados parcialmente inconstitucionales se rehacen (CP art. 167).\n\n**13. Mensaje de urgencia y sesiones conjuntas.** CP art. 163 (NO Ley 5 art. 163, que es «enmiendas que impliquen erogación», **derogado por el art. 71 de la Ley 179 de 1994**) y Ley 5 art. 191: el Presidente puede pedir trámite de urgencia; la cámara decide en **30 días**; la urgencia puede repetirse en todas las etapas; si insiste, prelación absoluta en el Orden del Día. CP art. 163 inc. 2 + **Ley 5 art. 169**: sesiones conjuntas de comisiones homólogas (1) por disposición constitucional — comisiones de asuntos económicos para Presupuesto y PND; (2) **por solicitud gubernamental vía mensaje de urgencia**; (3) por disposición reglamentaria — numeral **INEXEQUIBLE**. Ley 5 art. 192: trámite preferencial para tratados de DDHH e iniciativa popular.\n\n**14. Tránsito de legislatura / archivo.** CP art. 162 y Ley 5 art. 190: los proyectos que no completen su trámite en una legislatura y **hayan recibido primer debate** en alguna cámara continúan en la siguiente en el estado en que se encuentren. **«Ningún proyecto podrá ser considerado en más de dos legislaturas.»** ⇒ archivo automático. Excepción: estatutarias (una sola legislatura).\n\n**15. Actos legislativos.** Ley 5 art. 221: normas del Congreso que modifican/reforman/adicionan/derogan textos constitucionales. CP art. 375 / Ley 5 art. 223: iniciativa = Gobierno, **10 miembros del Congreso**, 20% de concejales o diputados, 5% del censo electoral. CP art. 375 inc. 2 + Ley 5 art. 224: trámite en **dos periodos ordinarios y consecutivos**. Ley 5 art. 225 (mod. art. 7 Ley 186/1995): **mayoría simple en primera vuelta; mayoría absoluta en segunda vuelta**; «Ambos períodos no necesariamente deben coincidir en la misma legislatura». Entre vueltas, publicación por el Gobierno. CP art. 375 inc. 3 + Ley 5 art. 226: en segunda vuelta solo se debaten iniciativas presentadas en la primera; las negadas no se reconsideran. Ley 5 art. 227: aplican supletoriamente las reglas del proceso ordinario. **Los «8 debates» son DERIVADOS** (CP 157-2/3 → 4 debates por vuelta × 2 vueltas), no citados textualmente en ninguna norma que verifiqué.\n\n**16. Procedimientos especiales (discriminador obligatorio).** La Ley 1909 de 2018 se expidió «**En virtud del Procedimiento Legislativo Especial para la Paz**» (fast-track, AL 01 de 2016). Por tanto el modelo necesita un campo `procedimiento` ∈ {ordinario, estatutario, orgánico, constituyente, especial_paz, urgencia, conjunta, plan_desarrollo, presupuesto} y NO solo ordinario/constituyente.\n\n**17. Mayorías.** Default: CP art. 146 mayoría de los **asistentes**; quórum decisorio CP art. 145 = mayoría de los integrantes (deliberatorio: 1/4). Especiales: estatutaria y orgánica = **mayoría absoluta** (CP 153 y CP 151); facultades extraordinarias = mayoría absoluta (CP 150-10); acto legislativo 2ª vuelta = mayoría absoluta (Ley 5 art. 225); reforma/derogación de decretos legislativos de guerra = **2/3** (CP 212).",
+ "canonical_bill_states": [
+  "radicado",
+  "publicado_gaceta",
+  "repartido_comision",
+  "ponentes_designados",
+  "ponencia_primer_debate_publicada",
+  "aprobado_primer_debate",
+  "negado_primer_debate",
+  "apelado_ante_plenaria",
+  "ponencia_segundo_debate_publicada",
+  "aprobado_segundo_debate",
+  "negado_segundo_debate",
+  "transito_a_camara_revisora",
+  "aprobado_tercer_debate",
+  "negado_tercer_debate",
+  "aprobado_cuarto_debate",
+  "negado_cuarto_debate",
+  "en_conciliacion",
+  "conciliacion_aprobada",
+  "conciliacion_fallida",
+  "aprobado_congreso",
+  "enviado_a_sancion",
+  "objetado_total",
+  "objetado_parcial",
+  "objeciones_en_tramite",
+  "en_control_previo_corte (solo estatutarias, CP 153)",
+  "devuelto_por_vicios_subsanables (Ley 5 art. 202)",
+  "sancionado",
+  "promulgado_diario_oficial",
+  "ley_vigente",
+  "archivado",
+  "retirado_por_autor (Ley 5 art. 155)",
+  "acumulado_con_otro_proyecto",
+  "primera_vuelta_aprobada (solo actos legislativos)",
+  "segunda_vuelta_aprobada (solo actos legislativos)",
+  "ENUM SEPARADO archivo_causa: transito_legislatura_art190 | negado_en_comision_art157 | negado_en_plenaria_art184 | conciliacion_fallida_art161 | objecion_discrepancia_camaras_art200 | inexequible_control_previo_art199 | retiro_autor_art155 | vencimiento_dos_legislaturas_art162 | no_completo_primer_debate_en_legislatura"
+ ],
+ "norm_types_hierarchy": [
+  "1. CONSTITUCIÓN POLÍTICA DE 1991 — norma de normas; guarda a cargo de la Corte Constitucional (CP art. 241).",
+  "2. ACTOS LEGISLATIVOS — reforman la Constitución (Ley 5 art. 221; CP art. 375). Control por la Corte SOLO por vicios de procedimiento (CP art. 241-1). Ej. verificado: AL 2 de 2023 (modificó CP art. 138), AL 1 de 2003 (modificó CP art. 161), AL 2 de 2004 (adicionó lit. f del CP art. 152).",
+  "3. LEYES ESTATUTARIAS — CP arts. 152/153: mayoría absoluta, una sola legislatura, control previo obligatorio. Ej. verificado: Ley Estatutaria 1909 de 2018 (DO 50.649).",
+  "4. LEYES ORGÁNICAS — CP art. 151: sujetan el ejercicio de la actividad legislativa; mayoría absoluta. Materias: reglamentos del Congreso, presupuesto, plan de desarrollo, competencias de entidades territoriales (Ley 5 art. 206). Ej. verificado: Ley Orgánica 2390 de 2024 (DO 52.829); Ley 5 de 1992.",
+  "5. LEYES MARCO (o cuadro) — CP art. 150 num. 19: el Congreso dicta normas generales y objetivos/criterios a los que se sujeta el Gobierno (crédito público, comercio exterior, régimen aduanero, actividad financiera/bursátil/aseguradora, régimen salarial de servidores públicos). [confidence: medium — verifiqué CP art. 150 num. 16 y num. 10 textualmente; el num. 19 no lo extraje verbatim].",
+  "6. LEYES APROBATORIAS DE TRATADOS — CP art. 150 num. 16 (verbatim verificado): aprobar o improbar tratados; permite transferir atribuciones a organismos internacionales sobre bases de equidad y reciprocidad. Cámara de origen: Senado (Ley 5 art. 143). Control previo de la Corte (CP art. 241-10).",
+  "7. LEYES ORDINARIAS — CP art. 150 (numerales restantes); mayoría simple (CP art. 146).",
+  "8. DECRETOS CON FUERZA DE LEY / DECRETOS LEY (facultades extraordinarias) — CP art. 150 num. 10 (verbatim verificado): hasta por SEIS MESES, precisas facultades, solicitadas expresamente por el Gobierno, aprobación por MAYORÍA ABSOLUTA. Prohibidas para códigos, leyes estatutarias, orgánicas, las del num. 20 y para decretar impuestos. El Congreso puede modificarlos en todo tiempo por iniciativa propia. Control: Corte (CP art. 241-5). Ej. de citación: 'Decreto Ley 019 de 2012'.",
+  "9. DECRETOS LEGISLATIVOS (estados de excepción) — Guerra Exterior CP art. 212 (SUSPENDEN las leyes incompatibles; rigen mientras dure; el Congreso los reforma/deroga con 2/3); Conmoción Interior CP art. 213 (máx. 90 días, prorrogable 2 veces, la 2ª con concepto previo favorable del Senado; dejan de regir al restablecerse el orden); Emergencia Económica, Social y Ecológica CP art. 215 (períodos de hasta 30 días, máx. 90 al año; pueden crear/modificar tributos que DEJAN DE REGIR al término de la siguiente vigencia fiscal salvo que el Congreso les dé carácter permanente). Régimen común CP art. 214: firma del Presidente y TODOS los ministros; conexidad directa y específica; no suspenden DDHH.",
+  "10. DECRETOS REGLAMENTARIOS — CP art. 189 num. 11 (verbatim verificado): potestad reglamentaria mediante decretos, resoluciones y órdenes para la cumplida ejecución de las leyes.",
+  "11. DECRETOS ÚNICOS REGLAMENTARIOS (DUR) — compilan por sector. Verificado en primaria: Decreto 780 de 2016 (DUR Sector Salud y Protección Social), expedido con base en CP art. 189-11; estructura Libro/Parte/Título/Capítulo/Sección con numeración de artículo tipo '2.5.3.2.1.1'.",
+  "12. RESOLUCIONES — actos administrativos de ministerios, superintendencias y agencias (ej. 'Resolución 3100 de 2019 del Ministerio de Salud'). Requieren `emisor` para ser identificables.",
+  "13. CIRCULARES Y DIRECTIVAS — instrucciones internas/externas; no innovan el ordenamiento (circulares externas de superintendencias sí son vinculantes para vigilados).",
+  "14. DOCUMENTOS CONPES — no son normas: política pública aprobada por el Consejo Nacional de Política Económica y Social. Verificado en primaria: CONPES 4144 'POLÍTICA NACIONAL DE INTELIGENCIA ARTIFICIAL', 14 de febrero de 2025 (DNP). Numeración secuencial SIN año en la cita.",
+  "15. NORMAS TERRITORIALES — ordenanzas (asambleas departamentales), acuerdos (concejos municipales/distritales), decretos de gobernadores y alcaldes. ⚠️ 'Decreto 1377 de 2013' es ambiguo sin `emisor`: hay decretos nacionales y territoriales con el mismo número/año.",
+  "NOTA TRANSVERSAL: la jerarquía NO es un único orden lineal. Leyes estatutarias/orgánicas no son 'superiores' a las ordinarias en rango sino que condicionan su validez (CP 151/153). Modelar `rango` (constitucional | legal | reglamentario | administrativo | politica_publica) separado de `tipo_norma`."
+ ],
+ "vigencia_model": "MODELO DE VIGENCIA Y AFECTACIONES — con hallazgo de licenciamiento que CAMBIA el diseño.\n\n**A. Restricción legal que condiciona todo el modelo (verificado).** `secretariasenado.gov.co` NO es fuente estatal: es **Avance Jurídico Casa Editorial S.A.S.**, editorial privada. Cada página dice «Derechos de autor reservados - Prohibida su reproducción» y prohíbe expresamente «la copia, adaptación, transformación, reproducción, utilización y divulgación masiva» de «las notas de vigencia, concordancias, notas del editor, forma de presentación y disposición de la compilación» (ISSN 1657-6241). Las **Notas de Vigencia son exactamente la capa derivada que este proyecto quiere**. ⇒ Las anotaciones tipo `<Artículo modificado por el artículo 13 de la Ley 974 de 2005>` o `<Derogado expresamente por el artículo 71 de la Ley 179 de 1994>` son **PISTAS (leads), NUNCA REGISTROS**. El texto normativo en sí es de dominio público; el valor agregado editorial no.\n\n**B. Backbone estatal SÍ existe (verificado, resuelve el problema).** El **Gestor Normativo de Función Pública** (`funcionpublica.gov.co/eva/gestornormativo/norma.php?i=`) —entidad del Estado— publica un bloque estructurado **«Vigencias(N)»** con relaciones tipadas en lenguaje natural, extraíbles por regex: «Modificado parcialmente por Acto Legislativo 02 de 2023», «Modificado por Decreto 0113 de 2023», «Adicionado por Acto Legislativo 02 de 2021», «Derogado por el artículo 1 del Acto Legislativo 2 de 2011», «Derogatoria tacita del artículo 257 por el artículo 19 del Acto Legislativo 2 de 2015 declarada INEXEQUIBLE mediante Sentencia de la Corte Constitucional». También enlaza jurisprudencia por artículo «(Ver Sentencias de la Corte Constitucional: C-104-93; C-1255-2001; …)» y conceptos DAFP. ⇒ **Fuente institucional primaria del grafo de afectaciones.**\n\n**C. Pipeline obligatorio (evidencia).** anotación/lead → identificar la norma afectante → **descargar el texto de ESA norma** → extraer su cláusula derogatoria/modificatoria → almacenar la arista citando el texto del Diario Oficial de la norma afectante. Toda arista lleva `derivation` y `confidence`; nunca se guarda la prosa del editor privado.\n\n**D. Bases legales de la vigencia (verificadas en primaria).**\n- **Código Civil art. 71**: «La derogación de las leyes podrá ser **expresa o tácita**. Es expresa, cuando la nueva ley dice expresamente que deroga la antigua. Es tácita, cuando la nueva ley contiene disposiciones que no pueden conciliarse con las de la ley anterior. La derogación de una ley puede ser **total o parcial**.»\n- **Código Civil art. 72**: «La derogación tácita deja vigente en las leyes anteriores… todo aquello que no pugna con las disposiciones de la nueva ley.» ⇒ la derogatoria tácita es PARCIAL por defecto y debe modelarse a nivel de artículo, no de norma.\n- **Derogatoria ORGÁNICA: Ley 153 de 1887 art. 3** — confirmado desde texto primario: Decreto 780 de 2016 art. 4.1.1 «Derogatoria integral. Este Decreto regula íntegramente las materias contempladas en él. Por consiguiente, de conformidad con el **artículo 3 de la Ley 153 de 1887**, quedan derogados todos los decretos de naturaleza reglamentaria relativos al Sector Salud… que versan sobre las mismas materias.»\n- **Ultractividad**: Ley 153 de 1887 art. 38 (citado en los considerandos del Decreto 780/2016: «efectos ultractivos de disposiciones derogadas»).\n- **Decaimiento / pérdida de fuerza ejecutoria: CPACA (Ley 1437 de 2011) art. 91** — verbatim: los actos en firme son obligatorios mientras no sean anulados; pierden obligatoriedad cuando (1) sean **suspendidos provisionalmente** sus efectos por la Jurisdicción de lo Contencioso Administrativo; (2) **desaparezcan sus fundamentos de hecho o de derecho** (= decaimiento propiamente dicho); (3) al cabo de **cinco (5) años** en firme la autoridad no ha realizado los actos para ejecutarlos; (4) cuando se cumpla la condición resolutoria…\n- **Compilación (DUR)**: el Decreto 780/2016 confirma que la compilación NO produce decaimiento de resoluciones/circulares subordinadas («no puede predicarse el decaimiento de las resoluciones, las circulares y demás actos») y que los actos expedidos con fundamento en las normas compiladas **mantienen vigencia y ejecutoriedad** porque sus fundamentos jurídicos permanecen en el DUR.\n- **Vigencia temporal de decretos legislativos**: CP 212 (rigen mientras dure la guerra; el Congreso los reforma/deroga con 2/3), CP 213 (dejan de regir al restablecerse el orden público), CP 215 (tributos decaen al término de la siguiente vigencia fiscal salvo permanencia otorgada por el Congreso).\n\n**E. ENUM `estado_vigencia` (norma o artículo).** `vigente` | `vigente_con_modificaciones` | `derogada_expresamente` | `derogada_tacitamente` | `derogada_organicamente` | `subrogada` | `compilada_en_dur` | `inexequible_total` | `inexequible_parcial` | `exequible_condicionada` | `exequible` | `anulada_consejo_estado` | `suspendida_provisionalmente` | `decaida_perdida_fuerza_ejecutoria` | `vigencia_agotada_por_plazo` | `no_vigente_aun_vacatio_legis` | `derogada_parcialmente` | `vigencia_incierta` (← estado explícito exigido por el contrato de evidencia: la incertidumbre se declara, no se rellena).\n\n**F. ENUM `tipo_afectacion` (aristas norma→norma, dirigidas: `fuente` afecta a `destino`).** `DEROGA_EXPRESAMENTE` | `DEROGA_TACITAMENTE` | `DEROGA_ORGANICAMENTE` | `MODIFICA` | `MODIFICA_PARCIALMENTE` | `ADICIONA` | `SUSTITUYE_SUBROGA` | `REGLAMENTA` | `COMPILA` | `COMPILADO_EN` | `DECLARA_INEXEQUIBLE_TOTAL` | `DECLARA_INEXEQUIBLE_PARCIAL` | `DECLARA_EXEQUIBLE` | `DECLARA_EXEQUIBLE_CONDICIONADA` | `ANULA` | `SUSPENDE_PROVISIONALMENTE` | `PRODUCE_DECAIMIENTO` | `CORRIGE_YERROS` | `PRORROGA_VIGENCIA` | `REVIVE_REVIVISCENCIA` | `INTERPRETA_CON_AUTORIDAD` | `CITA` (referencia neutra, sin efecto de vigencia).\n\n**G. Campos obligatorios de la arista `afectacion`.** `id`, `norma_fuente_id`, `norma_destino_id`, `articulo_fuente` (texto que produce el efecto), `articulo_destino` (nullable → NULL = afecta la norma completa), `tipo_afectacion`, `fecha_efecto` (≠ fecha de publicación cuando hay vacatio legis o efectos diferidos), `fecha_publicacion_fuente`, `alcance` (`total`|`parcial`|`condicionada`), `texto_soporte` (cita literal breve de la norma afectante), `url_fuente_primaria`, `fecha_captura`, `jerarquia_evidencia` (`primaria`|`institucional`|`secundaria`), `derivation` (`declarado_en_norma` | `declarado_en_fallo` | `publicado_por_estado` | `parsed_from_text` | `inferido_por_conflicto` | `lead_editorial_no_confirmado`), `confidence` (`alta`|`media`|`baja`), `verificado_por` (`fetch`|`humano`|`ninguno`), `notas_incertidumbre`.\n\n**H. Reglas de resolución.** (1) La vigencia se computa **a nivel de artículo** y se agrega hacia arriba; nunca al revés. (2) `DEROGA_TACITAMENTE` y `DEROGA_ORGANICAMENTE` NUNCA pueden tener `derivation = declarado_en_norma` con confianza alta salvo cláusula expresa de derogatoria integral (como el art. 4.1.1 del D. 780/2016); en los demás casos son `inferido_por_conflicto` con `confidence: baja` y REQUIEREN respaldo jurisprudencial o doctrinal para elevarse. (3) `exequible` NO equivale a `vigente`: la Corte declara exequible una norma que puede haber sido derogada después; son ejes ortogonales — modelar `estado_vigencia` y `estado_constitucionalidad` como campos SEPARADOS. (4) La inexequibilidad rige hacia futuro salvo que el fallo module efectos → campo `modulacion_efectos` (`ex_nunc`|`ex_tunc`|`diferida`|`condicionada`) con `fecha_diferimiento`. (5) La `exequibilidad condicionada` no cambia el texto pero cambia su sentido → debe renderizarse SIEMPRE junto al artículo. (6) Toda consulta de «¿qué está vigente hoy?» se resuelve como consulta temporal `AS OF fecha`, nunca como flag booleano: guardar `vigencia_desde` / `vigencia_hasta` por artículo (bitemporal: tiempo de vigencia + tiempo de registro/captura).",
+ "entities": [
+  {
+   "name": "norma",
+   "fields": [
+    "id (uuid)",
+    "eli_uri (identificador canónico propio, estilo ELI)",
+    "tipo_norma (enum: constitucion|acto_legislativo|ley_estatutaria|ley_organica|ley_marco|ley_aprobatoria_tratado|ley_ordinaria|decreto_ley|decreto_legislativo|decreto_reglamentario|decreto_unico_reglamentario|resolucion|circular|directiva|ordenanza|acuerdo_municipal|conpes)",
+    "rango (enum: constitucional|legal|reglamentario|administrativo|politica_publica)",
+    "numero (text — conservar ceros a la izquierda: '019', '0113')",
+    "anio (int)",
+    "emisor_id (fk entidad — OBLIGATORIO para decretos/resoluciones: 'Decreto 1377 de 2013' es ambiguo sin él)",
+    "titulo_oficial",
+    "epigrafe",
+    "fecha_expedicion",
+    "fecha_publicacion",
+    "diario_oficial_numero (text: '53.578')",
+    "diario_oficial_fecha",
+    "sector_administrativo (Ley 489/1998 art. 42)",
+    "estado_vigencia (enum §vigencia_model E)",
+    "estado_constitucionalidad (ortogonal a vigencia)",
+    "vigencia_desde",
+    "vigencia_hasta",
+    "texto_original_url",
+    "texto_vigente_url",
+    "url_fuente_primaria",
+    "fecha_captura",
+    "jerarquia_evidencia",
+    "hash_texto",
+    "proyecto_origen_id (fk proyecto — traza ley↔proyecto)",
+    "es_compilatorio (bool)",
+    "compilado_en_id (fk norma)"
+   ],
+   "notes": "FRBR/Akoma Ntoso: separar Work (la norma como entidad abstracta) de Expression (versión temporal del texto) — ver entidad norma_version. NUNCA usar (tipo,numero,anio) como PK sin emisor: colisiona entre orden nacional y territorial."
+  },
+  {
+   "name": "norma_version",
+   "fields": [
+    "id",
+    "norma_id",
+    "vigente_desde",
+    "vigente_hasta",
+    "texto_completo",
+    "motivo_cambio (fk afectacion)",
+    "es_version_original (bool)",
+    "url_fuente",
+    "fecha_captura"
+   ],
+   "notes": "Expression en términos FRBR. Permite responder '¿qué decía el art. X el 3-mar-2024?'. Imprescindible para el contrato de evidencia: una cita debe anclarse a la versión vigente en la fecha citada."
+  },
+  {
+   "name": "articulo",
+   "fields": [
+    "id",
+    "norma_id",
+    "norma_version_id",
+    "numero (text: '15', '61M', '63-1', '2.5.3.2.1.1')",
+    "ruta_estructural (Libro/Parte/Título/Capítulo/Sección)",
+    "epigrafe",
+    "texto",
+    "orden",
+    "estado_vigencia",
+    "vigencia_desde",
+    "vigencia_hasta",
+    "proviene_de_norma_id (fk — provenance de compilación en DUR)",
+    "proviene_de_articulo (text)"
+   ],
+   "notes": "La numeración NO es entera: verificado '61A','61M','63-1' en Ley 5 de 1992 y rutas de 5–6 niveles en el DUR. Usar text + clave de ordenamiento natural separada."
+  },
+  {
+   "name": "afectacion",
+   "fields": [
+    "id",
+    "norma_fuente_id",
+    "norma_destino_id",
+    "articulo_fuente",
+    "articulo_destino (nullable)",
+    "tipo_afectacion (enum §F)",
+    "fecha_efecto",
+    "alcance (total|parcial|condicionada)",
+    "texto_soporte",
+    "url_fuente_primaria",
+    "fecha_captura",
+    "jerarquia_evidencia",
+    "derivation",
+    "confidence",
+    "verificado_por",
+    "notas_incertidumbre"
+   ],
+   "notes": "Arista tipada dirigida. Es el corazón del sistema y la parte que NO puede copiarse de secretariasenado (© Avance Jurídico)."
+  },
+  {
+   "name": "proyecto",
+   "fields": [
+    "id",
+    "numero_camara (text)",
+    "numero_senado (text)",
+    "legislatura",
+    "cuatrienio",
+    "titulo",
+    "objeto_resumen",
+    "tipo_proyecto (ley_ordinaria|estatutaria|organica|acto_legislativo|aprobatoria_tratado)",
+    "procedimiento (ordinario|estatutario|organico|constituyente|especial_paz|urgencia|sesion_conjunta|plan_desarrollo|presupuesto)",
+    "camara_origen (senado|camara — Ley 5 art. 143)",
+    "iniciativa (congresional|gubernamental|popular|judicial|organo_control|mixta)",
+    "comision_id",
+    "estado_actual (enum canonical_bill_states)",
+    "archivo_causa (enum)",
+    "fecha_radicacion",
+    "fecha_publicacion_gaceta",
+    "gaceta_numero",
+    "primer_debate_fecha",
+    "segundo_debate_fecha",
+    "tercer_debate_fecha",
+    "cuarto_debate_fecha",
+    "legislaturas_consumidas (int — archivo automático al superar 2, CP 162)",
+    "requiere_control_previo (bool — true si estatutaria)",
+    "una_sola_legislatura (bool — true si estatutaria, CP 153)",
+    "vuelta (1|2 — solo actos legislativos)",
+    "acumulado_en_id",
+    "ley_resultante_id",
+    "url_fuente_primaria",
+    "fecha_captura"
+   ],
+   "notes": "Un proyecto tiene DOS números (Senado y Cámara) y ambos deben indexarse: 'PL 043/25S – 200/25C'. `legislaturas_consumidas` es campo calculado que dispara el archivo por tránsito de legislatura."
+  },
+  {
+   "name": "tramite_evento",
+   "fields": [
+    "id",
+    "proyecto_id",
+    "tipo_evento (radicacion|publicacion_gaceta|reparto|designacion_ponente|publicacion_ponencia|debate|votacion|aprobacion|negacion|apelacion|conciliacion|envio_otra_camara|sancion|objecion|fallo_corte|archivo|retiro)",
+    "fecha",
+    "camara",
+    "comision_id",
+    "debate_numero (1..4)",
+    "gaceta_numero",
+    "url_fuente_primaria",
+    "fecha_captura",
+    "resultado"
+   ],
+   "notes": "Event-sourcing: el `estado_actual` del proyecto se DERIVA de los eventos, nunca se escribe a mano. Permite reconstruir el estado en cualquier fecha y auditar."
+  },
+  {
+   "name": "ponencia",
+   "fields": [
+    "id",
+    "proyecto_id",
+    "debate_numero",
+    "camara",
+    "tipo (positiva|negativa|archivo)",
+    "ponentes (fk[] congresista)",
+    "ponente_coordinador_id",
+    "fecha_presentacion",
+    "fecha_publicacion_gaceta",
+    "gaceta_numero",
+    "url"
+   ],
+   "notes": "Ley 5 art. 150 (mod. Ley 2390/2024): siempre hay ponente coordinador. Plazo 5–15 días (art. 153)."
+  },
+  {
+   "name": "comision",
+   "fields": [
+    "id",
+    "numero (1..7)",
+    "camara (senado|camara)",
+    "nombre",
+    "materias (text[] — verbatim Ley 3/1992 art. 2)",
+    "miembros_senado (int)",
+    "miembros_camara (int)"
+   ],
+   "notes": "Verificado Ley 3 de 1992 art. 2 mod. Ley 754/2002: C1 19/35, C2 13/19, C3 15/29, C4 15/27, C5 13/19, C6 13/18, C7 14/19, con miembros adicionales transitorios por Ley 1921/2018 y Ley 2267/2022."
+  },
+  {
+   "name": "congresista",
+   "fields": [
+    "id",
+    "nombre",
+    "camara",
+    "partido_id",
+    "bancada_id",
+    "circunscripcion",
+    "cuatrienio",
+    "comisiones (fk[])",
+    "es_declarado_oposicion (bool — Ley 1909/2018)",
+    "activo"
+   ],
+   "notes": "Modelo compatible con Popolo (Person/Membership/Organization). Votaciones nominales = FASE 2 por decisión del dueño."
+  },
+  {
+   "name": "partido",
+   "fields": [
+    "id",
+    "nombre",
+    "declaracion (oposicion|independiente|gobierno — Ley 1909 de 2018)",
+    "personeria_juridica (bool)",
+    "fecha_declaracion"
+   ],
+   "notes": "Ley Estatutaria 1909 de 2018 (DO 50.649, 9-jul-2018) define organizaciones políticas, declaración de oposición/independencia y derecho de réplica (art. 17). También otorga curul a quien siga en votos al Presidente/Vicepresidente electos → Comisiones Primeras (Ley 3/1992 art. 2 par. 3, adicionado por Ley 1921/2018)."
+  },
+  {
+   "name": "sentencia",
+   "fields": [
+    "id",
+    "tipo (C|T|SU|A)",
+    "numero",
+    "anio",
+    "identificador_canonico ('C-748/11')",
+    "fecha",
+    "magistrado_ponente",
+    "norma_demandada_id",
+    "articulos_demandados",
+    "decision (exequible|inexequible|exequible_condicionada|inhibitoria|estarse_a_lo_resuelto)",
+    "alcance (total|parcial)",
+    "modulacion_efectos (ex_nunc|ex_tunc|diferida|condicionada)",
+    "fecha_diferimiento",
+    "url_relatoria",
+    "fecha_captura"
+   ],
+   "notes": "URL verificada: https://www.corteconstitucional.gov.co/relatoria/{AÑO_SENTENCIA}/{TIPO}-{NNN}-{YY}.htm — el año de la ruta DEBE ser el año de la sentencia (C-313-14 bajo /2014/ → 4.6 MB real; bajo /2015/ → 8.607 bytes = soft-404)."
+  },
+  {
+   "name": "entidad",
+   "fields": [
+    "id",
+    "nombre_oficial",
+    "sigla",
+    "tipo (ministerio|departamento_administrativo|superintendencia|agencia|corte|congreso|entidad_territorial)",
+    "sector_administrativo",
+    "orden (nacional|departamental|municipal|distrital)",
+    "alias (text[])"
+   ],
+   "notes": "Registro canónico de emisores. Ley 489 de 1998 art. 42 (verbatim): el Sector Administrativo lo integran el Ministerio o Departamento Administrativo, las superintendencias y demás entidades adscritas o vinculadas."
+  },
+  {
+   "name": "conpes",
+   "fields": [
+    "id",
+    "numero (int, SIN año en la cita)",
+    "titulo",
+    "fecha_aprobacion",
+    "entidades_participantes (fk[])",
+    "sector",
+    "url_pdf",
+    "fecha_captura"
+   ],
+   "notes": "Verificado: CONPES 4144 = 'Política Nacional de Inteligencia Artificial', 14-feb-2025. PDF en https://colaboracion.dnp.gov.co/CDT/Conpes/Económicos/{numero}.pdf (carpeta 'Económicos' confirmada; 'Sociales' → 404 para 4144, así que la carpeta debe descubrirse, no asumirse)."
+  },
+  {
+   "name": "cita",
+   "fields": [
+    "id",
+    "origen_tipo (norma|articulo|sentencia|conpes|proyecto|noticia)",
+    "origen_id",
+    "texto_citado (span literal)",
+    "offset_inicio",
+    "offset_fin",
+    "destino_norma_id (nullable si no resuelve)",
+    "destino_articulo",
+    "tipo_cita (normativa|constitucional|jurisprudencial|interna|conpes|proyecto)",
+    "confianza_resolucion",
+    "es_falso_positivo (bool)"
+   ],
+   "notes": "Toda cita conserva el span original + su resolución; una cita no resuelta se guarda con destino NULL, jamás se descarta ni se inventa el destino."
+  },
+  {
+   "name": "tema",
+   "fields": [
+    "id",
+    "slug",
+    "label",
+    "basis",
+    "parent_id",
+    "eurovoc_uri (nullable)"
+   ],
+   "notes": "Taxonomía jerárquica; ver taxonomy_proposal."
+  },
+  {
+   "name": "fuente_captura",
+   "fields": [
+    "id",
+    "url",
+    "http_status",
+    "content_length",
+    "content_hash",
+    "fecha_captura",
+    "parser_version",
+    "es_soft_404 (bool)",
+    "jerarquia_evidencia",
+    "notas"
+   ],
+   "notes": "Materializa el contrato de evidencia: ningún registro sin URL checkeable + fecha de captura. `content_length` es necesario para detectar soft-404 (ver key_insights)."
+  }
+ ],
+ "relations": [
+  "proyecto —TRAMITADO_EN→ comision (Ley 3/1992 art. 2, reparto por materia)",
+  "proyecto —TIENE_EVENTO→ tramite_evento (event-sourcing; el estado se deriva)",
+  "proyecto —TIENE_PONENCIA→ ponencia",
+  "ponencia —PONENTE→ congresista (con rol coordinador|ponente)",
+  "proyecto —AUTOR→ congresista | entidad (iniciativa congresional/gubernamental/judicial/órgano de control)",
+  "proyecto —ACUMULADO_EN→ proyecto (acumulación por unidad de materia, CP art. 158)",
+  "proyecto —SE_CONVIRTIO_EN→ norma (traza proyecto→ley; nullable hasta sanción)",
+  "proyecto —SUCESOR_EN_LEGISLATURA→ proyecto (misma iniciativa reradicada tras archivo por CP art. 162)",
+  "norma —AFECTA→ norma (arista tipada `afectacion`, 22 tipos; con fecha, alcance, fuente y confidence)",
+  "articulo —AFECTA→ articulo (granularidad fina; la derogatoria tácita es parcial por defecto, CC art. 72)",
+  "norma —COMPILA→ norma (DUR; verificado: Decreto 780/2016 compila 129 decretos distintos)",
+  "articulo —PROVIENE_DE→ articulo (provenance de compilación: 1.246 marcas '(Art. N del Decreto NNNN de YYYY)' extraídas del DUR Salud)",
+  "norma —REGLAMENTA→ norma (decreto reglamentario → ley; CP art. 189-11)",
+  "sentencia —CONTROLA→ norma | articulo (con decision + alcance + modulación de efectos)",
+  "sentencia —DECLARA_INEXEQUIBLE→ articulo (subtipo de afectacion que cambia estado_vigencia)",
+  "norma —EXPEDIDA_POR→ entidad",
+  "entidad —PERTENECE_A→ sector_administrativo (Ley 489/1998 art. 42)",
+  "norma/proyecto/conpes —TRATA_SOBRE→ tema (multi-etiqueta, con score de confianza)",
+  "tema —SUBTEMA_DE→ tema",
+  "congresista —MIEMBRO_DE→ partido/bancada (patrón Popolo Membership, con periodo)",
+  "congresista —INTEGRA→ comision (por cuatrienio)",
+  "partido —DECLARADO→ oposicion|independiente|gobierno (Ley 1909/2018)",
+  "cualquier_registro —CAPTURADO_DE→ fuente_captura (obligatorio: contrato de evidencia)",
+  "noticia —MENCIONA→ proyecto | norma (señal temprana; jerarquia_evidencia = 'secundaria', NUNCA suficiente para marcar vigencia)",
+  "conpes —ORIENTA→ tema | sector (política pública, no norma)",
+  "norma —DESARROLLA→ conpes (cuando la norma implementa una política)"
+ ],
+ "citation_patterns": [
+  "LEY: /\\bLey(?:\\s+Estatutaria|\\s+Org[áa]nica|\\s+Marco)?\\s+(\\d{1,4})(?:ª|a\\.?|o\\.?)?\\s+de\\s+(\\d{4})\\b/i — cubre 'Ley 1581 de 2012', 'Ley 5ª de 1992', 'Ley 5o. de 1992' (variante REAL verificada en Ley 2390/2024 art. 2: «el artículo 35 de la Ley 5o. de 1992»), 'Ley Estatutaria 1909 de 2018'.",
+  "ARTÍCULO + LEY: /\\bart[íi]culos?\\.?\\s+(\\d+[A-Z]?(?:-\\d+)?)(?:\\s*,\\s*\\d+[A-Z]?)*\\s+(?:de\\s+la\\s+)?Ley\\s+(\\d{1,4})\\s+de\\s+(\\d{4})/i — 'artículo 15 de la Ley 1751 de 2015'. OJO: la numeración de artículo NO es entera — verificado '61A','61M','63-1','63-8' en Ley 5 de 1992.",
+  "DECRETO: /\\bDecreto\\s+(?:Ley\\s+|Legislativo\\s+|[ÚU]nico\\s+Reglamentario\\s+)?(\\d{1,4})\\s+de\\s+(\\d{4})\\b/i — 'Decreto 1377 de 2013', 'Decreto Ley 019 de 2012', 'Decreto 0113 de 2023'. ⚠️ CONSERVAR CEROS A LA IZQUIERDA como texto: '019' ≠ '19', '0780' vs '780' aparecen ambos.",
+  "ACTO LEGISLATIVO: /\\bActo\\s+Legislativo\\s+(?:n[úu]mero\\s+)?(\\d{1,2})\\s+de\\s+(\\d{4})\\b/i — verificadas AMBAS formas de padding en corpus real: 'Acto Legislativo 2 de 2011' y 'Acto Legislativo 02 de 2023', y 'Acto Legislativo número 02 de 2015'. Normalizar a int.",
+  "SENTENCIA (forma larga): /\\bSentencia\\s+(?:de\\s+la\\s+Corte\\s+Constitucional\\s+)?([CTSU]{1,2})-(\\d{1,4})[-/](\\d{2}|\\d{4})\\b/i — 'Sentencia C-748 de 2011'.",
+  "SENTENCIA (forma corta): /\\b(C|T|SU|A)-\\s?(\\d{1,4})\\s?[-/]\\s?(\\d{2}|\\d{4})\\b/ — ⚠️ TRES variantes verificadas EN EL MISMO documento (Gestor Normativo, CP 1991): año de 2 dígitos 'C-070-04', año de 4 dígitos 'C-992-2001', y con ESPACIOS por artefacto de render/OCR 'C- 127 -20'. También 'C-332-17' (guion) coexiste con 'C-748/11' (slash). El regex debe tolerar espacios y ambos separadores, y desambiguar el año con ventana 1992–2026.",
+  "CONPES: /\\b(?:Documento\\s+)?CONPES\\s+(\\d{3,4})\\b/i — 'CONPES 4144'. ⚠️ SIN año: la numeración es secuencial global. No inventar 'CONPES 4144 de 2025' como identificador.",
+  "RESOLUCIÓN (requiere emisor): /\\bResoluci[óo]n\\s+(\\d{1,5})\\s+de\\s+(\\d{4})(?:\\s+d[eu]l?\\s+(Ministerio[^,.;]{0,60}|Superintendencia[^,.;]{0,60}|[A-ZÁÉÍÓÚ][\\w\\s]{2,50}))?/i — 'Resolución 3100 de 2019 del Ministerio de Salud'. Sin `emisor` la cita NO es resoluble: guardar destino NULL, no adivinar.",
+  "PROYECTO DE LEY (forma larga): /\\bProyecto\\s+de\\s+(?:Ley|Acto\\s+Legislativo)\\s+(?:n[úu]mero\\s+)?(\\d{1,4})\\s+de\\s+(\\d{4})\\s+(Senado|C[áa]mara)\\b/i — 'Proyecto de Ley 043 de 2025 Senado'.",
+  "PROYECTO (forma corta con doble número): /\\bPL\\s+(\\d{1,4})\\/(\\d{2})\\s?([SC])\\s*[–-]\\s*(\\d{1,4})\\/(\\d{2})\\s?([SC])\\b/i — 'PL 043/25S – 200/25C'. Debe crear UNA entidad proyecto con dos números, no dos proyectos.",
+  "ARTÍCULO DE DUR (ruta estructural): /\\b(\\d)\\.(\\d{1,2})\\.(\\d{1,2})\\.(\\d{1,2})\\.(\\d{1,2})(?:\\.(\\d{1,2}))?\\b/ — verificado en Decreto 780 de 2016: 1.564 ocurrencias, profundidad 5 (874) y 6 (690); ej. '2.9.2.5.1', '2.1.10.1.1'. ⚠️ Alto riesgo de falso positivo contra versiones de software, numerales de listas y IPs: exigir que vaya precedido de 'Artículo' o esté dentro de un documento cuyo tipo_norma = decreto_unico_reglamentario.",
+  "PROVENANCE DE COMPILACIÓN: /\\(Arts?\\.?\\s+([\\d,\\sy]+)\\s+del\\s+(Decreto|Decreto\\s+Ley|Ley)\\s+(\\d{1,4})\\s+de\\s+(\\d{4})\\)/i — verificado: 1.246 coincidencias sobre 129 normas fuente distintas en el DUR Salud; ej. '(Art. 1 del Decreto 2353 de 2015)', '(Arts. 47, 48 y49 del Decreto 1543 de 1997)' (nótese el error de espaciado 'y49' del OCR). Genera directamente las aristas articulo—PROVIENE_DE→articulo.",
+  "GACETA / DIARIO OFICIAL: /\\bDiario\\s+Oficial\\s+No\\.?\\s+([\\d.]+)\\s+de\\s+(.{0,25}\\d{4})/i y /\\bGaceta\\s+del\\s+Congreso\\s+No\\.?\\s*(\\d+)/i — 'Diario Oficial No. 53.578 - 5 de agosto de 2026'. El número lleva punto de millar: NO parsear como float.",
+  "=== FALSOS POSITIVOS A EVITAR (todos observados en el corpus real que descargué) ===",
+  "FP-1 REFERENCIAS CONSTITUCIONALES disfrazadas de ley: 'artículo 158 de la Carta', 'el inciso 4 del art. 154 Superior', 'artículo 161 constitucional', 'artículo 169 C.P.'. Deben resolver a la Constitución, NO crear una norma 'Ley 158'. Regex negativo: si tras el número aparece /Carta|Superior|constitucional|C\\.?P\\.?|Constituci[óo]n/ → tipo_cita = 'constitucional'.",
+  "FP-2 REFERENCIAS INTERNAS sin norma nombrada: 'el artículo anterior', 'artículo 160, inciso 2o.', 'lo dispuesto en el artículo 97 del presente reglamento', 'los artículos 108 y 164'. Resolver SIEMPRE contra la norma contenedora; si se emite como cita externa se fabrican vínculos inexistentes. Es el falso positivo más frecuente en textos de trámite.",
+  "FP-3 RADICADOS JUDICIALES del Consejo de Estado: 'Radicado: 11001-03-15-000-2014-00529-00(PI)'. Contiene '2014' y guiones y puede dispararse contra el patrón de sentencia. Excluir cadenas con ≥4 grupos separados por guion.",
+  "FP-4 CONCEPTOS DAFP: 'Concepto 068021 de 2023', 'Concepto 154811 de 2022' — misma forma 'N de AAAA' que una ley pero NO son normas. Verificados en el Gestor Normativo. Exigir el lexema tipo ('Ley','Decreto') antes del número; nunca inferirlo.",
+  "FP-5 NÚMEROS DE DIARIO OFICIAL / GACETA leídos como norma: 'No. 53.578', 'No. 50.649'.",
+  "FP-6 RUIDO DE OCR en PDFs escaneados (verificado en Decreto 780/2016, escaneado con Kodak Alaris): 'REPÚBLICA DE COCOMBIA', '78g' por '780', '6 MAY 1016' por '6 MAY 2016'. Toda fecha extraída por OCR debe validarse contra un rango plausible y marcarse `confidence: baja` si el documento es escaneado.",
+  "FP-7 AÑO AMBIGUO de 2 dígitos: 'C-070-04' → 2004, pero un ingenuo mapping podría dar 1904. Anclar a la ventana 1992–2026 (la Corte Constitucional existe desde 1992).",
+  "FP-8 COLISIÓN NACIONAL/TERRITORIAL: 'Decreto 1377 de 2013' existe en el orden nacional y puede existir en decretos departamentales/municipales. Sin `emisor` resuelto, dejar destino NULL con `confianza_resolucion: baja` — NUNCA asumir orden nacional por defecto.",
+  "FP-9 'Ley 5' vs 'Ley 5ª' vs 'Ley 5o.' — tres grafías del MISMO cuerpo normativo (todas verificadas). Normalizar antes de deduplicar o se crean tres normas distintas."
+ ],
+ "standards": "RECOMENDACIÓN: adoptar PATRONES, no conformidad formal. Ningún estándar internacional tiene adopción oficial en Colombia (verificado por ausencia: ni Gestor Normativo, ni Corte Constitucional, ni Senado/Cámara publican XML normativo ni URIs persistentes tipo ELI).\n\n**ADOPTAR — Akoma Ntoso / OASIS LegalDocML (el modelo, no el XML completo).** Verificado: la especificación OASIS `akn-core-v1.0-part1-vocabulary.html` responde 200 (808 KB) en docs.oasis-open.org. **Precedente regional CONFIRMADO por fetch**: la Biblioteca del Congreso Nacional de Chile publica en `datos.bcn.cl` un «**Esquema Akoma-Ntoso BCN**», con endpoint **SPARQL**, ontologías RDF/OWL y un «**Modelo de normas**», además de modelos de biografías, Congreso, recursos legislativos, sesión parlamentaria y transparencia. Es el único caso regional verificado y el modelo a imitar. Qué tomar: (a) la **jerarquía FRBR Work/Expression/Manifestation** — es exactamente la distinción entre «Ley 1751 de 2015» (Work), su texto vigente al 3-mar-2024 (Expression) y el PDF del Diario Oficial (Manifestation), y resuelve el problema central de vigencia; (b) el vocabulario de estructura jerárquica (`book/part/title/chapter/section/article/paragraph`), que mapea 1:1 con la ruta de 5–6 niveles del DUR; (c) el patrón de **anotación con referencias tipadas** (`ref`, `mref`) para las citas. Qué NO hacer: serializar todo el corpus a XML AKN válido — es un coste enorme sin consumidor. Guardar las estructuras en Postgres/JSONB y dejar AKN como formato de EXPORTACIÓN.\n\n**ADOPTAR EL PATRÓN — ELI (European Legislation Identifier).** Verificado: `eur-lex.europa.eu/eli-register/about.html` responde 200. Adoptar la IDEA de un **URI persistente, legible y componible** para cada norma, con plantilla propia — sin declararse conforme a ELI (que es un marco de la UE con vocabulario y anotación RDFa específicos). Plantilla propuesta: `/eli/co/{tipo}/{anio}/{numero}/{emisor?}` → `/eli/co/ley/2015/1751`, `/eli/co/decreto/2016/780/minsalud`, `/eli/co/acto-legislativo/2023/2`; con sufijo de versión temporal `/consolidado/2024-03-03` para la Expression y `/art/2.5.3.2.1.1` para el artículo. Adoptar también los metadatos ELI clave: `date_document`, `date_publication`, `date_entry_in_force`, `date_no_longer_in_force`, `passed_by`, `changes`/`changed_by` (que es justo la arista `afectacion`).\n\n**ADOPTAR EN FASE 2 — Popolo.** Verificado: `popoloproject.com` responde 200. Es el vocabulario estándar de datos parlamentarios (`Person`, `Organization`, `Membership`, `Post`, `VoteEvent`, `Vote`, `Motion`). Encaja exactamente con congresista/partido/bancada/comisión y con las **votaciones nominales que el dueño difirió a FASE 2**. Adoptarlo AHORA como nomenclatura de las entidades de personas (coste cero) evita una migración cuando lleguen las votaciones: modelar `Membership` con periodo en vez de un `partido_id` plano en `congresista`.\n\n**NO ADOPTAR — OCD (Open Civic Data).** Es un ecosistema centrado en jurisdicciones de EE.UU. (`ocd-division/country:us/...`), con identificadores de división geográfica que no tienen contrapartida colombiana mantenida. Su modelo de bills/votes solapa con Popolo, que es más neutral y mejor documentado. Coste de adopción > beneficio.\n\n**EUROVOC — usar SOLO como mapeo, no como taxonomía primaria.** Verificado: `publications.europa.eu/resource/dataset/eurovoc` responde 200 con `application/rdf+xml` (111 KB de descriptor). ⚠️ **Reachability verificada; contenido NO parseado** — no enumeré ningún concepto EuroVoc. Además, es un tesauro multilingüe pensado para el acervo de la UE: no tiene conceptos para SGSSS, CONPES, consulta previa, JEP, PDET o resguardos indígenas. Recomendación: taxonomía propia (ver taxonomy_proposal) con un campo OPCIONAL `eurovoc_uri` por tema, poblado a mano y solo donde el mapeo sea honesto, para interoperabilidad futura. No presentar EuroVoc como base de la taxonomía.\n\n**ESTÁNDARES DE INGESTA/EVIDENCIA (propios, derivados del contrato).** (1) Todo registro lleva `url_fuente_primaria` + `fecha_captura` + `content_hash`. (2) `jerarquia_evidencia` ∈ {primaria, institucional, secundaria} con la regla dura: **`estado_vigencia` solo puede fijarse con evidencia `primaria` o `institucional`**; la prensa jamás la fija. (3) Schema.org `Legislation` en el marcado HTML de la PWA para SEO (coste marginal, beneficio real de descubrimiento).",
+ "taxonomy_proposal": [
+  {
+   "slug": "salud",
+   "label": "Salud y seguridad social en salud",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('salud'; 'seguridad social'); sector administrativo Salud y Protección Social (Ley 489/1998 art. 42); DUR Salud (D. 780/2016)"
+  },
+  {
+   "slug": "ia-y-transformacion-digital",
+   "label": "Inteligencia artificial y transformación digital",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('sistemas digitales de comunicación e informática'; 'investigación científica y tecnológica'); CONPES 4144 'Política Nacional de Inteligencia Artificial' (14-feb-2025, verificado en PDF primario)"
+  },
+  {
+   "slug": "proteccion-de-datos",
+   "label": "Protección de datos personales y privacidad",
+   "basis": "Ley 3/1992 art. 2 Comisión Primera ('derechos, garantías y deberes'); materia estatutaria CP art. 152 lit. a (habeas data)"
+  },
+  {
+   "slug": "telecomunicaciones-y-espectro",
+   "label": "Telecomunicaciones, espectro y medios",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('comunicaciones'; 'medios de comunicación'; 'espectros electromagnéticos'; 'órbita geoestacionaria')"
+  },
+  {
+   "slug": "ciencia-tecnologia-innovacion",
+   "label": "Ciencia, tecnología e innovación",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('investigación científica y tecnológica'); Ministerio de Ciencia, Tecnología e Innovación (listado en portada del CONPES 4144)"
+  },
+  {
+   "slug": "empleo-y-trabajo",
+   "label": "Empleo, trabajo y relaciones laborales",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('estatuto del servidor público y trabajador particular'; 'régimen salarial y prestacional'; 'organizaciones sindicales'); Ministerio del Trabajo"
+  },
+  {
+   "slug": "pensiones-y-proteccion-social",
+   "label": "Pensiones y protección social",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('seguridad social'; 'cajas de previsión social'; 'fondos de prestaciones')"
+  },
+  {
+   "slug": "empleo-publico-y-carrera",
+   "label": "Empleo público y carrera administrativa",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('carrera administrativa'; 'servicio civil'); tema 'SISTEMA DE CARRERA' observado en el Gestor Normativo"
+  },
+  {
+   "slug": "turismo",
+   "label": "Turismo y desarrollo turístico",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('turismo y desarrollo turístico'); sector Comercio, Industria y Turismo"
+  },
+  {
+   "slug": "ambiente-y-recursos-naturales",
+   "label": "Ambiente, ecología y recursos naturales",
+   "basis": "Ley 3/1992 art. 2 Comisión Quinta ('ecología'; 'medio ambiente y recursos naturales'; 'corporaciones autónomas regionales')"
+  },
+  {
+   "slug": "cambio-climatico-y-riesgo",
+   "label": "Cambio climático y gestión del riesgo",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('calamidades públicas'); CP art. 215 (emergencia ecológica)"
+  },
+  {
+   "slug": "energia-y-minas",
+   "label": "Energía, minas e hidrocarburos",
+   "basis": "Ley 3/1992 art. 2 Comisión Quinta ('minas y energía')"
+  },
+  {
+   "slug": "agro-y-desarrollo-rural",
+   "label": "Agro, pesca y desarrollo rural",
+   "basis": "Ley 3/1992 art. 2 Comisión Quinta ('régimen agropecuario'; 'recursos ictiológicos y asuntos del mar')"
+  },
+  {
+   "slug": "tierras-y-restitucion",
+   "label": "Tierras, baldíos y restitución",
+   "basis": "Ley 3/1992 art. 2 Comisión Quinta ('adjudicación y recuperación de tierras')"
+  },
+  {
+   "slug": "conflicto-y-paz",
+   "label": "Conflicto armado, paz y víctimas",
+   "basis": "Ley 3/1992 art. 2 Comisión Primera ('estrategias y políticas para la paz'); Procedimiento Legislativo Especial para la Paz (AL 01/2016), invocado verbatim en la Ley 1909 de 2018"
+  },
+  {
+   "slug": "seguridad-y-defensa",
+   "label": "Seguridad, defensa y fuerza pública",
+   "basis": "Ley 3/1992 art. 2 Comisión Segunda ('defensa nacional y fuerza pública'; 'servicio militar'); Ministerio de Defensa Nacional"
+  },
+  {
+   "slug": "convivencia-y-orden-publico",
+   "label": "Convivencia ciudadana y orden público",
+   "basis": "CP art. 213 (conmoción interior: 'convivencia ciudadana'); Ley 3/1992 art. 2 Comisión Primera"
+  },
+  {
+   "slug": "drogas-y-sustancias",
+   "label": "Política de drogas y sustancias psicoactivas",
+   "basis": "CP art. 150 num. 17 e inciso adicionado por AL 2 de 2019 (delitos de estupefacientes, verificado verbatim)"
+  },
+  {
+   "slug": "migracion-y-fronteras",
+   "label": "Migración, fronteras y nacionalidad",
+   "basis": "Ley 3/1992 art. 2 Comisión Segunda ('fronteras'; 'nacionalidad'; 'extranjeros'; 'migración')"
+  },
+  {
+   "slug": "relaciones-internacionales-y-tratados",
+   "label": "Relaciones internacionales y tratados",
+   "basis": "Ley 3/1992 art. 2 Comisión Segunda ('política internacional'; 'tratados públicos'; 'carrera diplomática y consular'); CP art. 150 num. 16"
+  },
+  {
+   "slug": "comercio-exterior-e-integracion",
+   "label": "Comercio exterior e integración económica",
+   "basis": "Ley 3/1992 art. 2 Comisión Segunda ('comercio exterior e integración económica'; 'zonas francas y de libre comercio'; 'contratación internacional')"
+  },
+  {
+   "slug": "infancia-y-adolescencia",
+   "label": "Infancia, adolescencia y familia",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('asuntos de la mujer y de la familia'); [basis parcial — 'infancia' no aparece literal en Ley 3/1992; complementar con la taxonomía de temas del Gestor Normativo]"
+  },
+  {
+   "slug": "genero-y-mujeres",
+   "label": "Género, mujeres y diversidad sexual",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('asuntos de la mujer y de la familia'); Comisión Legal para la Equidad de la Mujer (Ley 3/1992 art. 2 par. transitorio 3, adicionado por Ley 2267/2022)"
+  },
+  {
+   "slug": "pueblos-etnicos",
+   "label": "Pueblos indígenas, NARP y Rrom",
+   "basis": "Ley 3/1992 art. 2 Comisión Primera ('asuntos étnicos'); CP art. 150 num. 12 (resguardos indígenas, verificado en Ley 5 art. 142 num. 12)"
+  },
+  {
+   "slug": "discapacidad-e-inclusion",
+   "label": "Discapacidad e inclusión social",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('organizaciones comunitarias'); CP art. 152 lit. a (derechos fundamentales) [basis indirecta]"
+  },
+  {
+   "slug": "territorio-y-descentralizacion",
+   "label": "Ordenamiento territorial y descentralización",
+   "basis": "Ley 3/1992 art. 2 Comisión Primera ('organización territorial'); CP art. 151 (competencias normativas de entidades territoriales)"
+  },
+  {
+   "slug": "tributario",
+   "label": "Tributario e impuestos",
+   "basis": "Ley 3/1992 art. 2 Comisión Tercera ('impuesto y contribuciones'; 'exenciones tributarias'); CP art. 150 num. 12; Ley 5 art. 143 (cámara de origen: Cámara)"
+  },
+  {
+   "slug": "hacienda-y-macroeconomia",
+   "label": "Hacienda, crédito público y macroeconomía",
+   "basis": "Ley 3/1992 art. 2 Comisión Tercera ('hacienda y crédito público'; 'régimen monetario'; 'leyes sobre el Banco de la República'; 'regulación económica')"
+  },
+  {
+   "slug": "presupuesto-y-control-fiscal",
+   "label": "Presupuesto y control fiscal",
+   "basis": "Ley 3/1992 art. 2 Comisión Cuarta ('leyes orgánicas de presupuesto'; 'sistema de control fiscal financiero'); CP art. 151"
+  },
+  {
+   "slug": "sistema-financiero-y-mercado-de-valores",
+   "label": "Sistema financiero, bursátil y asegurador",
+   "basis": "Ley 3/1992 art. 2 Comisión Tercera ('mercado de valores'; 'actividad financiera, bursátil, aseguradora y de captación de ahorro')"
+  },
+  {
+   "slug": "contratacion-y-compras-publicas",
+   "label": "Contratación estatal y compras públicas",
+   "basis": "Ley 3/1992 art. 2 Comisión Primera ('normas generales sobre contratación administrativa') y Comisión Cuarta ('contratación administrativa')"
+  },
+  {
+   "slug": "justicia",
+   "label": "Justicia y administración de justicia",
+   "basis": "CP art. 152 lit. b ('Administración de justicia', materia estatutaria, verificado verbatim); Ley 5 art. 207 num. 2"
+  },
+  {
+   "slug": "derechos-fundamentales",
+   "label": "Derechos fundamentales y garantías",
+   "basis": "CP art. 152 lit. a; Ley 3/1992 art. 2 Comisión Primera ('de los derechos, las garantías y los deberes')"
+  },
+  {
+   "slug": "sistema-politico-y-electoral",
+   "label": "Sistema político, electoral y oposición",
+   "basis": "CP art. 152 lit. c ('Organización y régimen de los partidos y movimientos políticos; estatuto de la oposición y funciones electorales', verbatim); Ley Estatutaria 1909 de 2018"
+  },
+  {
+   "slug": "transparencia-y-anticorrupcion",
+   "label": "Transparencia, anticorrupción y control",
+   "basis": "Ley 3/1992 art. 2 Comisión Primera ('reglamentos de los organismos de control'); Decreto Ley 019 de 2012 (antitrámites)"
+  },
+  {
+   "slug": "educacion",
+   "label": "Educación",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('educación y cultura'); Ministerio de Educación Nacional"
+  },
+  {
+   "slug": "cultura",
+   "label": "Cultura, patrimonio y memoria",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('educación y cultura'); Comisión Primera ('honores y monumentos públicos' está en la Segunda)"
+  },
+  {
+   "slug": "deporte-y-recreacion",
+   "label": "Deporte y recreación",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('recreación'; 'deportes')"
+  },
+  {
+   "slug": "vivienda-y-habitat",
+   "label": "Vivienda y hábitat",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('vivienda')"
+  },
+  {
+   "slug": "transporte-e-infraestructura",
+   "label": "Transporte, infraestructura y obras públicas",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('obras públicas y transporte'; 'espacio aéreo'); Comisión Segunda ('política portuaria')"
+  },
+  {
+   "slug": "servicios-publicos-y-agua",
+   "label": "Servicios públicos domiciliarios y agua",
+   "basis": "Ley 3/1992 art. 2 Comisión Sexta ('funciones públicas y prestación de los servicios públicos'; 'tarifas')"
+  },
+  {
+   "slug": "propiedad-intelectual",
+   "label": "Propiedad intelectual, industrial y patentes",
+   "basis": "Ley 3/1992 art. 2 Comisión Primera ('propiedad intelectual') y Comisión Cuarta ('propiedad industrial, patentes y marcas')"
+  },
+  {
+   "slug": "competencia-y-consumidor",
+   "label": "Competencia y protección al consumidor",
+   "basis": "Ley 3/1992 art. 2 Comisión Cuarta ('control de calidad y precios')"
+  },
+  {
+   "slug": "economia-solidaria-y-comunitaria",
+   "label": "Economía solidaria y organizaciones comunitarias",
+   "basis": "Ley 3/1992 art. 2 Comisión Séptima ('economía solidaria'; 'organizaciones comunitarias'; 'sociedades de auxilio mutuo')"
+  },
+  {
+   "slug": "planeacion-y-desarrollo",
+   "label": "Planeación nacional y desarrollo",
+   "basis": "Ley 3/1992 art. 2 Comisión Tercera ('Planeación Nacional'); CP art. 151 y art. 341 (PND); DNP"
+  }
+ ],
+ "sources_consulted": [
+  "http://www.secretariasenado.gov.co/senado/basedoc/ley_0005_1992.html (y _pr002 a _pr006) — Ley 5 de 1992, Reglamento del Congreso. HTTP 200 vía HTTP; arts. 139–227 extraídos verbatim. Última actualización declarada: 15 de agosto de 2026 (DO 53.578)",
+  "http://www.secretariasenado.gov.co/senado/basedoc/ley_0003_1992.html — Ley 3 de 1992 art. 2 consolidado (mod. Ley 754/2002, Ley 1921/2018, Ley 2267/2022): 7 comisiones, composición y materias verbatim",
+  "http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991_pr004.html / _pr005 / _pr006 / _pr007 / _pr008 / _pr012 — CP arts. 138, 145, 146, 150, 151, 152, 153, 157, 158, 159, 160, 161, 162, 163, 165, 166, 167, 168, 169, 212, 213, 214, 215, 241, 375",
+  "http://www.secretariasenado.gov.co/senado/basedoc/ley_2390_2024.html — Ley ORGÁNICA 2390 de 2024 (julio 26), Diario Oficial No. 52.829 de 26 de julio de 2024; digitalización del trámite legislativo; 17 artículos",
+  "http://www.secretariasenado.gov.co/senado/basedoc/ley_1909_2018.html — Ley ESTATUTARIA 1909 de 2018 (julio 9), Diario Oficial No. 50.649; Estatuto de la Oposición; expedida 'En virtud del Procedimiento Legislativo Especial para la Paz'",
+  "http://www.secretariasenado.gov.co/senado/basedoc/codigo_civil_pr002.html — Código Civil arts. 71 y 72 (derogación expresa/tácita, total/parcial; alcance de la tácita)",
+  "http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr002.html — CPACA art. 91 (pérdida de ejecutoriedad / decaimiento; suspensión provisional)",
+  "http://www.secretariasenado.gov.co/senado/basedoc/ley_0489_1998.html y _pr001 — Ley 489 de 1998 (DO 43.464), art. 42 sectores administrativos, art. 43 sistemas administrativos",
+  "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=4125 — Gestor Normativo (Función Pública), Constitución Política: metadatos estructurados (Fecha de Expedición, Entrada en Vigencia, Medio de Publicación), bloque 'Vigencias(20)' con afectaciones tipadas y 'Temas (20)' con subtemas. Charset ISO-8859-1; cadena de certificado incompleta (WebFetch falla, curl funciona)",
+  "https://www.corteconstitucional.gov.co/relatoria/2011/C-748-11.htm — HTTP 200, 1.903.545 bytes (sentencia real)",
+  "https://www.corteconstitucional.gov.co/relatoria/2014/C-313-14.htm — HTTP 200, 4.616.584 bytes (sentencia real)",
+  "https://www.corteconstitucional.gov.co/relatoria/2015/C-313-14.htm — HTTP 200, 8.607 bytes (SOFT-404: año de ruta incorrecto)",
+  "https://colaboracion.dnp.gov.co/CDT/Conpes/Econ%C3%B3micos/4144.pdf — HTTP 200, 930.357 bytes; CONPES 4144 'POLÍTICA NACIONAL DE INTELIGENCIA ARTIFICIAL', versión aprobada, Bogotá D.C., 14 de febrero de 2025 (DNP + MinDefensa, MinTrabajo, MinCIT, MinEducación, MinTIC, MinCiencias, DAPRE)",
+  "https://www.minsalud.gov.co/Normatividad_Nuevo/Decreto%200780%20de%202016.pdf — HTTP 200, 11 MB; Decreto Único Reglamentario del Sector Salud y Protección Social (6 may 2016). PDF ESCANEADO (Creator: Smart Touch 1.7 / Kodak Alaris). Art. 4.1.1 'Derogatoria integral' invocando Ley 153 de 1887 art. 3; 1.564 rutas de artículo de 5–6 niveles; 1.246 marcas de provenance sobre 129 decretos fuente",
+  "https://datos.bcn.cl/ — Linked Open Data de la Biblioteca del Congreso Nacional de Chile: 'Esquema Akoma-Ntoso BCN', endpoint SPARQL, ontologías RDF/OWL (Modelo de normas, biografías, Congreso, recursos legislativos, sesión parlamentaria, transparencia, geografía)",
+  "https://congresovisible.uniandes.edu.co/proyectos-de-ley/ — HTTP 200; filtros verificados: Corporación, Cuatrienio, Legislatura, Iniciativa, Tema, Tipo proyecto, Estado de proyecto. Tipo ∈ {Proyecto de Ley, Orgánica}; Iniciativa ∈ {Legislativa, Gubernamental}. App Next.js; API en https://apicongresovisible.uniandes.edu.co (Laravel)",
+  "https://docs.oasis-open.org/legaldocml/akn-core/v1.0/akn-core-v1.0-part1-vocabulary.html — HTTP 200, 807.987 bytes (OASIS Akoma Ntoso / LegalDocML v1.0)",
+  "https://eur-lex.europa.eu/eli-register/about.html — HTTP 200 (ELI)",
+  "https://www.popoloproject.com/ — HTTP 200 (Popolo)",
+  "https://publications.europa.eu/resource/dataset/eurovoc — HTTP 200, application/rdf+xml, 111.524 bytes (descriptor del dataset; conceptos NO parseados)",
+  "https://www.suin-juriscol.gov.co/ — INACCESIBLE (ver gaps)",
+  "https://www.imprenta.gov.co/diario-oficial — HTTP 500",
+  "https://www.funcionpublica.gov.co/web/sirece/sectores-administrativos — HTTP 403"
+ ],
+ "gaps": [
+  "**SUIN-Juriscol INACCESIBLE (bloqueante para la fuente estatal ideal de vigencia).** `https://www.suin-juriscol.gov.co/` — DNS resuelve a 186.86.242.143 pero la conexión falla en 443 Y en 80, desde TRES rutas de red independientes: curl (code=000, remote_ip vacío), WebFetch (ECONNREFUSED 186.86.242.143:443) y Playwright (net::ERR_ABORTED). No pude determinar si está caído temporalmente, si bloquea tráfico no colombiano o si migró. **Es el Sistema Único de Información Normativa del Ministerio de Justicia y sería la fuente estatal de referencia para vigencia**; hay que reintentar desde una IP colombiana antes de dar por bueno el diseño. Mitigación adoptada: el Gestor Normativo de Función Pública cumple ese rol (verificado).",
+  "**Temas de Congreso Visible NO enumerados.** El filtro 'Tema' existe (verificado), pero los valores se cargan por API desde `https://apicongresovisible.uniandes.edu.co` (Laravel) cuya ruta desconozco: probé /, /api, /docs, /api/temas, /temas, /api/v1/temas, /api/tema, /openapi.json, /api/schema, /graphql → todas 404 salvo la raíz. Dejé de adivinar. La taxonomía propuesta se apoya en Ley 3/1992 art. 2 (verbatim) en vez de en Congreso Visible.",
+  "**EUROVOC: alcance verificado, contenido NO.** Tengo HTTP 200 + application/rdf+xml + 111.524 bytes y CERO conceptos leídos. No debe presentarse como base de ningún tema; el campo `eurovoc_uri` queda opcional y sin poblar.",
+  "**Sectores administrativos: página oficial 403.** `funcionpublica.gov.co/web/sirece/sectores-administrativos` devuelve 403. Sustituido por Ley 489/1998 art. 42 (concepto legal, verbatim) más los sectores nombrados en la portada del CONPES 4144. La LISTA COMPLETA y actual de sectores administrativos queda sin verificar.",
+  "**Diario Oficial: portal de la Imprenta Nacional caído.** `imprenta.gov.co/diario-oficial` → HTTP 500; `diariooficial.gov.co` y `diario-oficial.imprenta.gov.co` → sin conexión. Hallazgo compensatorio: el número y fecha de Diario Oficial vienen DENTRO del encabezado de cada norma (verificados: 53.578, 52.829, 50.649, 43.464), así que la cita al DO es capturable sin el portal — pero NO pude verificar un mecanismo de descarga masiva del DO ni su calendario de publicación.",
+  "**Ley 5 arts. 117–119 (clases de mayorías) no extraídos** — no descargué la página pr003. Las mayorías las fundé en la CP (arts. 145, 146, 151, 153, 150-10, 212) y en Ley 5 art. 225, que es la parte load-bearing; la tipología reglamentaria completa queda sin verificar.",
+  "**CP art. 150 num. 19 (leyes marco) no extraído verbatim** — verifiqué los numerales 10 y 16 del art. 150. La caracterización de las leyes marco va marcada `confidence: medium` en norm_types_hierarchy.",
+  "**'8 debates' para actos legislativos es DERIVADO, no citado.** Ninguna norma que descargué dice literalmente 'ocho debates'. Se deduce de CP art. 157 nums. 2-3 + CP art. 375 + Ley 5 art. 227. No presentarlo como cita textual.",
+  "**Patrón de URL de la Corte verificado SOLO para sentencias 'C-'.** Dos positivos reales (C-748-11, C-313-14) y un negativo limpio. Mi única sonda 'SU-' (SU-217-17) devolvió 8.607 bytes (soft-404) y C-621-16 también: NO puedo afirmar que el patrón funcione para T-, SU- o A-, ni que esas sentencias concretas existan con esa numeración.",
+  "**Contradicción normativa vigente sin resolver autoritativamente.** CP art. 138 (mod. AL 2 de 2023) fija el segundo periodo desde el 16 de FEBRERO; Ley 5 art. 224 sigue diciendo 16 de MARZO. Ambos textos verificados. Prevalece la CP, pero no encontré la norma o fallo que armonice la ley orgánica: el modelo debe registrar ambas fechas y la incertidumbre.",
+  "**No verifiqué las APIs del Senado y la Cámara** (POST /api/search_pdly.php, admin-ajax.php) porque otro agente ya lo hizo; mi diseño de la entidad `proyecto` asume campos que deben contrastarse contra el payload real de esas APIs antes de congelar el esquema.",
+  "**Licenciamiento no resuelto jurídicamente.** Establecí que Avance Jurídico reclama derechos sobre las notas de vigencia. NO consulté abogado ni verifiqué el alcance de la excepción de textos normativos oficiales en la Ley 23 de 1982 / Decisión Andina 351. La recomendación de usar secretariasenado solo como 'lead' es conservadora por diseño, no un dictamen legal."
+ ],
+ "key_insights": [
+  "**El calendario legislativo que la mayoría de fuentes (y mi memoria) daría por bueno está DESACTUALIZADO.** El Acto Legislativo 2 de 2023 modificó el CP art. 138: el segundo periodo ordinario ahora empieza el **16 de febrero**, no el 16 de marzo, y entre el 16 de febrero y el 15 de marzo **no pueden tramitarse leyes estatutarias ni reformas constitucionales**. En años de elección al Congreso vuelve a empezar el 16 de marzo. La Ley 5 art. 224 conserva el texto viejo. Consecuencia de modelo: el calendario es un dato VERSIONADO por legislatura, no una constante del código, y el cómputo del tránsito de legislatura (CP 162 / Ley 5 190) depende de él.",
+  "**El proveedor de facto del corpus normativo colombiano es una editorial PRIVADA, y su capa más valiosa es justo la que no se puede copiar.** secretariasenado.gov.co es Avance Jurídico Casa Editorial S.A.S. (ISSN 1657-6241), que reserva derechos sobre 'las notas de vigencia, concordancias, notas del editor, forma de presentación y disposición de la compilación' y prohíbe su 'divulgación masiva'. Esas notas de vigencia SON el grafo de afectaciones que este proyecto quiere construir. Diseño obligado: tratarlas como PISTAS y reconstruir cada arista desde el texto de la norma afectante. De ahí salen los campos `derivation` y `confidence` en la tabla `afectacion` — son consecuencia arquitectónica, no adorno.",
+  "**Existe un backbone estatal y resuelve el problema anterior:** el Gestor Normativo de Función Pública publica un bloque 'Vigencias(N)' con afectaciones tipadas y parseables ('Modificado parcialmente por Acto Legislativo 02 de 2023', 'Adicionado por Decreto 867 de 2021', 'Derogatoria tacita del artículo 257 por el artículo 19 del Acto Legislativo 2 de 2015 declarada INEXEQUIBLE mediante Sentencia…'), además de jurisprudencia por artículo. Es fuente institucional del Estado. Debe ser el primer crawler que se construya.",
+  "**Estos portales devuelven HTTP 200 para documentos inexistentes: el fingerprinting por tamaño es OBLIGATORIO.** La Corte Constitucional sirve un soft-404 de exactamente **8.607 bytes** con status 200 (C-313-14 bajo el año equivocado), frente a 1,9 MB y 4,6 MB de sentencias reales; Congreso Visible usa **6.645 bytes** para sus 404. Un pipeline que confíe en el status code registrará documentos vacíos como capturados. Esto es la misma clase de fallo que la regla deadline-aware de liveness que ya existe en career-ops: status 200 ≠ contenido existente. Guardar `content_length` y `content_hash` en `fuente_captura` y validar contra umbral por dominio.",
+  "**La vigencia y la constitucionalidad son ejes ORTOGONALES y colapsarlos es el error de modelado más caro.** Una norma declarada exequible puede estar derogada; una declarada exequible-condicionada mantiene su texto pero cambia su sentido y debe renderizarse siempre con el condicionamiento; una inexequibilidad puede tener efectos diferidos o ex tunc. Por eso `estado_vigencia`, `estado_constitucionalidad` y `modulacion_efectos` son tres campos, y 'vigente' se responde como consulta temporal AS OF, nunca como booleano.",
+  "**La derogatoria tácita es, por definición legal, PARCIAL y a nivel de artículo.** Código Civil art. 72: 'La derogación tácita deja vigente en las leyes anteriores… todo aquello que no pugna con las disposiciones de la nueva ley'. Un modelo que marque normas enteras como derogadas tácitamente contradice el texto legal. La unidad de vigencia es el ARTÍCULO; la norma agrega hacia arriba.",
+  "**Los Decretos Únicos Reglamentarios son una mina de aristas ya etiquetadas por el propio Estado.** El Decreto 780 de 2016 lleva 1.246 marcas de procedencia del tipo '(Art. 1 del Decreto 2353 de 2015)' cubriendo 129 decretos fuente distintos, y su art. 4.1.1 declara derogatoria integral invocando la Ley 153 de 1887 art. 3 (base legal de la derogatoria ORGÁNICA). Un solo parser sobre los ~25 DUR sectoriales produce decenas de miles de aristas `COMPILA`/`PROVIENE_DE` con evidencia primaria. Es el mayor retorno por unidad de esfuerzo de todo el backfill.",
+  "**Buena parte del corpus oficial son PDFs ESCANEADOS, no texto nativo.** El DUR de Salud viene de un escáner Kodak Alaris y el OCR produce 'REPÚBLICA DE COCOMBIA', '78g' por '780' y '6 MAY 1016' por '6 MAY 2016'. Toda fecha o número extraído de un PDF escaneado debe validarse contra rangos plausibles y marcarse con `confidence` degradada. Un extractor de citas afinado solo contra HTML limpio fallará silenciosamente aquí.",
+  "**Las variantes de citación conviven DENTRO de un mismo documento oficial.** En la misma lista del Gestor Normativo aparecen 'C-992-2001' (año de 4 dígitos), 'C-070-04' (2 dígitos) y 'C- 127 -20' (con espacios). Y 'Ley 5 de 1992', 'Ley 5ª de 1992' y 'Ley 5o. de 1992' son el mismo cuerpo normativo. La normalización antes de deduplicar no es opcional: sin ella se crean entidades fantasma.",
+  "**El identificador de un decreto o resolución NO es (tipo, número, año).** Necesita `emisor`. 'Decreto 1377 de 2013' puede ser nacional o territorial; 'Resolución 3100 de 2019' no significa nada sin 'del Ministerio de Salud'. Las leyes sí son únicas por (número, año). Esta asimetría debe estar en la clave, no en un comentario.",
+  "**Ley 5 art. 163 NO es el mensaje de urgencia** (es 'enmiendas que impliquen erogación', derogado por el art. 71 de la Ley 179 de 1994). El mensaje de urgencia es CP art. 163 + Ley 5 arts. 191–192, y las sesiones conjuntas son CP art. 163 inc. 2 + Ley 5 art. 169 (cuyo numeral 3 fue declarado INEXEQUIBLE). El brief de la tarea traía esta referencia cruzada mal; verificarla evitó incrustar un error en el esquema.",
+  "**El trámite no es binario ordinario/constituyente.** La Ley 1909 de 2018 fue expedida 'En virtud del Procedimiento Legislativo Especial para la Paz' (fast-track del AL 01 de 2016). El campo `procedimiento` necesita al menos 9 valores, y el número de debates, las mayorías y las reglas de archivo dependen de él — no del tipo de norma resultante.",
+  "**El archivo de un proyecto tiene causas distintas que comparten estado terminal.** Tránsito de legislatura (Ley 5 art. 190 / CP 162, con el corte duro de 'ningún proyecto en más de dos legislaturas'), negado en comisión (art. 157), negado en plenaria (art. 184), discrepancia entre cámaras sobre objeciones (art. 200), inexequibilidad en control previo (art. 199) y retiro del autor (art. 155, solo antes de ponencia y si es de iniciativa congresional). Un enum que solo diga 'archivado' no puede responder '¿por qué murió esto?', que es la pregunta de valor de un monitor legislativo. De ahí el enum separado `archivo_causa`.",
+  "**Chile ya recorrió este camino y publicó el resultado.** datos.bcn.cl expone un 'Esquema Akoma-Ntoso BCN' con SPARQL y un 'Modelo de normas' en RDF/OWL. Es el único precedente regional que pude verificar y valida la recomendación: adoptar el MODELO de Akoma Ntoso (FRBR Work/Expression/Manifestation + jerarquía estructural) sin comprometerse a serializar todo el corpus a XML conforme.",
+  "**La taxonomía temática no hay que inventarla: la Ley 3 de 1992 art. 2 ya la trae, y además es funcionalmente útil.** Las materias de las 7 comisiones constitucionales permanentes están enumeradas taxativamente y cubren 18 de los 20 temas que pedía el brief (salud, turismo, migración, minas y energía, vivienda, deportes, educación y cultura, asuntos étnicos, paz, etc.). Ventaja doble: es fuente primaria Y predice a qué comisión se reparte un proyecto, que es exactamente lo que un monitor necesita para alertar temprano. Las únicas piezas sin anclaje literal ahí son 'infancia' y 'discapacidad', y eso queda declarado en la taxonomía en vez de disimulado."
+ ]
+}

@@ -1,0 +1,102 @@
+{
+ "area": "ingesta-stack (Crawlee, Playwright, feedsmith, unpdf)",
+ "overall": "Los cuatro pines del plan RESISTEN: el 2026-08-19 los cuatro son la última versión estable de su línea (Crawlee 3.18.1, Playwright 1.62.1, feedsmith 2.9.6, unpdf 1.8.1). La nota del plan «versiones verificadas el 2026-08-16» es honesta y nada se movió desde entonces. El valor de esta pasada NO está en los dígitos sino en tres desajustes entre lo que el plan AFIRMA y lo que Crawlee 3.18 realmente HACE: (1) «backoff honrando Retry-After» no existe en 3.18 en ninguna capa —lo verifiqué en el crawler Y en el cliente HTTP, donde Crawlee pone `retry: {limit: 0}` y apaga el Retry-After nativo de got—; (2) `respectRobotsTxtFile` NO honra `Crawl-delay` en 3.18, así que la «cortesía» del plan depende entera de `sameDomainDelaySecs` manual; (3) el plan envía un UA identificado pero no se lo pasa al matcher de robots, que evalúa como `*`. Dos RC en el horizonte (Crawlee 4.0.0-rc.0 del 2026-08-13, feedsmith 3.0.0-rc.3 del 2026-08-06) — NO son motivo para cambiar el pin, sí para diseñar el pacing detrás de una interfaz fina, porque v4 trae `ThrottlingRequestManager` que hace nativo justo lo que hoy habría que escribir a mano. CAVEAT METODOLÓGICO: Context7 rindió mal para Crawlee — `/websites/crawlee_dev_js` devolvió «no documentation matched» para el adaptive crawler y boilerplate de PuppeteerCrawler en el reintento, y dos URLs de crawlee.dev dieron 404. Todo lo de Crawlee sale del registry de npm, los releases de GitHub, `upgrading_v4.md` y los `.d.ts`/`.js` de los tarballs PUBLICADOS (reproducible con `npm pack @crawlee/basic@3.18.1`). Context7 sí funcionó bien para feedsmith y unpdf. Versiones de Node: unpdf exige `>=22`, Playwright `>=20`, Crawlee 3.18 `>=16`, Crawlee v4 `>=22`; el plan fija Node 24 LTS — no hay conflicto.",
+ "findings": [
+  {
+   "item": "Crawlee 3.18",
+   "plan_dice": "«colectores en TypeScript con Crawlee 3.18 (Cheerio para estático, Playwright 1.62 para JS)» (PLAN-V2.md:271)",
+   "realidad": "Existe. `dist-tags.latest` = 3.18.1, publicada el 2026-08-12. 3.18.0 salió el 2026-08-04. Recomiendo pinear 3.18.1 EXACTO, no `^3.18`: el patch .1 trae `fix(playwright): update handleCloudflareChallenge for new Cloudflare challenge markup` (#4019), que importa si alguna fuente colombiana está tras Cloudflare.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/crawlee + https://github.com/apify/crawlee/releases"
+  },
+  {
+   "item": "Playwright 1.62",
+   "plan_dice": "«Playwright 1.62 para JS» (PLAN-V2.md:271)",
+   "realidad": "Existe. `latest` = 1.62.1 (2026-07-30); 1.62.0 salió el 2026-07-24. La línea 1.63 está en alpha diaria (1.63.0-alpha-2026-08-19), no estable. 1.62.1 es puro bugfix (regresiones de tsconfig y accessibility snapshot). Exige Node >=20. Nota: `@crawlee/playwright` declara `peerDependencies: { playwright: '*' }`, así que no hay restricción de rango — la compatibilidad la eliges tú.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/playwright + https://github.com/microsoft/playwright/releases"
+  },
+  {
+   "item": "feedsmith 2.9.6",
+   "plan_dice": "«feedsmith 2.9.6 para RSS (rss-parser está abandonado desde 2023)» (PLAN-V2.md:271)",
+   "realidad": "Existe y es EXACTAMENTE la última estable (2026-07-14). La justificación también es correcta: rss-parser sigue en 3.13.0, publicada el 2023-04-11 — abandonada, confirmado. Ojo: hay una línea 3.0 en RC (3.0.0-rc.3, 2026-08-06) con breaking changes ya declarados (tipos movidos al entry point principal, campos deprecados eliminados de los namespaces Media/Podcast/DC/DCTerms, `DeepPartial` eliminado). No cambies el pin —un RC no es base para un proyecto que arranca— pero cuenta con migrar en unos meses.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/feedsmith + https://github.com/macieklamberski/feedsmith/releases + Context7 /macieklamberski/feedsmith"
+  },
+  {
+   "item": "unpdf 1.8.1",
+   "plan_dice": "«unpdf 1.8.1 como primera pasada gratuita con router digital-vs-escaneado» (PLAN-V2.md:271)",
+   "realidad": "Existe y es la última, publicada el 2026-08-13 (seis días antes de hoy). 1.8.0 (2026-07-24) subió PDF.js a v6.1 y añadió soporte de `@napi-rs/canvas` v1; 1.8.1 es un polyfill de `Math.sumPrecise` para PDF.js. Exige Node >=22. API confirmada: `getDocumentProxy()` + `extractText(pdf, {mergePages})` → `{totalPages, text}`.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/unpdf + https://github.com/unjs/unpdf/releases + Context7 /unjs/unpdf"
+  },
+  {
+   "item": "«backoff honrando Retry-After» en Crawlee 3.18",
+   "plan_dice": "«Política de cortesía innegociable: ... backoff honrando `Retry-After`» (PLAN-V2.md:279), presentado como configuración del stack",
+   "realidad": "NO EXISTE en Crawlee 3.18, en NINGUNA de las dos capas. (a) Capa crawler: cero coincidencias de `retry-after` en @crawlee/basic, @crawlee/http y @crawlee/core 3.18.1; un 429 cae en `BLOCKED_STATUS_CODES = [401, 403, 429]` (core/session_pool/consts.js:4) → retira la sesión y reintenta INMEDIATAMENTE. (b) Capa cliente: got honra Retry-After por defecto, pero Crawlee lo apaga — `core/http_clients/got-scraping-http-client.js:18` pasa `retry: { limit: 0 }`. (c) Los crawlers de navegador no pasan por got siquiera. Corroboración de los mantenedores: el upgrade guide de v4 dice «`blockedStatusCodes` still defaults to [401,403,429], so out of the box a 429 retires the session and retries immediately, **as in v3**». En v4 lo resuelve el nuevo `ThrottlingRequestManager` (opt-in), que honra `Retry-After`, retiene solo ese dominio y no gasta presupuesto de reintentos.",
+   "status": "desactualizado",
+   "accion": "Reescribir la línea 279: el Retry-After hay que ESCRIBIRLO (un `errorHandler` que lea la cabecera y reencole con delay, o un request manager propio). Y meterlo detrás de una interfaz fina de pacing, para cambiarla por `ThrottlingRequestManager` cuando v4 sea estable sin tocar los colectores.",
+   "fuente": "npm pack @crawlee/{basic,http,core}@3.18.1 + https://raw.githubusercontent.com/apify/crawlee/master/docs/upgrading/upgrading_v4.md (L1468)"
+  },
+  {
+   "item": "`respectRobotsTxtFile` y la directiva `Crawl-delay`",
+   "plan_dice": "«UA identificado con URL del repo, `respectRobotsTxtFile`, concurrencia 1-2 por dominio, 2-5s de delay con jitter» (PLAN-V2.md:279) — implica que robots cubre el ritmo",
+   "realidad": "`respectRobotsTxtFile` existe en 3.18.1 (basic-crawler.d.ts:259) y filtra URLs prohibidas, incluidas las de `enqueueLinks`. Pero NO honra `Crawl-delay`: cero coincidencias de `crawl-delay`/`crawlDelay` en @crawlee/utils 3.18.1, y `RobotsTxtFile` solo expone `isAllowed()`, `getSitemaps()` y `parseSitemaps()` — no hay getter de crawl-delay. El upgrade guide de v4 lo confirma por contraste: enforzar `Crawl-delay` es una capacidad NUEVA de v4 vía `ThrottlingRequestManager`, y sin él «the directive is ignored and the crawler warns about it».",
+   "status": "desactualizado",
+   "accion": "Separar en el plan lo que da robots (permiso) de lo que da el ritmo (`sameDomainDelaySecs` + `maxRequestsPerMinute` + `maxConcurrency`, a mano). Si una fuente colombiana declara `Crawl-delay`, hay que leerlo y aplicarlo explícitamente — Crawlee 3.18 no lo hará.",
+   "fuente": "npm pack @crawlee/utils@3.18.1 (internals/robots.d.ts) + upgrading_v4.md (L1482)"
+  },
+  {
+   "item": "UA identificado vs. UA del matcher de robots",
+   "plan_dice": "«UA identificado con URL del repo (sin email personal), `respectRobotsTxtFile`» (PLAN-V2.md:279)",
+   "realidad": "Inconsistencia real: `respectRobotsTxtFile` acepta `boolean | { userAgent?: string }` y el docstring dice «If not provided, the default user-agent `*` will be used». Con `respectRobotsTxtFile: true` el crawler evalúa robots.txt COMO SI fuera `*` mientras las peticiones salen con el UA identificado del repo. Si una fuente escribe una regla específica para tu UA (permisiva o restrictiva), se ignora.",
+   "status": "desactualizado",
+   "accion": "Fijar `respectRobotsTxtFile: { userAgent: '<mismo UA que se envía>' }` y que el UA sea UNA constante compartida entre la config del cliente HTTP y la de robots.",
+   "fuente": "npm pack @crawlee/basic@3.18.1 (internals/basic-crawler.d.ts:253-261)"
+  },
+  {
+   "item": "API para alternar Cheerio (estático) y Playwright (JS)",
+   "plan_dice": "«Cheerio para estático, Playwright 1.62 para JS» (PLAN-V2.md:271) — se lee como dos crawlers, elegidos por colector",
+   "realidad": "Existe `AdaptivePlaywrightCrawler` (en @crawlee/playwright 3.18.1), que decide solo: `renderingTypeDetectionRatio` (0.1 por defecto = ~10% de requests corren en las dos vías para comparar), `resultChecker`, `resultComparator`, `shouldPropagateError`, y un handler unificado con `querySelector`/`parseWithCheerio`. PERO está marcado `@experimental` en el propio `.d.ts`, y en v4 cambió su ciclo de vida (el `renderingTypePredictor` que le pases ahora es «prestado» y lo inicializas tú, vía la nueva interfaz `IRenderingTypePredictor`). Mi lectura: la elección del plan es la CORRECTA y no hay que cambiarla. Cada fuente colombiana es estática o JS de forma conocida a priori; la detección adaptativa gasta ~10% de corridas en navegador para aprender lo que el autor del colector ya sabe, y contradice el diseño «un colector = un pipeline CLI con fixtures versionados» (un colector que puede tomar dos rutas distintas es mucho más difícil de fijar con snapshots).",
+   "status": "vigente",
+   "accion": "Ninguna al stack. Añadir una frase al plan que diga POR QUÉ no se usa el adaptive crawler (experimental + fixtures deterministas), para que nadie lo «arregle» después.",
+   "fuente": "npm pack @crawlee/playwright@3.18.1 (internals/adaptive-playwright-crawler.d.ts:95-180)"
+  },
+  {
+   "item": "Crawlee 4.0 en RC",
+   "plan_dice": "Nada — el plan fija 3.18 sin mencionar la línea 4",
+   "realidad": "`v4.0.0-rc.0` se publicó el 2026-08-13 y la línea beta está muy viva (4.0.0-beta.139 el 2026-08-19 mismo). Breaking changes que TOCAN este plan: solo ESM, Node 22+, TypeScript 5.8+, el cliente HTTP por defecto pasa a ser `impit` (got-scraping se vuelve opt-in vía `@crawlee/got-scraping-client`), `ignoreSslErrors`→`ignoreTlsErrors`, `SitemapRequestList`→`SitemapRequestLoader`, `RobotsFile`→`RobotsTxtFile`, `autoscaledPoolOptions`→`taskLoopOptions`, y la validación de argumentos pasa de `ow` a zod. Aviso extra que pega con la costumbre del repo: v4 documenta «Installing with `--omit=optional` breaks native dependencies».",
+   "status": "vigente",
+   "accion": "No adoptar el RC. Añadir una nota de vigilancia al plan: cuando v4 sea estable, las dos razones para migrar son `ThrottlingRequestManager` (Retry-After + Crawl-delay nativos) y `ConcurrencySystem` (presupuesto de concurrencia COMPARTIDO entre varios colectores en el mismo job de 6h, en vez de que cada uno sobre-suscriba el runner).",
+   "fuente": "https://raw.githubusercontent.com/apify/crawlee/master/docs/upgrading/upgrading_v4.md"
+  },
+  {
+   "item": "Versión de Cheerio (conflicto latente)",
+   "plan_dice": "«Cheerio para estático» sin fijar versión",
+   "realidad": "Crawlee 3.18.1 depende de `cheerio: 1.0.0-rc.12` — un release candidate de hace años — mientras que el `latest` de cheerio en npm es 1.2.0. Si un colector importa `cheerio` directamente (además del `$` que le inyecta el CheerioCrawler), el árbol acaba con DOS copias de cheerio con APIs distintas. v4 sí sube a Cheerio v1.",
+   "status": "desactualizado",
+   "accion": "Regla explícita en el plan: los colectores usan el `$` del contexto de Crawlee y NO declaran `cheerio` como dependencia propia. Si hace falta parsear HTML fuera del crawler (p.ej. en tests de fixtures), fijar la MISMA `1.0.0-rc.12`.",
+   "fuente": "npm view @crawlee/playwright@3.18.1 dependencies + https://registry.npmjs.org/cheerio"
+  },
+  {
+   "item": "`renderPageAsImage` de unpdf (la ruta al OCR)",
+   "plan_dice": "«unpdf 1.8.1 como primera pasada gratuita con router digital-vs-escaneado, Mistral OCR 4.1 vía Batch para escaneados» (PLAN-V2.md:271)",
+   "realidad": "El puente entre las dos mitades (rasterizar la página para mandarla al OCR) no es gratis en dependencias: `renderPageAsImage` exige (a) usar el build OFICIAL de PDF.js en vez del serverless que unpdf trae por defecto —hay que llamar a `definePDFJSModule()`— y (b) instalar `@napi-rs/canvas`, un paquete nativo. El plan presenta unpdf como una pasada ligera y no presupuesta ninguna de las dos cosas.",
+   "status": "desactualizado",
+   "accion": "Añadir `@napi-rs/canvas` + el swap de build de PDF.js a la lista de dependencias de ingesta, o —alternativa más limpia— mandar el PDF ENTERO a Mistral OCR sin rasterizar en local, y usar unpdf solo como router de decisión.",
+   "fuente": "https://raw.githubusercontent.com/unjs/unpdf/main/README.md (§renderPageAsImage, L300-320)"
+  }
+ ],
+ "best_practices": [
+  "ROUTER DIGITAL-VS-ESCANEADO CON HEURÍSTICA EXPLÍCITA. El plan nombra el router pero no define el criterio, y eso es justo lo que decide la factura de OCR. Receta concreta con la API real: `extractText(pdf, {mergePages: false})` → caracteres por página; por debajo de ~100 chars/página en la mediana, es escaneado. Segunda señal, más fina y disponible sin coste: `extractTextItems()` devuelve items posicionados (`x`, `y`, `fontSize`, `dir`, `hasEOL`) — un PDF digital tiene cientos de items con fontSize coherente, uno escaneado con una capa OCR pobre tiene poquísimos o con posiciones absurdas. Escribir el umbral en el plan y versionarlo como `parser_version` (que el esquema de `fuente_captura` ya contempla).",
+  "`lastmod` DE SITEMAP COMO DETECCIÓN DE CAMBIOS *ANTES* DE DESCARGAR. La detección del plan (SHA-256 + ETag/If-Modified-Since) es toda POST-fetch o depende de que la fuente mande cabeceras correctas — y las fuentes estatales colombianas rara vez las mandan bien. Crawlee 3.18 ya expone `parseSitemap()` con `SitemapUrlData.lastmod?: Date` (@crawlee/utils/internals/sitemap.d.ts:6) y `RobotsTxtFile.getSitemaps()` para descubrir los sitemaps desde robots.txt. Es la señal más barata que existe: filtra por `lastmod > última_corrida_exitosa` y no descargas siquiera. Encaja exactamente con la tabla `source_runs` que el plan ya define.",
+  "SONDA DE STALENESS BARATA PARA LOS «FEEDS ZOMBIE». El plan identifica el riesgo #1 (W Radio congelado desde oct-2025, Ámbito Jurídico desde jul-2025, los dos devolviendo HTTP 200 con XML válido) y manda comparar `max(pubDate)` contra la cadencia esperada — pero parsear 11 feeds enteros para mirar una fecha es desperdicio. feedsmith tiene la primitiva exacta: `parseFeed(content, { maxItems: 0 })` parsea SOLO los metadatos del feed y se salta todos los items. Eso convierte la alarma de staleness en un chequeo de milisegundos que se puede correr en cada ciclo, no solo en el de ingesta.",
+  "`onSkippedRequest` COMO RASTRO DE AUDITORÍA DE ROBOTS. El plan promete «declaración explícita en la UI» para el Consejo de Estado / SAMAI (cuyo robots.txt prohíbe `/*.aspx?*`, es decir toda su superficie útil). Crawlee 3.18 tiene el callback `onSkippedRequest` (basic-crawler.d.ts), que se dispara cuando una request se descarta por robots.txt, por filtros de `enqueueLinks`, por redirección fuera de estrategia o por `maxRequestsPerCrawl`. Persistir esos eventos da la evidencia auditable de QUÉ se dejó de rastrear y POR QUÉ — que es precisamente lo que la UI tiene que declarar, y hoy el plan lo dejaría a la memoria de quien lo escribió.",
+  "`sameDomainDelaySecs` EN v3 RETIENE LAS REQUESTS EN MEMORIA. El plan pide «concurrencia 1-2 por dominio, 2-5s de delay con jitter» dentro de jobs de GitHub Actions de hasta 6h sobre 11 feeds y varios dominios estatales. En Crawlee 3.18 las requests retrasadas por `sameDomainDelaySecs` se guardan en memoria y se re-encolan; v4 lo cambió a propósito para que esperen en almacenamiento. Con muchos dominios y delays largos eso es presión de memoria real sobre el runner. Mitigación en 3.18: trocear en varios jobs por dominio en vez de un crawl gigante, y usar `maxRequestsPerMinute` (que sí es un límite del task loop, no una cola en RAM) como cinturón adicional.",
+  "PINEAR 3.18.1 EXACTO Y NO `^3.18`. No es tiquismiquis de semver: el patch .1 contiene `fix(playwright): update handleCloudflareChallenge for new Cloudflare challenge markup` (#4019) y `fix(core): do not purge storages that are already in use` (#3988). Además, para fuentes tras Cloudflare conviene activar `retryOnBlocked: true`, que el plan no menciona y que es el interruptor documentado para Cloudflare Bot Management y el rate limiting de Google.",
+  "AISLAR EL PACING DETRÁS DE UNA INTERFAZ FINA. Como el Retry-After hay que escribirlo a mano en 3.18 (ver findings) y v4 lo trae nativo con `ThrottlingRequestManager` (`domains`, `minCrawlDelaySecs`, `maxDomainStallSecs` con default de 15 min y `PersistentRateLimitError`), conviene que los colectores NUNCA hablen directo con las opciones de pacing. Un módulo `politeness.ts` que hoy devuelva `{maxConcurrency, sameDomainDelaySecs, maxRequestsPerMinute, errorHandler}` y mañana devuelva un `requestManager` deja la migración a v4 en un archivo en vez de en trece colectores.",
+  "VARIOS CRAWLERS EN UN PROCESO COMPARTEN LA MISMA COLA POR DEFECTO EN v3. Trampa silenciosa y directamente relevante al diseño «un colector = un pipeline»: en Crawlee 3.x, todo `BasicCrawler` (o subclase) que no reciba un `requestQueue` explícito abre LA MISMA cola por defecto. Dos colectores en el mismo proceso Node se pisan las requests y el dedup. v4 lo arregla dando alias automáticos (`__default_1__`…). En 3.18 hay que pasar una `RequestQueue` explícita y nombrada por colector, o ejecutar un colector por proceso. El plan no lo dice y es un bug de datos, no de rendimiento.",
+  "`extractTextItems` PARA TEXTO JURÍDICO A DOS COLUMNAS. Más allá del router, la extracción plana de `extractText` pierde el orden de lectura en documentos a columnas, con encabezados de página repetidos y numeración marginal — típico de gacetas y providencias. `extractTextItems()` da coordenadas, `fontSize` y `hasEOL` por item, que es lo que permite (a) tirar encabezados/pies repetidos antes de chunkear y (b) reconstruir el orden de lectura. Esto conecta directo con la regla R4 del propio plan («chunking por artículo, nunca por tokens»): sin orden de lectura correcto, el chunking por artículo se rompe justo en los documentos que más importan.",
+  "NO ADOPTAR NINGUNO DE LOS DOS RC, PERO FECHAR LA REVISIÓN. Crawlee 4.0.0-rc.0 (2026-08-13) y feedsmith 3.0.0-rc.3 (2026-08-06) van los dos camino de GA. La práctica sana no es congelar y olvidar: dejar escrito en el plan un recordatorio de re-verificación (~90 días) con los dos motivos concretos de migración ya identificados —`ThrottlingRequestManager`/`ConcurrencySystem` en Crawlee, y en feedsmith los tipos movidos al entry point principal más la eliminación de campos deprecados de los namespaces Media/Podcast/DC—, para que la migración sea una decisión con fecha y no un descubrimiento."
+ ]
+}

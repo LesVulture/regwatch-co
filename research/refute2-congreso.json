@@ -1,0 +1,184 @@
+{
+ "especialidad": "congreso — API del Senado (leyes.senado.gov.co), admin-ajax de la Cámara, Gaceta del Congreso (Imprenta Nacional) y el crosswalk Senado↔Cámara",
+ "verdicts": [
+  {
+   "claim": "«8 endpoints PHP sin auth ni CSRF» en leyes.senado.gov.co/api/*.php",
+   "verdict": "confirmed",
+   "evidence": "curl -s https://leyes.senado.gov.co/js/app.js | grep -o 'api/[a-z_]*\\.php' | sort | uniq -c → exactamente 8: get_detalle_actos/lys/pal/pdly.php + search_actos/lys/pal/pdly.php. Todos mis POST se hicieron sin cookies, sin token y sin Referer y devolvieron 200 application/json.",
+   "severity": "low"
+  },
+  {
+   "claim": "«POST search_pdly.php con legislatura=2026-2027 → 200, JSON con 169 filas; primera: {id:9924, numero_senado:'001/26', ... LEY ÁNGEL 2.0 ... estado:'PENDIENTE DESIGNAR PONENTES EN SENADO'}»",
+   "verdict": "partially",
+   "correction": "El mecanismo y el registro son exactos, la cifra no: hoy (2026-08-19) devuelve 191→192 filas, no 169. Es crecimiento real de la legislatura, pero cualquier número escrito en prosa envejece en horas; el JSON trae `total_results` y hay que leerlo de ahí. Además la respuesta tiene 4 claves (success, data, message, total_results), no las 2 que enumera el informe.",
+   "evidence": "curl -X POST https://leyes.senado.gov.co/api/search_pdly.php -F legislatura=2026-2027 → HTTP:200 TYPE:application/json SIZE:131849; python json.load → rows 191, keys ['success','data','message','total_results']; data[0] = {id:9924, numero_senado:'001/26', cuatrenio:'2026-2030', ...'LEY ÁNGEL 2.0', estado:'PENDIENTE DESIGNAR PONENTES EN SENADO'}. Una segunda corrida minutos después: 192.",
+   "severity": "low"
+  },
+  {
+   "claim": "«[los 4 search] todos multipart form-data con campos legislatura ('2026-2027'), autor, comision, palabra_clave — filtran server-side (probado: legislatura+autor=PADILLA → 5 filas)»",
+   "verdict": "partially",
+   "correction": "Cierto sólo para search_pdly (y a medias para search_pal, que no tiene comision). search_lys y search_actos NO aceptan legislatura ni autor ni comision: sus formularios sólo exponen palabra_clave, n_senado y n_camara, y el servidor IGNORA `legislatura` en silencio (200 OK, mismos datos). La recomendación §1 («search_lys/search_actos semanal para sancionadas [por la legislatura activa]») no puede funcionar tal como está escrita.",
+   "evidence": "Extracción de campos del HTML de https://leyes.senado.gov.co/ por formulario: form-pdly → ['legislatura','autor','comision','palabra_clave']; form-pal → ['legislatura','autor','palabra_clave']; form-lys → ['palabra_clave','n_senado','n_camara']; form-actos → ['palabra_clave','n_senado','n_camara']. Prueba empírica: POST search_lys.php -F legislatura=1998-1999 → rows 100, primeras leyes 2620/2619/2618 con fecha 2026-07-31 (idénticas a la llamada sin parámetros). Confirmo aparte el dato del informe: POST search_pdly -F legislatura=2026-2027 -F autor=PADILLA → 5 filas exactas; -F comision=PRIMERA → 47 filas, todas comision='PRIMERA'.",
+   "severity": "high"
+  },
+  {
+   "claim": "«Sin paginación: cada búsqueda devuelve TODAS las filas de la legislatura» / «respuesta completa sin paginación (barato para snapshot diario)»",
+   "verdict": "partially",
+   "correction": "Cierto CON filtro (legislatura=2024-2025 → 470 filas, muy por encima de 100). Falso SIN filtro: el servidor aplica un tope silencioso de exactamente 100 filas y no expone ningún parámetro de paginación. Para las leyes sancionadas —que no admiten filtro de legislatura— eso significa que el endpoint sólo entrega las 100 más recientes por defecto. Hay salida: una palabra_clave amplia levanta el tope (`A` → 2.711 leyes, `DE` → 2.670), y get_detalle_lys.php es enumerable por id.",
+   "evidence": "POST search_pdly.php sin parámetros → rows 100. POST search_lys.php sin parámetros → rows 100, total_results 100. POST search_lys.php -F palabra_clave=A → rows 2711; -F palabra_clave=DE → rows 2670; -F palabra_clave=SALUD → 52. POST search_pdly.php -F legislatura=2024-2025 → rows 470.",
+   "severity": "high"
+  },
+  {
+   "claim": "[Foco del orquestador] Enumerabilidad de get_detalle_pdly.php por id 1..~10.200",
+   "verdict": "partially",
+   "correction": "El informe NO menciona la enumerabilidad por id en ninguna parte (busqué campo por campo con json.load). La verifiqué yo: el rango es denso de id=1 hasta ~10.115 y es una vía de ingesta completa alternativa a iterar 37 legislaturas. Y trae la trampa que el informe tampoco documenta: un id inexistente devuelve HTTP 200 con un <p> de prosa, no un 404.",
+   "evidence": "GET get_detalle_pdly.php?id=1 → 200, 13.726 bytes, 'Número Senado 001/91 ... Legislatura 1991-1992'. id=5000 → 200, 14.466 bytes, PL de 2010 con 'GACETA 827/10'. id=9924 → 200, 'GACETA 942/2026'. id=10100 → 200 con tabla real. id=10150/10190/10200/10500/99999 → HTTP:200, 80 bytes, '<p class=\"text-warning\">No se encontró un proyecto con el ID proporcionado.'. Máximo id observado en el corpus 2022-2027: 10.115. get_detalle_lys.php?id= denso 1..~2.7xx, mismo 200-con-prosa a partir de 2800.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«_ajax_nonce (10 hex, se extrae del HTML de /proyectos-de-ley/ en cada corrida)» + «El nonce rota (obtener uno fresco por corrida). Hay caché de página (WP Fastest Cache): el nonce embebido puede quedar viejo — si el POST devuelve error de nonce, recargar la página sin caché»",
+   "verdict": "refuted",
+   "correction": "El nonce NO se valida. El handler responde igual con un nonce falso y sin nonce ninguno. Todo el paso de scraping del nonce, su rotación y la ruta de fallo por caché de WP son un modo de fallo inexistente que el plan diseña de más. (Matiz honesto: la Cámara podría activar check_ajax_referer mañana; mantener el scrape como seguro es defendible, tratar el error de nonce como camino previsto no lo es.)",
+   "evidence": "POST admin-ajax.php -d 'action=get_proyectos_ley_page&_ajax_nonce=0000000000&page=1&per_page=2&legislatura=20&...' → {\"success\":true,\"data\":{\"items\":[{\"nro_camara\":\"211\\/2026C\",...}. POST idéntico OMITIENDO por completo _ajax_nonce → misma respuesta {\"success\":true,...}. Los 6.446 registros del corpus completo los bajé con _ajax_nonce='x'.",
+   "severity": "high"
+  },
+  {
+   "claim": "«se extrae del HTML de /proyectos-de-ley/ [por regex]»",
+   "verdict": "partially",
+   "correction": "La receta invita a la regex equivocada: la página tiene al menos 9 cadenas del tipo nonce\":\"[a-f0-9]{10}\" y la PRIMERA no es la buena. El único válido es window.PL_CFG.PL_NONCE. Es exactamente el patrón de la especialidad hermana (una receta que 'funciona' hasta que no).",
+   "evidence": "grep -oE 'nonce[\"\\']?\\s*[:=]\\s*[\"\\'][a-f0-9]{8,12}[\"\\']' camara.html → 56a8347c70, 1f043042f1, 1f043042f1, 917c6845f8, 020260c7bf, bb02971378, 042541aa53, 145606f1b1, f0392130a6 (9+). El bloque real: window.PL_CFG = { AJAX_URL:\"https://www.camara.gov.co/wp-admin/admin-ajax.php\", PL_NONCE:\"3f25a21f8f\", COMISION:\"\", COM_LOCKED:false, HOME_URL:\"https://www.camara.gov.co\" }.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«legislatura (ID de taxonomía NO ordinal: 20=2026-2027, 13=2025-2026, 3=2024-2025, 2=2023-2024, 1=2022-2023)» y la lista de campos del POST",
+   "verdict": "confirmed",
+   "evidence": "Del HTML de /proyectos-de-ley/: <select id=\"legislaturaField\"> con <option value=\"20\">2026-2027</option><option value=\"13\">2025-2026</option><option value=\"3\">2024-2025</option><option value=\"2\">2023-2024</option><option value=\"1\">2022-2023</option><option value=\"5\">2021-2022</option>… hasta <option value=\"14\">2008-2009</option>. Y el JS: body.set('action','get_proyectos_ley_page'); body.set('_ajax_nonce',…); page, per_page, term, comision, tipo, estado, origen, legislatura, ley_numero, ley_fecha, comision_adv. Respuesta {success, data:{items,total,total_pages}} verificada. Ojo con una trampa adicional que el informe no marca: el value 20 significa 'legislatura 2026-2027' en un select y 'Comisión Especial Vigilancia del Organismo Electoral' en el de comisión.",
+   "severity": "low"
+  },
+  {
+   "claim": "«Detalle server-rendered en https://www.camara.gov.co/{link_web}/: estado, título, números C/S, origen, legislatura, autores…, fecha de radicación…»",
+   "verdict": "confirmed",
+   "correction": "Aquí NO se repite el precedente de las CERO filas: el HTML servido por curl, sin ejecutar JS, ya trae los campos.",
+   "evidence": "curl -s https://www.camara.gov.co/presupuesto-y-sostenibilidad-fiscal-territorial/ (746.624 bytes, sin JS) → texto plano contiene '211/2026C Senado — Origen Cámara Legislatura 2026-2027 Autores Representantes Alfredo Ape Cuello Baute…', 'Fecha de Radicación Cámara 12/8/2026 Senado - Tipo de ley Ley Orgánica', 'Objeto del proyecto La presente ley tiene por objeto…', 'Estado Trámite en Comisión'.",
+   "severity": "low"
+  },
+  {
+   "claim": "«128 proyectos en legislatura 2026-2027 al 18-08-2026 (Cámara)» / «Legislaturas 2008-2009 a 2026-2027»",
+   "verdict": "partially",
+   "correction": "Hoy son 140. Y el informe nunca dimensiona el corpus, que es el dato que decide la ingesta: con legislatura=All el endpoint entrega 6.446 registros en 65 páginas de 100 — una descarga completa barata que el plan no contempla.",
+   "evidence": "POST legislatura=20 → total 140, total_pages 28. POST legislatura=All → 'TOTAL GLOBAL registros camara: 6446 paginas 65'; descargué las 65 páginas y obtuve 6.446 items. POST legislatura=3 (2024-2025) → 643.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«nro_camara formato 'NNN/AAAAC' (211/2026C, con sufijo C y año completo)» — presentado como el identificador del crosswalk",
+   "verdict": "refuted",
+   "correction": "Dos cosas rotas. (a) El formato no es uno: sobre los 6.446 registros hay al menos 10 variantes en nro_camara y 10 en nro_senado, incluidos separadores con espacio, sin sufijo, en minúscula, con listas 'ACUM', y 8 registros donde el campo nro_senado lleva sufijo C (error de dato en origen). (b) nro_camara NO es único: 387 valores están duplicados. Un join por (número, año) empareja proyectos distintos.",
+   "evidence": "Counter de formatos sobre 6.446: nro_camara → NNN/NNNNC 5.466, 'NNN/NNNN C' 590, NNN/NNNN 306, 'NNN/NNNNC ACUM NNN/NNNN' 21, NNN/NNNNc 9, 'NNN/NNNNC ACUM NNN/NNNNC' 6, NNN 5, 'NNN/ NNNN' 4…; nro_senado → NNN/NNNNS 1.428, 'NNN/NNNN S' 278, NNN/NNNN 264, NNN/NNNNC 8, NNN/NNS 5, NN/NNNN 4, NNN/NNNNs 3, 'NNN/NNNN S Acum.' 3, NNN 2. Duplicados: 'nro_camara duplicados: 387 de 6055 unicos'. Caso verificado: 374/2024C = {vigencia 2024-2025, nro_senado 084/2023S, 'Comisión Legal para la Protección de la Infancia', link_web comision-proteccion-infancia-631} Y {vigencia 2023-2024, nro_senado 206/2024, 'Fondo Emprender de Cafés Especiales', link_web fondo-emprender-de-cafes-1090}. Contraste: link_web tiene 0 duplicados y 0 vacíos en 6.446 → es el único PK usable de la Cámara.",
+   "severity": "high"
+  },
+  {
+   "claim": "key_insights[2]: «El crosswalk Senado↔Cámara está resuelto por las propias fuentes: ambos portales publican el número de la otra cámara en cada registro… tres patas para una tabla de equivalencias robusta»",
+   "verdict": "refuted",
+   "correction": "Ninguna de las tres patas publica el número de la otra cámara «en cada registro»: lo hace una minoría en las tres. Y donde sí lo hace, el 18,9% de las claves es ambiguo y el 13,4% no tiene reciprocidad. El crosswalk NO está resuelto: es un problema de resolución de entidades que necesita arbitraje por título+fecha, no un join.",
+   "evidence": "Senado 2022-2027 (5 legislaturas, 1.691 filas): 641 traen numero_camara = 37,9%. Cámara (6.446 filas): 2.031 traen nro_senado = 31,5%; en la legislatura activa (20) son 0 de 140. Congreso Visible (muestra de 450 registros de 30 páginas repartidas por todo el corpus, fechas 1998-08-12 a 2026-08-12): sólo 118 traen AMBOS números = 26,2% (149 sólo cámara, 183 sólo senado). Join normalizado de los 641 pares del Senado contra los 6.446 de la Cámara: 'resuelve a >=1 registro Camara: 636, no resuelve: 5, AMBIGUO (>1 candidato): 120, reciprocidad confirmada: 551, sin reciprocidad: 85'.",
+   "severity": "high"
+  },
+  {
+   "claim": "Recomendación §1 y §2: job diario «por la legislatura activa» en ambos portales, y §3 crosswalk «arbitrado con el id de Congreso Visible»",
+   "verdict": "refuted",
+   "correction": "Ingerir sólo la legislatura activa rompe el crosswalk: los proyectos cruzan de cámara con números de OTRA legislatura. En la legislatura 2024-2025 del Senado, 111 de 219 numero_camara no existen en el listado de Cámara de esa misma legislatura. Y el árbitro propuesto (Congreso Visible) sólo publica ambos números en el 26,2% de los casos, así que no arbitra la mayoría de los empates.",
+   "evidence": "Join Senado 2024-2025 (219 filas con numero_camara) contra Cámara legislatura=3: 'existe en el listado de Camara (misma legislatura): 108 | NO existe: 111'. Al rehacerlo contra el corpus COMPLETO de Cámara, 636 de 641 resuelven. Ejemplo de ambigüedad verificada: Senado 206/24 declara numero_camara '374/24', y '374/2024C' son dos proyectos distintos en dos legislaturas. Fill-rate de CV medido arriba: 118/450 = 26,2%.",
+   "severity": "high"
+  },
+  {
+   "claim": "«el PDF NO tiene URL directa… la descarga real es un POST stateful con ViewState + cookie de sesión → el ingestor necesita un worker headless (Playwright) o replicar el ciclo JSF» + gaps[1] «No completé una descarga real del binario PDF»",
+   "verdict": "partially",
+   "correction": "La premisa es correcta (no hay URL directa) pero la conclusión operativa sobra: Playwright NO hace falta. Cerré el gap del informe con dos llamadas de curl y bajé el PDF entero. El plan debe quitar el worker headless de las gacetas.",
+   "evidence": "GET https://svrpubindc.imprenta.gov.co/senado/index2.xhtml?ent=Senado&fec=14-08-2026&num=1051 con -c cookiejar → extraigo action='/senado/index2.xhtml;jsessionid=…' y javax.faces.ViewState='4508969528089007772:-7914063230528263131'. POST a esa action con -b cookiejar y dldFile=dldFile&pdfIr=pdfIr&javax.faces.ViewState=… → 'HTTP/1.1 200 OK / Server: GlassFish Server Open Source Edition 4.1.1 / Content-Disposition: attachment;filename=\"gaceta_1051.pdf\" / Content-Type: application/pdf'; fichero de 14.932.603 bytes, magic b'%PDF-1.7'. Repetido con éxito para gaceta_1022.pdf (1.270.305 bytes) y gaceta_1032.pdf (1.608.782 bytes).",
+   "severity": "high"
+  },
+  {
+   "claim": "«cliqué 'Ver Link PDF' y el sistema mostró el permalink 'http://svrpubindc.imprenta.gov.co/senado/index2.xhtml?ent=Cámara&fec=13-8-2026&num=1032'» — permalink presentado como la vía de resolución de gacetas",
+   "verdict": "refuted",
+   "correction": "Ese permalink, tal como lo cita el informe, NO descarga nada: falla en SILENCIO. La app decodifica el query string como ISO-8859-1, así que 'Cámara' en UTF-8 (C%C3%A1mara) no casa con ninguna entidad y devuelve una página HTML de ~1.957 bytes sin Content-Disposition — indistinguible de un éxito si sólo se mira el status. El propio botón del sitio genera ese enlace envenenado. Hay que normalizar a 'Camara'/'Senado' sin acento (o latin-1). Agravante: index2.xhtml devuelve el mismo 200 de 2.117 bytes para ent=Senado&fec=99-99-9999&num=999999, o sea que el 200 del permalink no prueba absolutamente nada sobre la existencia de la gaceta.",
+   "evidence": "Ciclo completo GET+POST, misma receta, variando sólo `ent`: C%C3%A1mara (UTF-8) → 'Content-Type: text/html;charset=UTF-8', 1.957 bytes, sin Content-Disposition. C%E1mara (latin-1) → 'attachment;filename=\"gaceta_1032.pdf\"', 1.608.782 bytes. Camara / CAMARA / camara → gaceta_1032.pdf, 1.608.782 bytes. El padding de la fecha es indiferente (13-8-2026 y 13-08-2026 funcionan igual). Control: ent=Senado&fec=99-99-9999&num=999999 → 200, 2.117 bytes, byte-idéntico (salvo jsessionid/ViewState) a un permalink válido.",
+   "severity": "high"
+  },
+  {
+   "claim": "«31.307 gacetas en el índice (3.131 páginas × 10) al 18-08-2026» y «última gaceta vista nº 1032 del 13-08-2026 al verificar el 18-08-2026»",
+   "verdict": "partially",
+   "correction": "El conteo es correcto y coherente (hoy 31.325 en 3.133 páginas). El 'última gaceta vista' no: la primera fila del índice hoy es la 1051 del 14/08/2026, y esa gaceta ya existía el 18-08. El informe leyó una vista que no era la más reciente, lo que hace poco fiable su lectura de cadencia («varias por día»).",
+   "evidence": "GET https://svrpubindc.imprenta.gov.co/senado/ → 'Registro 1 a 10 de 31325 | Página 1 de 3133'; filas: 1051 Senado 14/08/2026, 1050 Senado 14/08/2026, …, 1035 13/08/2026, 1033 13/08/2026. La descarga de gaceta_1051.pdf (14,9 MB) confirma que existe. Confirmo el stack: header 'Server: GlassFish Server Open Source Edition 4.1.1' y recursos PrimeFaces v=5.2 con jsessionid en la ruta.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«CRÍTICO: HTTPS NO FUNCIONA — el puerto 443 rechaza la conexión (ECONNREFUSED); el sitio solo sirve por HTTP plano»",
+   "verdict": "partially",
+   "correction": "La conclusión es correcta (no hay TLS, HTTP sí sirve) pero el diagnóstico no: no hay rechazo, hay time-out. Importa operativamente: un ECONNREFUSED falla en milisegundos, un drop cuelga al cliente el timeout entero. Cualquier fetcher que intente https:// primero pagará ~25 s por documento.",
+   "evidence": "curl -m 25 https://www.secretariasenado.gov.co/senado/basedoc/ley_2213_2022.html → 'HTTPS:000' + rc=28 (CURLE_OPERATION_TIMEDOUT), no rc=7 (CURLE_COULDNT_CONNECT). curl http://… mismo path → HTTP:200, 46.378 bytes, <title>Leyes desde 1992 - Vigencia expresa y control de constitucionalidad [LEY_2213_2022]</title>, exactamente el título citado por el informe.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«datos.gov.co feim-cysj CONGELADO: rowsUpdatedAt = 2023-12-07T01:22:11Z. El 'updatedAt' del catálogo (2026-05-18) es solo un toque de metadata» + encoding roto",
+   "verdict": "confirmed",
+   "correction": "Confirmado al segundo, y peor de lo que dice: además del mojibake hay filas basura y fechas corruptas. El veredicto 'avoid' está bien puesto.",
+   "evidence": "GET https://www.datos.gov.co/api/views/feim-cysj.json → rowsUpdatedAt 1701912131 = 2023-12-07T01:22:11, viewLastModified 1779126768 = 2026-05-18T17:52:48, name 'Proyectos de ley del Senado de la Republica'. GET /resource/feim-cysj.json?$limit=50000 → 2.274 filas, de las cuales 1.276 contienen U+FFFD (p.ej. 'POR EL CUAL SE EXPIDE EL C�DIGO DE �TICA…'); una fila tiene n_senado='LEGISLATURA 2017 - 2018'; min f_presentado='0201-08-29' y max='9/6/2018' (formatos mezclados).",
+   "severity": "low"
+  },
+  {
+   "claim": "robots.txt: camara.gov.co «allowed (solo Disallow /wp-admin/ con Allow explícito para admin-ajax.php; sitemap declarado)»; leyes.senado e imprenta «404»; secretariasenado «Joomla default, basedoc no bloqueado»",
+   "verdict": "confirmed",
+   "evidence": "https://www.camara.gov.co/robots.txt → 'User-agent: * / Disallow: /wp-admin/ / Allow: /wp-admin/admin-ajax.php / Sitemap: https://www.camara.gov.co/sitemap_index.xml'. https://leyes.senado.gov.co/robots.txt → HTTP:404. https://svrpubindc.imprenta.gov.co/robots.txt → HTTP:404. http://www.secretariasenado.gov.co/robots.txt → Joomla default (Disallow /administrator/, /cache/, /cli/, /components/, /images/, /includes/, /installation/, /language/, /libraries/, /logs/, /media/, /modules/, /plugins/, /templates/, /tmp/) — /senado/basedoc/ no aparece.",
+   "severity": "low"
+  },
+  {
+   "claim": "«El listado de proyectos viene embebido en __NEXT_DATA__ (props.pageProps.ListProyectos + TotalProyectos + query)… id, cuatrienio_id, legislatura_id, …, se_acumula_a_id» y «el listado solo está disponible vía SSR»",
+   "verdict": "partially",
+   "correction": "El SSR es real y las claves son exactas — otra vez, no se repite el fallo de CERO filas. Lo que falta es el coste: son 15 registros por página sobre 15.129 totales, o sea 1.009 peticiones de ~900 KB (~900 MB) para el corpus. El informe presenta a CV como enriquecimiento y árbitro del crosswalk sin decir lo que cuesta traerlo. Corrijo también un matiz del informe: /_next/data/{buildId}/proyectos-de-ley.json?page=N SÍ funciona hoy y pesa 679 KB (más barato que el HTML), aunque efectivamente depende del buildId.",
+   "evidence": "curl sin JS de https://congresovisible.uniandes.edu.co/proyectos-de-ley/ (894.276 bytes) → '__NEXT_DATA__ presente: True'; pageProps keys ['ListProyectos','TotalProyectos','query']; ListProyectos = list de 15; item keys incluye id, cuatrienio_id, legislatura_id, corporacion_id, titulo, alias, fecha_radicacion, numero_camara, numero_senado, tema_id_principal, sinopsis, se_acumula_a_id…; TotalProyectos 15129; buildId '6Ko27ES0iQiiGabGJFHZq' (el mismo que cita el informe → sin redeploy). Paginación: sólo ?page=N se honra (page=2 → primer id 15628 vs 15643 en page=1); ?pagina/?p/?offset/?numero devuelven la página 1. GET /_next/data/6Ko27ES0iQiiGabGJFHZq/proyectos-de-ley.json?page=2 → HTTP 200, application/json, 679.326 bytes.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«La mejor señal push de todo el ecosistema es el RSS + sitemap de la Cámara (lastmod del mismo día; cada proyecto nuevo es un post)»",
+   "verdict": "partially",
+   "correction": "El push es real y fresquísimo. El matiz: el feed no es sólo de proyectos — mezcla tipos de post ('Proposición No. 03'), así que sirve de disparador (que es como lo usa la recomendación) pero no como censo de radicaciones.",
+   "evidence": "GET https://www.camara.gov.co/feed/ → 200 text/xml, <lastBuildDate>Wed, 19 Aug 2026 20:29:52 +0000</lastBuildDate>, 11 items: 'Proposición No. 03', 'FORMALIZACIÓN DE LA MINERÍA DE PEQUEÑA ESCALA', 'ASEGURAMIENTO INCLUSIVO', 'INNOVA TERRITORIO'… GET /sitemap_index.xml → 200, post-sitemap1..N.xml con lastmod 2026-08-19T20:59:05+00:00.",
+   "severity": "low"
+  },
+  {
+   "claim": "«el Senado no tiene señal push funcional (RSS 500, ?format=feed 404)» y «el Joomla histórico (leyes.senado.gov.co/proyectos/index.php/*) devuelve 404… el portal viejo fue desmantelado SIN redirects»",
+   "verdict": "partially",
+   "correction": "Verifiqué las dos partes comprobables y salen bien: ?format=feed da 404 y las rutas Joomla viejas dan 404 de Apache sin redirect. No reproduje el error 500 concreto del feed Joomla que cita el informe, así que esa mitad queda sin verificar por mí.",
+   "evidence": "GET 'https://www.senado.gov.co/index.php/component/content/?format=feed&type=rss' → HTTP:404, text/html, 1.645 bytes (página de error Joomla). GET https://leyes.senado.gov.co/proyectos/index.php/proyectos-ley y /proyectos-de-ley → HTTP:404, 196 bytes, '<title>404 Not Found</title> … The requested URL was not found on this server.' (Apache, sin Location).",
+   "severity": "low"
+  },
+  {
+   "claim": "key_insights[6]: «Votaciones nominales: NO existen hoy en formato estructurado en ninguna fuente oficial»",
+   "verdict": "unverifiable",
+   "correction": "No lo audité. Es una afirmación universal negativa sobre todo el ecosistema y no tengo cómo refutarla ni confirmarla con el presupuesto de esta revisión; el propio informe la declara como gaps[2]. La señalo para que nadie la lea como verificada por mí.",
+   "evidence": "No ejecuté ninguna comprobación sobre /votaciones-y-asistencias/, las actas de plenaria en gacetas, ni el catálogo de datos.gov.co para votaciones. Sin comando, sin veredicto.",
+   "severity": "medium"
+  }
+ ],
+ "omissions": [
+  "EL TAMAÑO DE LOS CORPUS. El informe no da una sola cifra de volumen total, y sin eso no se puede dimensionar la ingesta ni el almacenamiento. Medidos por mí: Cámara 6.446 proyectos (legislatura=All, 65 páginas de 100); Senado ~10.115 ids enumerables de proyectos de ley + ~2.7xx leyes sancionadas + 32 actos legislativos; Imprenta 31.325 gacetas (y una sola de ellas pesa 14,9 MB — el archivo documental propio que pide la recomendación §4 son cientos de GB, no un detalle).",
+  "LOS 200 QUE NO SON ÉXITOS. Es la trampa que el orquestador anticipaba y el informe no la marca en ningún sitio. get_detalle_pdly/lys devuelven HTTP 200 con un <p> de prosa para ids inexistentes; index2.xhtml devuelve el MISMO 200 de 2.117 bytes para una gaceta inventada; el POST de descarga devuelve 200 con text/html cuando falla. Un ingestor que valide por status archivará HTML de 1.957 bytes como si fuera un PDF de gaceta. Todo fetcher del plan necesita validar cuerpo y Content-Type.",
+  "LA ENUMERACIÓN POR ID DEL SENADO. El informe diseña la ingesta como 37 búsquedas por legislatura cuando get_detalle_pdly.php?id=1..~10.115 recorre el corpus histórico completo de forma densa y resiliente al cambio de formato del selector. Es una estrategia alternativa (y un cotejo de completitud) que el informe ni evalúa.",
+  "LA CALIDAD DEL CROSSWALK, QUE ERA EL CORAZÓN DE LA ESPECIALIDAD. El informe afirma que está resuelto sin medir ni una vez fill-rate, ambigüedad, reciprocidad ni colisiones. Los cuatro números salen mal (37,9% / 31,5% / 26,2% de fill-rate; 18,9% ambiguo; 13,4% sin reciprocidad; 387 nro_camara duplicados).",
+  "LA HETEROGENEIDAD DE FORMATO DENTRO DE CADA FUENTE. El informe describe un formato limpio por fuente ('NNN/AAAAC', 'NNN/YY'). En la realidad hay ~10 variantes por campo, con espacios, minúsculas, sufijos cruzados y listas 'ACUM' embebidas en el mismo campo del número. La normalización no es cosmética: es la diferencia entre resolver 636 de 641 pares y resolver muchos menos.",
+  "EL COSTE DE CONGRESO VISIBLE. 15 registros por página × 1.009 páginas de ~900 KB para 15.129 proyectos. El informe lo propone como capa de enriquecimiento y árbitro sin cuantificar la descarga ni el rezago de re-crawl.",
+  "LOS DUPLICADOS DENTRO DE LA PROPIA FUENTE DEL SENADO. Una búsqueda por palabra_clave=ANIMAL devolvió '112/92' dos veces seguidas. No lo investigué a fondo, pero el informe da por hecho que numero_senado identifica y no comprueba unicidad en ningún lado.",
+  "RATE LIMITS, CORTESÍA Y USER-AGENT. Nada. Bajé 65 páginas de la Cámara, 30 de Congreso Visible, 5 legislaturas del Senado y 3 PDFs de gaceta (17,8 MB) sin un solo 429 ni bloqueo, pero el plan no dice qué ritmo asume ni qué hace cuando lo bloqueen — y la Imprenta corre sobre un GlassFish 4.1.1 al que el propio informe atribuye 'riesgo alto de caída'."
+ ],
+ "architecture_changing": [
+  "EL CROSSWALK NO ESTÁ RESUELTO — hay que rediseñarlo como resolución de entidades, no como join. Medido: sólo el 37,9% de las filas del Senado trae numero_camara, el 31,5% de las de la Cámara trae nro_senado y el 26,2% de las de Congreso Visible trae ambos; de los 641 pares que sí existen, 120 (18,9%) son ambiguos y 85 (13,4%) no tienen reciprocidad. El plan necesita una capa de arbitraje por título + fecha de radicación + legislatura, con estado explícito de 'sin cruce' y 'cruce ambiguo', no una tabla de equivalencias que se asume correcta.",
+  "INGERIR SÓLO 'LA LEGISLATURA ACTIVA' ROMPE EL CRUCE (recomendación §1 y §2). Los proyectos cruzan de cámara arrastrando números de otra legislatura: 111 de 219 numero_camara del Senado 2024-2025 no existen en el listado de Cámara de esa legislatura, y sí en el corpus completo (636 de 641 resuelven contra el total). Hay que ingerir el corpus completo de ambas cámaras y refrescarlo, no sólo el año en curso. Es barato: legislatura=All baja los 6.446 de la Cámara en 65 páginas, e ids 1..~10.115 recorren el Senado entero.",
+  "nro_camara NO ES IDENTIFICADOR (387 colisiones sobre 6.055 valores únicos; caso verificado: 374/2024C son dos proyectos distintos). El PK de la Cámara es link_web (0 duplicados, 0 vacíos en 6.446). Cualquier esquema de base de datos que use el número como clave hay que rehacerlo.",
+  "FUERA PLAYWRIGHT DE LA INGESTA DE GACETAS (recomendación §4). El ciclo JSF se replica con dos llamadas de curl —GET para jsessionid+ViewState, POST con dldFile/pdfIr/ViewState— y devuelve el binario: gaceta_1051.pdf, 14.932.603 bytes, %PDF-1.7. Se elimina el worker headless, su coste y su fragilidad.",
+  "FUERA EL SCRAPING DEL NONCE DE LA CÁMARA COMO REQUISITO (recomendación §2). admin-ajax.php responde {\"success\":true,...} con _ajax_nonce=0000000000 y también sin el parámetro. El paso de scrapear el nonce y la ruta de fallo 'recargar la página sin caché' resuelven un problema que hoy no existe; si se conservan, que sea como seguro documentado, no como camino previsto.",
+  "LA INGESTA DE LEYES SANCIONADAS NECESITA OTRA ESTRATEGIA. search_lys y search_actos no aceptan el parámetro legislatura (lo ignoran en silencio) y sin filtro el servidor devuelve exactamente 100 filas sin paginación. Las vías reales son una palabra_clave amplia (A → 2.711 leyes) o enumerar get_detalle_lys.php?id=1..~2.7xx. Tal como está escrita, la recomendación §1 recogería 100 leyes y creería tenerlas todas.",
+  "VALIDAR CUERPO Y Content-Type EN TODOS LOS FETCHERS, no el status. Los cuatro endpoints críticos devuelven 200 en el caso de error: id inexistente → 200 con prosa; gaceta inventada → 200 con la misma página de 2.117 bytes; descarga fallida → 200 text/html. Sin esta guarda el archivo documental se llena de HTML disfrazado de PDF y nadie se entera.",
+  "NORMALIZAR ent SIN ACENTO AL RESOLVER GACETAS. El permalink que el propio sitio de la Imprenta genera —ent=Cámara— falla en silencio cuando se pide con UTF-8: la app decodifica el query string como ISO-8859-1. Usar 'Camara'/'Senado' (o latin-1). Afecta a la mitad de todas las gacetas del Congreso."
+ ],
+ "overall": "**El input no llegó truncado**: cargué `congreso.json` completo con `json.load()` y recorrí sus cuatro claves (`sources` con 9 fuentes, `gaps` con 9, `key_insights` con 8, `recommendation`), campo por campo, sin `grep`.\n\n**Lo que el informe hizo bien, y hay que decirlo porque era lo que más riesgo tenía:** el precedente de la especialidad hermana —una receta de parsing que devolvía CERO filas por asumir render en servidor— NO se repite aquí. Los tres puntos donde podía haberse repetido resisten la prueba con curl y sin JS: el detalle de la Cámara está server-rendered con todos sus campos, el `__NEXT_DATA__` de Congreso Visible viene embebido con las 24 claves que el informe enumera, y el POST del Senado devuelve el registro exacto que cita (id 9924, `001/26`, LEY ÁNGEL 2.0). El dato de `autor=PADILLA → 5 filas` sale clavado. Los IDs no ordinales de legislatura de la Cámara (20/13/3/2/1) están literalmente en el HTML. Los cuatro `robots.txt` son exactos. El diagnóstico de `datos.gov.co` (congelado en `rowsUpdatedAt` 2023-12-07 con el catálogo mintiendo 2026-05-18) es correcto al segundo. Este informe hizo trabajo real de campo, no lo inventó.\n\n**Lo que se cae, y se cae en el punto que el orquestador marcó como el que sostiene la Fase 1:** el crosswalk. `key_insights[2]` dice que está «resuelto por las propias fuentes» porque «ambos portales publican el número de la otra cámara en cada registro». Lo medí sobre los corpus completos y ninguna de las tres patas llega al 40%: Senado 37,9%, Cámara 31,5%, Congreso Visible 26,2%. De los 641 pares que sí existen, 120 (18,9%) son ambiguos y 85 (13,4%) no tienen reciprocidad. Y el identificador sobre el que se apoyaría el join no es identificador: hay 387 valores de `nro_camara` duplicados, y verifiqué uno a mano —`374/2024C` es a la vez un fondo de cafés especiales y una comisión de protección de la infancia—. El plan no necesita un ajuste de dato: necesita una capa de resolución de entidades y aceptar que una parte del cruce quedará marcada como ambigua.\n\n**Tres correcciones que abaratan el plan en vez de encarecerlo.** Cerré el `gaps[1]` del propio informe y bajé una gaceta completa (14,9 MB, `%PDF-1.7`) con dos llamadas de curl: el worker Playwright de la recomendación §4 sobra. El `_ajax_nonce` de la Cámara no se valida —responde igual con un nonce falso y sin nonce—: el paso de scraping y su ruta de fallo por caché resuelven un problema inexistente. Y `get_detalle_pdly.php` es enumerable de 1 a ~10.115, lo que hace innecesario iterar 37 legislaturas.\n\n**Y una que lo encarece, la más fea de todas porque falla callando:** el permalink de gaceta que el informe cita textualmente —`ent=Cámara&fec=13-8-2026&num=1032`, generado por el botón «Ver Link PDF» del propio sitio de la Imprenta— no descarga nada. La app decodifica el query string como ISO-8859-1, así que la `á` en UTF-8 no casa y devuelve 1.957 bytes de HTML con status 200 y sin `Content-Disposition`. Con `ent=Camara` sin acento salen los 1.608.782 bytes del PDF. Esto es exactamente el modo de fallo que el orquestador pedía cazar —200 que no es lo que se espera— y afecta a la mitad de todas las gacetas del Congreso. Es también un aviso sobre el método del informe: verificó ese permalink por status (`→ 200 'Gaceta Congreso'`) sin completar el ciclo, y ese 200 no significa nada: index2.xhtml devuelve la misma página para `num=999999`.\n\n**Lo que NO pude verificar y no debe leerse como avalado por mí:** la afirmación universal de `key_insights[6]` («no existen votaciones nominales estructuradas en NINGUNA fuente oficial») —no la audité, y el propio informe la declara como gap—; el error 500 concreto del feed Joomla del Senado (sí confirmé el 404 de `?format=feed`); si las 0 colisiones de `numero_camara` que observé en Congreso Visible se sostienen fuera de mi muestra de 450 registros (con la tasa de la Cámara, ~6%, esperaría 0-2, así que la muestra no discrimina); y la profundidad histórica real de cada fuente más allá de lo que devuelven sus selectores. Tampoco probé qué pasa cuando estos servidores se enfadan: no vi un solo 429, pero tampoco forcé el ritmo."
+}

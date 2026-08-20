@@ -1,0 +1,186 @@
+{
+ "especialidad": "legal-ai — alucinación en herramientas jurídicas RAG, claims de los líderes de mercado, y el andamiaje técnico (Citations API / contextual retrieval) que sostiene el plan de Q&A de regwatch-co",
+ "verdicts": [
+  {
+   "claim": "Stanford RegLab, 'Hallucination-Free? Assessing the Reliability of Leading AI Legal Research Tools' (Magesh, Surani, Dahl, Suzgun, Manning, Ho); JELS 2025 doi 10.1111/jels.12413; arXiv 2405.20362 v1 mayo 2024; primera evaluación PREREGISTRADA",
+   "verdict": "confirmed",
+   "evidence": "curl 'http://export.arxiv.org/api/query?id_list=2405.20362' → TITLE: Hallucination-Free? Assessing the Reliability of Leading AI Legal Research Tools; AUTHORS: ['Varun Magesh','Faiz Surani','Matthew Dahl','Mirac Suzgun','Christopher D. Manning','Daniel E. Ho']; PUB: 2024-05-30. curl api.crossref.org/works/10.1111/jels.12413 → CONTAINER: ['Journal of Empirical Legal Studies']; ISSUED 2025-04-23; VOL/ISSUE/PAGE: 22 2 216-242. Abstract: 'we design and report on the first preregistered empirical evaluation of AI-driven legal research tools'.",
+   "severity": "low"
+  },
+  {
+   "claim": "'tasas... Lexis+ AI 17%, Westlaw AIAR 33%, GPT-4 43%'",
+   "verdict": "confirmed",
+   "evidence": "curl arxiv.org/pdf/2405.20362 → magesh.pdf (38 pp); pdftotext, Figura 4 (líneas 928-962 de magesh.txt): '17% / 18% / 65%' (Lexis), '33% / 25% / 42%' (Westlaw), '17% / 63% / 20%' (Pract. Law), '43% / 8% / 49%' (GPT-4), bajo el eje 'Proportion Hallucinated When Responsive'. Los tres números del informe coinciden EXACTAMENTE.",
+   "severity": "low"
+  },
+  {
+   "claim": "'RAG reduce ~2-3x pero NO elimina' (projects[0].what_fails y key_insights[0], titular del informe)",
+   "verdict": "partially",
+   "correction": "El factor 2-3x solo vale para la MEJOR herramienta. 43%→17% = 2,5x (Lexis y Ask Practical Law); 43%→33% = 1,3x (Westlaw AI-AR). El propio paper lo dice al revés de como lo pinta el informe: Westlaw 'hallucinates nearly twice as often as the other legal tools we test'. Publicar '~2-3x' como propiedad de RAG es seleccionar el mejor caso: la banda medida es 1,3x-2,5x.",
+   "evidence": "magesh.txt:201 'Westlaw's AI-Assisted Research is accurate 42% of the time, but hallucinates nearly twice as often as the other legal tools we test'. Aritmética sobre Figura 4: 43/17=2,53; 43/33=1,30.",
+   "severity": "medium"
+  },
+  {
+   "claim": "La banda '17-33%' corresponde a Lexis y Westlaw ('17-33% en herramientas comerciales'; key_insights[0] 'medido en Lexis/Westlaw')",
+   "verdict": "partially",
+   "correction": "La banda cubre TRES productos, no dos: Lexis+ AI 17%, Ask Practical Law AI 17%, Westlaw AI-AR 33%. El informe nunca cita la cifra de Ask Practical Law aunque es la que fija el piso de la banda junto con Lexis.",
+   "evidence": "Abstract arXiv: 'the AI research tools made by LexisNexis (Lexis+ AI) and Thomson Reuters (Westlaw AI-Assisted Research and Ask Practical Law AI) each hallucinate between 17% and 33% of the time'. Figura 4: Pract. Law 17%.",
+   "severity": "low"
+  },
+  {
+   "claim": "projects[0].evidence: 'Fetch a reglab.stanford.edu y arxiv.org/abs/2405.20362 (2026-08-19): ... Lexis+ AI 17%, Westlaw AIAR 33%, GPT-4 43%' con verified_by_fetch: true",
+   "verdict": "partially",
+   "correction": "Los números son correctos, la procedencia declarada no puede haberlos producido. NINGUNA de las dos URLs citadas contiene el desglose por herramienta ni el 43% de GPT-4: solo el rango '17% and 33%'. El desglose vive en la Figura 4 del PDF (que hay que descargar y extraer) y, por separado, en el post de ailawlibrarians que el informe fetcheó como projects[3]. Es el mismo patrón de 'verificado por fetch' decorativo que hundió afirmaciones en los informes hermanos: aquí el dato sobrevive, la disciplina de evidencia no.",
+   "evidence": "WebFetch a reglab.stanford.edu/publications/hallucination-free-…/ → 'The page states that AI legal research tools \"hallucinate between 17% and 33% of the time.\" No per-tool specific percentages are provided—only this range is given… No specific percentage for GPT-4 is cited on this page.' El abs de arXiv contiene el mismo texto del abstract.",
+   "severity": "medium"
+  },
+  {
+   "claim": "LexisNexis afirmaba '100% hallucination-free linked legal citations' (2023) y el estudio lo declara 'overstated'",
+   "verdict": "confirmed",
+   "evidence": "magesh.txt:123 'Lexis: \"Unlike other vendors, however, Lexis+ AI delivers 100% hallucination-free linked legal citations connected to source documents, grounding those responses in authoritative resources that can be relied upon with confidence.\" (Wellen, 2024a)'. Abstract: 'We demonstrate that the providers' claims are overstated.' Matiz de fecha: el paper fecha esa redacción con '100%' en Wellen 2024a (post de LexisNexis), y atribuye a 'LexisNexis, 2023' la variante sin porcentaje ('linked hallucination-free legal citations', magesh.txt:580). El informe la fecha entera en 2023.",
+   "severity": "low"
+  },
+  {
+   "claim": "'Lexis+ AI® has been renamed Lexis+® with Protégé™' (feb 2026); la página evita 'hallucination-free' y dice 'grounded in authoritative LexisNexis sources'; Shepard's integrado; multi-modelo OpenAI/Google/Anthropic",
+   "verdict": "confirmed",
+   "evidence": "WebFetch lexisnexis.com/en-us/products/lexis-plus-ai.page → 'As of February 2026, Lexis+ AI® has been renamed Lexis+® with Protégé™.'; 'The word \"hallucination\" or \"hallucination-free\" does not appear anywhere on this page.'; 'Shepard's citations - Validate citations and confirm the status and treatment of authorities directly within your research and drafting workflow.'; 'Protégé General AI includes access to large language models from OpenAI, Google, and Anthropic.'",
+   "severity": "low"
+  },
+  {
+   "claim": "'La retractación SILENCIOSA de LexisNexis valida nuestra regla' (projects[7].lessons_for_us[1]) y patterns[7] 'nadie serio dice ya hallucination-free… la retórica migró'",
+   "verdict": "refuted",
+   "correction": "No fue silenciosa: LexisNexis reformuló el claim en PÚBLICO y por escrito en 2024, y el propio paper lo recoge. Lo que el informe verificó es la ausencia de una palabra en una página de 2026 — eso es consistente con una retractación silenciosa pero también con la reformulación documentada. La lección que se extrae ('la incertidumbre se declara') es correcta; el hecho que la sostiene está mal contado, y el informe usa un adjetivo que su fuente primaria contradice.",
+   "evidence": "magesh.txt:684 (nota 13): 'Accompanying this release, LexisNexis noted, \"our promise is not perfection, but that all linked legal citations are hallucination-free\" (LexisNexis, 2024).' Es decir: siguieron usando el término, acotándolo, y lo publicaron.",
+   "severity": "medium"
+  },
+  {
+   "claim": "Las cifras 17%/33% describen el estado actual de Lexis y Westlaw (CoCounsel.what_fails: 'Stanford midió 33% de alucinación en Westlaw AIAR pese al trusted content', en presente, junto a páginas de producto de 2026)",
+   "verdict": "partially",
+   "correction": "Las mediciones son de marzo-abril 2024 y el paper se blinda explícitamente contra extrapolarlas al producto siguiente. Entre la medición y las páginas que el informe fetchea (Protégé feb 2026, Fiduciary-Grade, Harvey II ago 2026) hay dos generaciones de producto. Citar 17/33% junto a la página de 2026 sin ese sello de fecha es exactamente el error que el informe reprocha a los vendedores.",
+   "evidence": "magesh.txt:684 nota 13: 'Since the completion of our evaluation for this paper in April 2024, LexisNexis has released a \"second generation\" version of its tool. Our results do not speak to the performance of this second generation product, if different.' magesh.txt:865: 'all queries on Lexis+ AI, Ask Practical Law AI, and GPT-4 were run between March 22 [and April] 2024'.",
+   "severity": "medium"
+  },
+  {
+   "claim": "CoCounsel: 'Fiduciary-Grade AI™ built for high-stakes professional work'; 'answers grounded in our authoritative, proprietary content'; 'transparencia verificable'; ~1M usuarios; ediciones Legal/Essentials/Tax-Audit",
+   "verdict": "partially",
+   "correction": "Todo verbatim salvo las ediciones: la página lista CUATRO productos separados —CoCounsel Legal, CoCounsel Essentials, CoCounsel Tax, CoCounsel Audit & Accounting—, no una edición 'Tax-Audit'. Error menor de transcripción, pero es el tipo de fusión que luego se cita como si fuera el catálogo real. 'Deep research sobre Westlaw+Practical Law' no aparece en esta página.",
+   "evidence": "WebFetch thomsonreuters.com/en/cocounsel → 'CoCounsel: Fiduciary-Grade AI™ built for high-stakes professional work'; 'Grounded in authoritative, proprietary content'; 'Transparent and verifiable - When almost right isn't good enough, every output must hold up to scrutiny'; 'Work smarter with CoCounsel, already trusted by 1M users'; editions: CoCounsel Legal / CoCounsel Essentials / CoCounsel Tax / CoCounsel Audit & Accounting.",
+   "severity": "low"
+  },
+  {
+   "claim": "Harvey: productos Agents/Vault/Knowledge/Shared Spaces/Contract Intelligence; Knowledge = 'Research complex legal, regulatory, and tax questions across domains'; Harvey II 2026-08-18; Claude Opus 5 en producción 2026-07-24; GPT-5.6; análisis audio/video/imagen ago 2026",
+   "verdict": "confirmed",
+   "evidence": "WebFetch harvey.ai/products → productos: Agents, Vault, Knowledge, Shared Spaces, Contract Intelligence (+ Command Center, Harvey Mobile, Ecosystem); Knowledge: 'Research complex legal, regulatory, and tax questions across domains.'; sección 'Introducing Harvey II'. WebFetch harvey.ai/blog → 'Introducing Harvey II' 2026-08-18; 'Claude Opus 5, Now Live in Harvey' 2026-07-24; 'GPT-5.6 Sol, Now Live in Harvey' 2026-07-09; 'Analyze the Full Scope of Legal Evidence, Not Just the Documents' 2026-08-14 (audio, video, image).",
+   "severity": "low"
+  },
+  {
+   "claim": "patterns[0]: 'los CUATRO líderes convergen en el mismo contrato' de procedencia (Vincent, Lexis, CoCounsel, Legis Xperta)",
+   "verdict": "partially",
+   "correction": "El conjunto está elegido entre los que convergen. Harvey —que el propio informe trata como líder y que actualiza modelo base en semanas— queda fuera, y su ficha admite 'cero transparencia pública sobre cómo ancla citas', cosa que mi fetch confirma. Legora, el otro producto agéntico del informe, tampoco documenta mecanismo de citas. De los seis actores fetcheados, dos de los más grandes NO publican contrato de procedencia: la convergencia es de los editoriales con corpus propietario, no del mercado.",
+   "evidence": "WebFetch harvey.ai/products → 'The page does not explicitly describe how citations are anchored or grounded in sources.' WebFetch legora.com → 'The page does not describe any citation or grounding mechanism for the AI system's outputs.'",
+   "severity": "medium"
+  },
+  {
+   "claim": "vLex Vincent: 'memorandos completamente citados con enlaces directos a fuentes primarias'; cobertura explícita de Colombia; es-CO; 20+ workflows; claim '3.67× más confiabilidad'",
+   "verdict": "partially",
+   "correction": "Todo confirmado salvo dos detalles: (a) la página lista 17 jurisdicciones nombradas, no '100+ países' como dice el informe (ese claim, si existe, está en otra página de vlex.com y no fue verificado); (b) el informe atribuye el 3.67× al RCT de Schwarcz —la página dice solo 'In randomized controlled trials' y NO cita estudio, así que la atribución es inferencia del informe, no dato de la fuente.",
+   "evidence": "WebFetch vlex.com/vincent-ai → 'Provides fully cited memo with direct links to primary sources'; 'In randomized controlled trials, Vincent shows 3.67× more reliability than leading LLMs and outperforms human research without AI. The page does not cite a specific study source.'; jurisdicciones: 'Brazil, Chile, Colombia, Ecuador, European Union, France, Hong Kong, Ireland, Italy, Mexico, New Zealand, Peru, Portugal, Singapore, Spain, United Kingdom, United States'; idiomas: 'Español (Colombia)', 'Español (México)', 'Español (Perú)', 'Español (Chile)'; '20+ pre-built workflows'.",
+   "severity": "low"
+  },
+  {
+   "claim": "Legis Xperta: tres modos de búsqueda con los textos citados; V5.0.5.3, copyright 2026; créditos; 'Sentencias Fuentes Oficiales BETA … tal como fueron publicadas … sin análisis ni contenido editorial'",
+   "verdict": "confirmed",
+   "evidence": "Playwright a xperta.legis.co/home + page.evaluate sobre aria-label: 'Encuentra información mediante búsquedas en lenguaje natural, por ideas, contexto o significado, incluso sin conocer los términos exactos.' y 'Versión BETA: Accede a sentencias de fuentes oficiales tal como fueron publicadas por las entidades competentes, sin análisis ni contenido editorial de Legis.'; innerText: 'Publicaciones Legis | Búsqueda Inteligente | Sentencias Fuentes Oficiales BETA'; 'Bolsa de Créditos … 60 créditos … COP 53,500'; footer '2026 © Todos los derechos reservados (V5.0.5.3)'. Matiz: la separación cruda/editorial es SOLO para sentencias, no para normas.",
+   "severity": "low"
+  },
+  {
+   "claim": "lessons_for_us[1] de Legis: 'Que legislación desde 1991 sea free tier en Legis presiona: el valor cobrable está en vigencia+Q&A+monitoreo, no en el texto crudo'",
+   "verdict": "partially",
+   "correction": "El free tier existe (confirmado), pero incluye EXPLÍCITAMENTE 'análisis de vigencia'. O sea: el incumbente ya regala, con solo registro, lo que el informe designa como el primer pilar del valor cobrable de regwatch-co. La conclusión que se sigue es la contraria a la escrita: la vigencia por sí sola no es el activo monetizable frente a Legis; lo defendible es la AUDITABILIDAD de esa vigencia (cadena de afectaciones enlazada a fuente primaria) más el trámite legislativo/votaciones, que Legis no ofrece.",
+   "evidence": "Playwright, innerText de xperta.legis.co/home: 'VER TODO EL CONTENIDO DISPONIBLE | Consulta la Colección de Legislación Colombiana de forma gratuita | Consulta la normativa y soporte legislativo desde 1991 con análisis de vigencia en todas las áreas del Derecho. | REGISTRARME'.",
+   "severity": "high"
+  },
+  {
+   "claim": "arXiv 2606.00898 'Citation Grounding Measures the Oracle': grafo disperso 4.7e5 → 0.791-0.855; denso 3.3e8 → 0.989-0.999; la métrica mide cobertura",
+   "verdict": "partially",
+   "correction": "Las cifras y la tesis son exactas. Lo que el informe omite es la otra mitad del abstract, que es la que muerde: el bootstrap muestra que NINGÚN par de sistemas es separable al 95% con ningún tamaño de oráculo. Y el contexto que el informe tampoco da: es un preprint de UN SOLO autor, no revisado por pares, sobre 100 consultas en derecho UCRANIANO — llevado en el JSON con confidence: high.",
+   "evidence": "curl 'http://export.arxiv.org/api/query?id_list=2606.00898' → v1 PUB 2026-05-30, v2 UPD 2026-08-08, AUTH ['Volodymyr Ovcharov']. Abstract: 'We score 400 responses (100 Ukrainian legal queries x four commercial LLMs)'; 'Bootstrapping over the queries shows the other half, which no version of this work reported: no pair of systems is separable at 95% at any oracle size tested.'; 'Sparse oracles discriminate, but what they discriminate is harvesting coverage; dense oracles are trustworthy and separate nothing.'",
+   "severity": "high"
+  },
+  {
+   "claim": "Anthropic Contextual Retrieval: -35% (5.7%→3.7%), -49% (→2.9%), -67% (→1.9%); contexto 50-100 tokens; chunks 800 tokens; $1.02 por millón de tokens de documento; contexto generado con Haiku",
+   "verdict": "confirmed",
+   "evidence": "curl anthropic.com/news/contextual-retrieval + extracción de texto: 'Contextual Embeddings reduced the top-20-chunk retrieval failure rate by 35% (5.7% → 3.7%)'; '…by 49% (5.7% → 2.9%)'; 'Reranked Contextual Embedding and Contextual BM25 reduced the top-20-chunk retrieval failure rate by 67% (5.7% → 1.9%)'; 'The resulting contextual text, usually 50-100 tokens, is prepended to the chunk'; 'Assuming 800 token chunks, 8k token documents, 50 token context instructions, and 100 tokens of context per chunk, the one-time cost to generate contextualized chunks is $1.02 per million document tokens'; 'We used the following Claude 3 Haiku prompt'.",
+   "severity": "low"
+  },
+  {
+   "claim": "Citations API: GA sin beta header, todos los modelos activos; punteros 'garantizados'; char_location 0-indexed / page_location 1-indexed / content_block_location; cited_text no factura output tokens; incompatible con structured outputs (400)",
+   "verdict": "confirmed",
+   "evidence": "WebFetch platform.claude.com/docs/en/build-with-claude/citations (74KB volcados) → 'All active models support citations.'; 'Platforms: Claude API, Claude Platform on AWS, Amazon Bedrock, Google Cloud, Microsoft Foundry'; l.309 'citations are guaranteed to contain valid pointers to the provided documents'; l.364-366 'Character indices are 0-indexed with exclusive end indices. Page numbers are 1-indexed… Content block indices are 0-indexed'; l.371 'The cited_text field is provided for convenience and does not count toward output tokens'; l.379-381 'Citations and structured outputs are incompatible… the API returns a 400 error'.",
+   "severity": "low"
+  },
+  {
+   "claim": "Legora: 'The agentic operating system for legal work'; Monitors = 'Continuously scanning global regulation and surfacing what matters'; GDPR/ISO 27001/ISO 42001/SOC 2/HIPAA",
+   "verdict": "confirmed",
+   "evidence": "WebFetch legora.com → tagline 'The agentic operating system for legal work'; 'Monitors cuts through the noise by continuously scanning global regulation and surfacing what matters before it impacts your business.'; certificaciones: GDPR, ISO 27001, ISO 42001, SOC 2 Type II, HIPAA (el informe escribe 'SOC 2', la página dice 'SOC 2 Type II').",
+   "severity": "low"
+  },
+  {
+   "claim": "Lexdoka: 'La primera IA multiagente para auditoría de cuentas del mundo'; 8 agentes; 'Cero alucinaciones' por arquitectura híbrida determinista; '90% menos tiempo'",
+   "verdict": "confirmed",
+   "evidence": "WebFetch lexdoka.com → 'La primera IA multiagente para auditoría de cuentas del mundo'; 8 agentes nombrados (Lexy/Router, DocIntel, ClientMiner, WebIntel, MathExpert, RiskBuilder, RiskMapper, AuditExpert); 'Arquitectura híbrida. Cero alucinaciones'; '90% Menos tiempo en planificación'. Confirma también el encuadre del informe: es auditoría financiera, no búsqueda normativa.",
+   "severity": "low"
+  },
+  {
+   "claim": "projects[1] Vals VLAIR: 'Harvey Assistant top score en 5 de 7 tareas'; 'Oct 2025 — ChatGPT 80% ≈ herramientas legales 78-81%; vLex retiró a Vincent antes de publicar'",
+   "verdict": "unverifiable",
+   "correction": "Lo que SÍ pude comprobar apunta a dos problemas. (a) Con los scores publicados en vals.ai/vlair, Harvey NO es top en resumen documental (72.1% vs CoCounsel 77.2%), así que '5 de 7' no se sostiene con los datos visibles. (b) El 'retiro de Vincent' que la página documenta es 'vLex withdrew from the Chronology Generation task' —una tarea del informe de feb 2025—, no un retiro del benchmark de oct 2025; parece una conflación. El informe de oct 2025 no aparece en vals.ai/vlair (la página anuncia el Legal Research Report 'to be released later in 2025') y vals.ai/legal-research da 404. El propio JSON marca esta ficha verified_by_fetch:false / confidence medium, lo cual es honesto.",
+   "evidence": "WebFetch vals.ai/vlair → 'Vals Legal AI Report (Updated: 02/27/2025)'; 'Legal Research Report (to be released later in 2025)'; Harvey: Doc Q&A 94.8, Chronology 80.2, Extraction 75.1, Summarization 72.1, Transcript 77.8; CoCounsel: Doc Q&A 89.6, Summarization 77.2, Chronology 78, Extraction 73.2; Vincent 53.6-72.7; 'vLex withdrew from the Chronology Generation task'. WebFetch vals.ai/legal-research → HTTP 404. WebSearch agotado (200/200) para buscar el reporte de oct 2025.",
+   "severity": "medium"
+  },
+  {
+   "claim": "projects[11] Tirant SOFIA 3.0 lleva verified_by_fetch: true",
+   "verdict": "refuted",
+   "correction": "El propio campo evidence dice que www.tirant.com y sofia.tirant.com devuelven 403 y que 'lo que sé de su funcionamiento es memoria de entrenamiento', con confidence: low. Marcar verified_by_fetch: true por haber leído un título de pestaña confunde 'el sitio está vivo' con 'las afirmaciones están verificadas'. Es un defecto de esquema, no de dato, y contamina el fichero entero: cualquier consumidor que filtre por ese booleano ingiere memoria de entrenamiento como verificada. Hace falta separar liveness_verified de claims_verified.",
+   "evidence": "legal-ai.json projects[11]: 'verified_by_fetch': true junto a 'confidence': 'low' y evidence: 'www.tirant.com y sofia.tirant.com devuelven 403 a WebFetch, así que las capacidades, jurisdicciones y mecanismo de citas NO se pudieron verificar hoy'. Mi curl: sofia.tirant.com/es/ → code=200 (solo liveness, igual que el informe).",
+   "severity": "medium"
+  },
+  {
+   "claim": "gaps[3]: 'Del estudio Magesh no confirmé la cifra exacta de Ask Practical Law AI ni la tasa de respuestas incompletas (recuerdo >60%…)'",
+   "verdict": "confirmed",
+   "correction": "El gap es real y está bien declarado, pero ya se puede cerrar: Ask Practical Law AI = 17% alucinación, 63% incompletas, 20% correcto. La memoria del autor era exacta.",
+   "evidence": "magesh.txt:201-203 'Thomson Reuters's Ask Practical Law AI provides incomplete answers (refusals or ungrounded responses…) on more than 60% of our queries, the highest rate among the systems we tested.' Figura 4: Pract. Law 17% / 63% / 20%. (Nota 18 del paper avisa de un desfase prosa/figura: 19%→20% Pract. Law, 41%/42% Westlaw.)",
+   "severity": "low"
+  },
+  {
+   "claim": "patterns[4] / key_insights[3]: 'cero correlación medida entre seguridad expresada y precisión (paradoja de confianza)' y sycophancy ante premisa falsa",
+   "verdict": "partially",
+   "correction": "La fuente respalda las dos frases, pero es una SÍNTESIS de blog, no una medición primaria, y el informe la eleva a 'cero correlación medida' sin nombrar el estudio que lo midió. Como sostiene una decisión de UX de primer orden (no mostrar confianza del modelo), conviene rastrear el estudio original antes de citarla como dato.",
+   "evidence": "WebFetch ailawlibrarians.com/2026/02/19/…: 'no correlation between a model's expressed confidence and its actual accuracy'; 'When users ask AI to support an incorrect legal proposition, the AI often generates plausible-sounding arguments using fabricated or mischaracterized authorities rather than correcting the user's mistaken premise'; 'even the best legal AI tools hallucinate somewhere between 15% and 25% of the time'; 'The Vals report documented a 14-point accuracy drop when moving from basic tasks to complex multi-jurisdictional surveys.'",
+   "severity": "low"
+  },
+  {
+   "claim": "projects[2] Schwarcz et al. 'AI-Powered Lawyering', RCT con 127 estudiantes, versión journal 2026 (doi 10.1177/2755323X261427048) — con verified_by_fetch: false pero confidence: high",
+   "verdict": "partially",
+   "correction": "El DOI es real y la ficha bibliográfica coincide (no es un identificador inventado). Lo que sigue sin verificar es el CONTENIDO: n=127 y el resultado 'misma tasa de alucinaciones con Vincent'. Confidence 'high' sobre un contenido no fetcheado no está justificado; 'medium' sí.",
+   "evidence": "curl api.crossref.org/works/10.1177/2755323X261427048 → HTTP 200; TITLE: 'AI-Powered Lawyering: AI Reasoning Models, Retrieval Augmented Generation, and the Future of Legal Practice'; CONTAINER: 'Journal of Law & Empirical Analysis'; AUTHORS: Schwarcz, Manning, Prescott, Barry, Cleveland, Rich; ISSUED 2026-04-09.",
+   "severity": "low"
+  }
+ ],
+ "omissions": [
+  "El paper que el informe usa como columna vertebral trae un dato que el informe nunca cita y que cambia la vara de éxito: la MEJOR herramienta del mercado (Lexis+ AI) solo acierta el 65% de las consultas (magesh.txt:911-913, Figura 4). Es decir, 1 de cada 3 consultas al líder no se responde bien ni siquiera contando incompletas como no-error. Cualquier meta interna de regwatch-co debe fijarse contra ese 65%, no contra el 17% de alucinación.",
+  "La ABSTENCIÓN como decisión de diseño no se analiza. Ask Practical Law AI compra su 17% de alucinación con 63% de respuestas incompletas; Lexis compra 65% de acierto con 18% de incompletas. Es un trade-off explícito y medido entre cobertura y fiabilidad, y regwatch-co tiene que elegir su punto en esa curva ANTES de escribir el gold set. El informe recomienda 'declarar no encontrado' (R-anti-sycophancy) sin reconocer que eso mueve el sistema hacia el perfil peor puntuado del estudio.",
+  "No hay análisis de COSTO ni LATENCIA de la ruta recomendada. El informe adopta Citations API + contextual retrieval + rerank + segunda llamada estructurada + juez de segundo modelo, sin una sola cifra de coste por consulta. La propia página de Anthropic dedica una sección a 'Cost and latency considerations' del reranking. Con un producto de monitoreo continuo (N normas × M consultas/día) esto decide la viabilidad, no el diseño.",
+  "Ni una palabra sobre licencias y términos de uso de las fuentes. El propio paper de Stanford tuvo que lidiar con la §2.2 de los ToS de LexisNexis, que prohíbe el acceso programático (magesh.txt:1589), y Thomson Reuters les negó acceso tres veces (nota 14). El informe planea raspar fuentes colombianas y compararse con Legis sin evaluar el riesgo equivalente — es la omisión con más capacidad de detener el proyecto.",
+  "No se examina qué hace Legis con su free tier: 'normativa y soporte legislativo desde 1991 CON ANÁLISIS DE VIGENCIA', gratis con registro. El informe lo menciona como presión de precio pero no lo cruza con su propia tesis de monetización, que queda invalidada tal como está escrita.",
+  "El informe no distingue en ninguna ficha entre 'liveness verificado' y 'afirmaciones verificadas'. verified_by_fetch es un booleano único que en projects[11] convive con confidence: low y un 403 declarado. Sin ese desdoble, el JSON no es filtrable por fiabilidad, que es justo para lo que existe el campo.",
+  "Falta el eje temporal en las cifras. 17/33/43 son de marzo-abril 2024 y conviven en el mismo documento con páginas de agosto de 2026, sin sello de fecha por dato. El informe predica 'fecha de captura por afirmación' como regla de producto (patterns[4]) y no la aplica a sí mismo."
+ ],
+ "architecture_changing": [
+  "arXiv 2606.00898 dice más de lo que el informe recoge, y lo que omite rompe la estrategia de MEDICIÓN, no un dato: 'no pair of systems is separable at 95% at any oracle size tested' y 'Sparse oracles discriminate, but what they discriminate is harvesting coverage; dense oracles are trustworthy and separate nothing'. Si regwatch-co pensaba usar citation-grounding contra su propio corpus Supabase como métrica interna para ELEGIR entre configuraciones de retrieval (chunking, híbrido, rerank), ese paper afirma que la métrica no puede ordenar nada a ninguna cobertura. Consecuencia: el gold set anotado a mano deja de ser 'además' y pasa a ser el ÚNICO instrumento capaz de comparar configuraciones; el grounding automático solo sirve como alarma de regresión, nunca como criterio de selección. Súmese que es un preprint de un autor, sin revisión por pares, sobre derecho ucraniano: la conclusión conservadora es no apoyar la estrategia de eval en ninguno de los dos.",
+  "La tesis de monetización del informe está invertida por su propia evidencia. Legis regala hoy, con solo registro, 'normativa y soporte legislativo desde 1991 con análisis de vigencia en todas las áreas del Derecho'. lessons_for_us[1] dice que 'el valor cobrable está en vigencia+Q&A+monitoreo'; la vigencia ya es gratis en el incumbente. El posicionamiento defendible tiene que reescribirse alrededor de lo que Legis NO da: la AUDITABILIDAD de la vigencia (cada 'vigente' con su cadena de afectaciones enlazada a fuente primaria y fecha de captura) y el trámite legislativo en tiempo real, votaciones nominales y CONPES. Eso cambia qué se construye primero: el grafo de afectaciones auditable y el pipeline del Congreso, no un buscador de normas con vigencia.",
+  "'RAG reduce 2-3x' es falso para la mitad de la muestra (Westlaw: 1,3x). Esto degrada RAG de 'mitigación suficiente' a 'mitigación insuficiente y de magnitud impredecible por implementación', y con ello la regla R1 (vigencia calculada de forma determinista sobre el grafo, nunca emitida por el LLM) deja de ser una buena práctica y pasa a ser la única barrera con garantía. Corolario de diseño: ninguna afirmación de vigencia, derogación o inexequibilidad debe poder salir del sistema por la ruta generativa, ni siquiera con citas; deben ser campos calculados que el LLM únicamente redacta.",
+  "El contrato de procedencia NO es consenso de mercado, es consenso de los editoriales con corpus propietario. Harvey y Legora —los dos productos agénticos, y los que más se parecen a un 'Monitor'— no publican mecanismo de citas alguno (verificado en ambas páginas). Fundar la propuesta de valor en 'todos convergen aquí' es fundarla en una muestra sesgada; la lectura correcta es la contraria y es mejor para regwatch-co: la trazabilidad verificable es un diferenciador REAL frente a la ola agéntica, no una paridad competitiva."
+ ],
+ "overall": "Este informe es, con diferencia, el más sólido de los cinco. Comprobé una a una las cifras del estudio de Stanford contra el PDF: 17% Lexis, 33% Westlaw, 43% GPT-4 coinciden EXACTAMENTE con la Figura 4, el DOI de JELS es real (vol 22, 216-242), la cita de LexisNexis está verbatim en la línea 123 del paper, el rename a Lexis+ with Protégé y el texto de Shepard's son verbatim de la página de hoy, las cuatro entradas del blog de Harvey tienen las fechas que el informe declara, Vincent sí vende Colombia con enlaces a fuente primaria en es-CO, y las once cifras de Anthropic (35/49/67%, 5.7→3.7/2.9/1.9%, $1.02/M, 50-100 tokens, garantía de punteros, char/page/content_block, incompatibilidad con structured outputs → 400) son todas verbatim. La evidencia por Playwright de Legis Xperta es real hasta el aria-label. No encontré aquí nada del calibre de la receta de parsing que devolvía cero filas ni del endpoint que fingía 200: no hay cifras inventadas ni identificadores fabricados, y las dos entradas más frágiles (Vals VLAIR, Tirant) las declara el propio autor. Lo que sí encontré son cuatro cosas que muerden. (1) La banda '~2-3x de reducción por RAG' es falsa para Westlaw, que solo mejora 1,3x, y el paper lo dice explícitamente; está en un key_insight. (2) 'Retractación silenciosa' de LexisNexis está refutada por la nota 13 del propio paper que el informe usa: reformularon en público en 2024. (3) El free tier de Legis ya incluye 'análisis de vigencia' desde 1991, lo que invierte la tesis de monetización escrita en el informe. (4) La procedencia declarada de las cifras estrella no puede haberlas producido: ni reglab.stanford.edu ni el abs de arXiv traen el desglose por herramienta ni el 43%; están en el PDF y en el post de ailawlibrarians. A eso se suma un defecto de esquema que contamina el fichero entero: verified_by_fetch:true conviviendo con confidence:low y un 403 declarado. Lo que NO pude verificar y hay que dar por abierto: el reporte VLAIR de octubre de 2025 (vals.ai/legal-research da 404, vals.ai/vlair sigue mostrando el de feb 2025, y el presupuesto de WebSearch de la sesión estaba agotado en 200/200 antes de que yo empezara, igual que le pasó al autor); el 'top en 5 de 7 tareas' de Harvey, que los scores visibles contradicen en resumen documental; el contenido del RCT de Schwarcz (el DOI es real, el n=127 no lo comprobé); Tirant SOFIA, que sigue en 403; y las startups colombianas de legaltech, que el informe declara honestamente como no verificadas. Leí el JSON completo (36.983 bytes, 18 proyectos, 8 patterns, 6 gaps, 5 key_insights, recommendation) con json.load; el campo recommendation lo leí solo truncado a 400 caracteres en mi volcado, así que las reglas R3 en adelante no las audité una por una."
+}

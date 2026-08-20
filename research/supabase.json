@@ -1,0 +1,187 @@
+{
+ "recommendations": [
+  {
+   "component": "Postgres (versión de motor)",
+   "recommended": "Postgres 17 (imagen supabase/postgres)",
+   "version_or_state_2026_08": "Releases activas del repo supabase/postgres al 2026-08-18: v17.6.1.165-cli y builds 17.9.0.x-orioledb (experimentales). PG15 sigue soportado 'hasta el fin de vida de Postgres 15 en la plataforma'; existe guía oficial de upgrade 15→17 (requiere deshabilitar plv8, timescaledb, pgjwt, plcoffee, plls antes de migrar).",
+   "why": "PG17 es la rama principal de desarrollo de Supabase hoy; un proyecto nuevo debe nacer en 17 para no heredar la deuda del EOL de 15.",
+   "verified": true,
+   "docs_source": "https://github.com/supabase/postgres/releases + https://supabase.com/docs/guides/platform/upgrading",
+   "caveats": "No pude verificar con un proyecto vivo que 17 sea el default exacto de proyectos nuevos (la página de upgrading no lo declara); confirmar al crear el proyecto con `show server_version`.",
+   "alternatives_considered": [
+    "Quedarse en PG15 (desaconsejado: camino a EOL en la plataforma)"
+   ]
+  },
+  {
+   "component": "pgvector (embeddings 1024 dims)",
+   "recommended": "halfvec(1024) + índice HNSW halfvec_cosine_ops (o vector(1024) + vector_cosine_ops si prefieres precisión completa: 1024 < 2000, indexable directo)",
+   "version_or_state_2026_08": "pgvector ≥0.8.0 en la plataforma (las docs oficiales documentan `hnsw.iterative_scan` de 0.8.0 como disponible, con strict_order/relaxed_order y hnsw.max_scan_tuples default 20.000). Límites de indexación desde 0.7.0: vector ≤2.000 dims, halfvec ≤4.000, bit ≤64.000. HNSW recomendado sobre IVFFlat por las docs.",
+   "why": "1024 dims cabe holgado en el límite de 2.000 del tipo vector; halfvec (fp16) reduce el almacenamiento de 4 KB a 2 KB por fila y el índice proporcionalmente — relevante para 500k+ filas en el disco de 8 GB incluido del Pro. Iterative scans (0.8.0) resuelven el problema de filtros selectivos (por vigencia, tipo de norma) sobre HNSW.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes + https://supabase.com/docs/guides/ai/automatic-embeddings",
+   "caveats": "La versión exacta instalada se confirma con `SELECT extversion FROM pg_extension WHERE extname='vector'` en el proyecto; las docs no publican el número.",
+   "alternatives_considered": [
+    "vector(1024) float32 (2× disco/RAM)",
+    "IVFFlat (peor con datos que cambian a diario, según docs oficiales)"
+   ]
+  },
+  {
+   "component": "Full-text search en español",
+   "recommended": "Columna generada `fts tsvector generated always as (to_tsvector('spanish', unaccent(texto))) stored` + índice GIN + websearch_to_tsquery('spanish', ...) con pesos setweight (A=título/epígrafe, B=articulado)",
+   "version_or_state_2026_08": "FTS nativo de Postgres documentado por Supabase con parámetro de configuración de idioma (los SDKs exponen `config:` en textSearch); 'spanish' es config built-in de Postgres. unaccent es contrib estándar de Postgres; su disponibilidad se comprueba con `SELECT name FROM pg_available_extensions WHERE name='unaccent'` (receta de verificación en docs de migración de Supabase).",
+   "why": "La normatividad colombiana está llena de acentos y variantes («artículo/articulo», «Bogotá/bogota»); sin unaccent el recall léxico se desploma. Nota técnica: para usarla en columna GENERATED hay que envolver unaccent en una función IMMUTABLE propia (unaccent() es solo STABLE).",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/database/full-text-search + Context7 /websites/supabase (pg_available_extensions, textSearch config)",
+   "caveats": "verified se refiere al mecanismo FTS+config de idioma; la presencia de unaccent en el catálogo de Supabase no la pude confirmar contra la lista renderizada (JS) — verified_by_fetch=false para ese punto concreto, confianza alta por ser contrib estándar. Confirmar al crear el proyecto."
+  },
+  {
+   "component": "BM25 / pg_search (ParadeDB)",
+   "recommended": "NO disponible en Supabase gestionado — no planificar con él. Usar ts_rank_cd dentro de la fusión RRF; si el ranking léxico se queda corto, pgroonga SÍ está disponible como FTS multilingüe alternativo",
+   "version_or_state_2026_08": "https://supabase.com/docs/guides/database/extensions/pg_search devuelve HTTP 404 (verificado 2026-08-18) y el buscador oficial de docs no arroja ningún resultado para pg_search/ParadeDB/BM25. pgroonga tiene página oficial viva en las docs de Supabase.",
+   "why": "Diseñar el ranking asumiendo BM25 nativo sería construir sobre un endpoint que no existe — exactamente el peor error para este proyecto. La receta oficial de híbrida usa ts_rank_cd y funciona.",
+   "verified": true,
+   "docs_source": "404 verificado en https://supabase.com/docs/guides/database/extensions/pg_search + https://supabase.com/docs/guides/database/extensions/pgroonga",
+   "caveats": "No pude contrastar con el changelog/blog (presupuesto de WebSearch agotado); si ParadeDB llegara como integración nueva, sería posterior a lo que las docs muestran hoy.",
+   "alternatives_considered": [
+    "pgroonga (multilingüe, operador &@~, disponible)",
+    "ts_rank_cd + RRF (receta oficial)"
+   ]
+  },
+  {
+   "component": "Búsqueda híbrida (léxica + semántica)",
+   "recommended": "Función SQL `hybrid_search` de la receta oficial: CTE full_text (GIN + websearch_to_tsquery) + CTE semantic (HNSW) + FULL OUTER JOIN con score RRF 1/(k+rank), k=50, pesos full_text_weight/semantic_weight configurables; expuesta vía RPC (supabase.rpc) a la PWA",
+   "version_or_state_2026_08": "Receta oficial completa y vigente en la guía 'Hybrid search' (SQL íntegro verificado hoy), incluida invocación desde Edge Function con supabase-js.",
+   "why": "Es exactamente el patrón que el proyecto necesita y está mantenido por Supabase: una sola llamada RPC devuelve el ranking fusionado; los pesos permiten favorecer lo léxico en consultas por número de ley y lo semántico en preguntas tipo «IA en salud».",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/ai/hybrid-search",
+   "caveats": "Adaptar: config 'spanish'+unaccent en el tsvector y halfvec(1024) en vez de vector(512) del ejemplo; el operador del índice debe coincidir con el de la consulta (cosine <=> con halfvec_cosine_ops)."
+  },
+  {
+   "component": "Jobs programados (ingesta diaria)",
+   "recommended": "Supabase Cron (pg_cron con UI en Integrations→Cron) + pg_net.http_post hacia Edge Functions, con la URL del proyecto y service key leídas de Vault",
+   "version_or_state_2026_08": "Cron: granularidad «from every second to once a year»; recomendación oficial de ≤8 jobs concurrentes y ≤10 min por ejecución. El patrón cron→pg_net→Edge Function está documentado íntegro en la guía 'Automatic embeddings' (util.invoke_edge_function con net.http_post y timeout de 5 min).",
+   "why": "Cubre el escaneo diario de fuentes oficiales (Congreso, SUIN-Juriscol, Función Pública, Corte Constitucional, DNP/CONPES) y el reintento de embeddings sin infraestructura externa.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/cron + https://supabase.com/docs/guides/ai/automatic-embeddings",
+   "caveats": "El límite práctico de ~10 min por job obliga a trocear el scraping por fuente; pg_net es async con timeout configurable por request."
+  },
+  {
+   "component": "Colas (pipeline de ingesta/embeddings)",
+   "recommended": "Supabase Queues (pgmq): cola `embedding_jobs` + cola `fetch_jobs`, con visibility timeout como mecanismo de retry, archivado para auditoría del contrato de evidencia, y RLS si se exponen vía PostgREST",
+   "version_or_state_2026_08": "Basado en extensión pgmq; entrega exactly-once dentro de la ventana de visibilidad; archivado opcional de mensajes; autorización granular con RLS. Guía oficial + quickstart vivos.",
+   "why": "El patrón oficial trigger→pgmq.send→pg_cron lee lotes→pg_net→Edge Function procesa y pgmq.delete es literalmente el pipeline de regwatch: cada documento capturado encola su embedding y su verificación, con retries gratis.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/queues + https://supabase.com/docs/guides/queues/pgmq",
+   "caveats": "Exactly-once solo dentro de la ventana de visibilidad: el worker debe ser idempotente (upsert por URL canónica + hash)."
+  },
+  {
+   "component": "Edge Functions (runtime y límites)",
+   "recommended": "Edge Functions para: endpoint de búsqueda/QA de la PWA, workers de embeddings y fetchers de fuentes. NO para parsing pesado de PDFs grandes",
+   "version_or_state_2026_08": "Supabase Edge Runtime («Deno compatible runtime with TypeScript first»; imports npm:/jsr: en ejemplos oficiales). Límites verificados: 256 MB RAM; wall-clock 150 s Free / 400 s planes pagos; CPU 2 s por request (I/O async no cuenta); idle timeout 150 s; bundle ≤20 MB; 100 funciones Free / 500 Pro; background tasks con EdgeRuntime.waitUntil; /tmp efímero 256 MB Free / 512 MB pago; montaje S3 persistente (S3FS) incluido Supabase Storage; sin cron propio (se programa vía Supabase Cron+pg_net); no sirve HTML sin dominio custom; sin libs multithread (sharp/libvips).",
+   "why": "Descargar un PDF (I/O) y subirlo a Storage cabe de sobra en 2 s de CPU + 400 s wall-clock; extraer texto de una gaceta de 300 páginas puede reventar los 2 s de CPU — la restricción dura es CPU, no duración. El patrón oficial /tmp + waitUntil cubre archivos grandes en I/O.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/functions/limits + https://supabase.com/docs/guides/functions/background-tasks + https://supabase.com/docs/guides/functions/ephemeral-storage",
+   "caveats": "No hay límite documentado de tamaño de respuesta en la página de límites (sí de log: 10.000 chars). Para gacetas/PDF pesados: trocear el parseo por páginas en invocaciones encadenadas vía cola, o delegar a un worker externo (GitHub Actions/servicio de parsing).",
+   "alternatives_considered": [
+    "Worker externo para PDF (GitHub Actions cron, Fly.io) escribiendo a Supabase por API"
+   ]
+  },
+  {
+   "component": "Storage (PDFs originales, snapshot probatorio)",
+   "recommended": "Bucket privado `evidence/` con el PDF/HTML original de cada captura + captured_at + hash en la fila; servir vía URLs firmadas",
+   "version_or_state_2026_08": "Free: 1 GB storage, archivo máx 50 MB. Pro: 100 GB incluidos, luego $0.0213/GB; archivo máx configurable hasta 500 GB. Egress Pro: 250 GB incl., luego $0.09/GB.",
+   "why": "El contrato de evidencia exige que la fuente citada sea re-checkeable aunque el portal oficial mueva o borre la URL: el snapshot en Storage es la póliza de seguro del «vigente solo con fuente primaria».",
+   "verified": true,
+   "docs_source": "https://supabase.com/pricing + https://supabase.com/docs/guides/storage/uploads/file-limits"
+  },
+  {
+   "component": "Auth + RLS (alertas y búsquedas guardadas)",
+   "recommended": "Magic link / Email OTP + OAuth (Google) con RLS por user_id en `saved_searches`, `alerts`, `watchlists`; el corpus normativo queda público de solo lectura (anon)",
+   "version_or_state_2026_08": "Passwordless email (magic link/OTP) documentado y vigente; Free 50.000 MAU, Pro 100.000 MAU incl. luego $0.00325/MAU. RLS es el mecanismo de autorización estándar de la plataforma (también aplicable a Queues y Storage).",
+   "why": "Para una PWA cívica el magic link elimina fricción de contraseñas; RLS mantiene los datos personales aislados sin código de backend adicional.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/auth/auth-email-passwordless + https://supabase.com/pricing"
+  },
+  {
+   "component": "Vault (secretos)",
+   "recommended": "Vault para: API key del proveedor de embeddings, project_url y service key que usa util.invoke_edge_function — nunca hardcodeadas en SQL versionado",
+   "version_or_state_2026_08": "Extensión con cifrado AEAD (libsodium); vault.create_secret() / vista vault.decrypted_secrets; la clave de cifrado vive fuera de la base de datos. Es el mecanismo que la propia guía de automatic embeddings usa para pg_net.",
+   "why": "Los cron jobs SQL necesitan credenciales para invocar Edge Functions; Vault es el único lugar correcto para eso dentro de Postgres.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/database/vault",
+   "caveats": "Quien tenga SELECT sobre vault.decrypted_secrets ve los secretos en claro: restringir con privilegios SQL."
+  },
+  {
+   "component": "Branching + migraciones declarativas",
+   "recommended": "supabase/schemas/*.sql como fuente de verdad (declarative schemas) + `supabase db diff -f` para generar migraciones + preview branches por PR con la integración GitHub",
+   "version_or_state_2026_08": "Declarative schemas: flujo documentado (schemas/ → db diff → migration up → db push), orden lexicográfico configurable en config.toml; el diff NO cubre DML, owner/grants de vistas, alter de políticas RLS, comentarios, particiones. Branching: GitHub integration + dashboard (beta); los branches nacen SIN datos de producción; branch en Micro desde $0.01344/hora, facturado como Branching Compute Hours, fuera del Spend Cap. El MCP indica que branching requiere plan pago.",
+   "why": "Un monitor normativo evoluciona su esquema constantemente (nuevos tipos de documento, nuevas fuentes); declarative schemas + branches dan migraciones reproducibles y entornos de prueba sin tocar el corpus de producción.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/local-development/declarative-database-schemas + https://supabase.com/docs/guides/deployment/branching + https://supabase.com/docs/guides/platform/manage-your-usage/branching",
+   "caveats": "Las políticas RLS alteradas no las ve el diff: gestionarlas como migraciones explícitas."
+  },
+  {
+   "component": "MCP server oficial + agent-skills",
+   "recommended": "MCP remoto https://mcp.supabase.com/mcp con read_only=true y project_ref=<id> para desarrollo asistido por agentes; instalar `npx skills add supabase/agent-skills`",
+   "version_or_state_2026_08": "MCP remoto oficial vivo (también local en http://localhost:54321/mcp con la CLI): tools de DB (SQL, migraciones, extensiones), Edge Functions, branching (create/list/delete/merge/rebase — plan pago), tipos TypeScript, logs, advisors y búsqueda de docs. agent-skills verificado: skills `supabase` y `supabase-postgres-best-practices`.",
+   "why": "El flujo de desarrollo del proyecto (Claude Code) puede operar el proyecto con guardarraíles: modo read-only contra producción, escritura solo en branches.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/getting-started/mcp + https://supabase.com/docs/guides/getting-started/ai-skills",
+   "caveats": "Advertencia oficial explícita de prompt-injection: nunca apuntar el MCP con escritura a producción."
+  },
+  {
+   "component": "Embeddings para español (el hueco de gte-small)",
+   "recommended": "Modelo multilingüe EXTERNO servido por API: bge-m3 (exactamente 1024 dims, fuerte en español) vía proveedor de inferencia, o text-embedding-3-large con dimensions=1024. Generación asíncrona con el patrón oficial automatic-embeddings",
+   "version_or_state_2026_08": "La inferencia embebida de Supabase (Supabase.ai.Session) ofrece gte-small, y las docs dicen textualmente: «gte-small model exclusively caters to English texts, and any lengthy texts will be truncated to a maximum of 512 tokens». LLM alojado por Supabase: «progressively rolling out», acceso por formulario — no contar con él.",
+   "why": "gte-small queda descartado para un corpus 100% en español; 1024 dims encaja con bge-m3 (el mismo modelo que el usuario ya opera vía Ollama en career-ops, útil para prototipado local del índice).",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/functions/ai-models",
+   "cost": "Externo a Supabase: bge-m3 por API de inferencia suele costar centavos por millón de tokens; corpus inicial de 500k docs (~500M tokens) del orden de unos pocos USD; goteo diario marginal. Cifras de proveedor NO verificadas hoy (sin presupuesto de búsqueda) — verificar antes de fijar proveedor.",
+   "alternatives_considered": [
+    "text-embedding-3-large con dimensions=1024 (receta oficial de Supabase usa este patrón)",
+    "Cohere embed-multilingual",
+    "self-host Ollama bge-m3 (gratis, pero rompe la arquitectura Supabase-céntrica para producción)"
+   ]
+  },
+  {
+   "component": "Planes y precios (Free vs Pro)",
+   "recommended": "Pro desde el día 1 para el monitor diario; Free solo para prototipo",
+   "version_or_state_2026_08": "Verificado hoy en supabase.com/pricing — Free: $0, 500 MB DB (shared CPU, 500 MB RAM), 5 GB egress, 1 GB storage, 50k MAU, Realtime 200 conexiones/2M mensajes, archivo máx 50 MB, 2 proyectos, PAUSA tras 1 semana de inactividad. Pro: $25/mes con $10 en compute credits; 8 GB disco incl. luego $0.125/GB; 250 GB egress luego $0.09/GB; 100 GB storage luego $0.0213/GB; Edge Functions 2M invocaciones incl. luego $2/M; 100k MAU luego $0.00325/MAU; Realtime 500 conexiones incl. ($10/1000 extra) y 5M mensajes ($2.50/M extra). Compute: Micro $10, Small $15, Medium $60, Large $110/mes.",
+   "why": "La pausa por inactividad del Free es incompatible con un cron diario de producción, y 500 MB de DB no aguantan ni el corpus de 50k documentos con texto completo.",
+   "verified": true,
+   "docs_source": "https://supabase.com/pricing",
+   "cost": "Ver cost_estimate global",
+   "caveats": "La cuota de invocaciones de Edge Functions del plan Free no aparecía especificada en la página al fetchearla; los cron jobs corren dentro de Postgres y no facturan aparte."
+  },
+  {
+   "component": "Realtime (opcional para alertas en vivo)",
+   "recommended": "Uso ligero: notificar a la PWA cuando cambia el estado de un proyecto de ley seguido (Postgres Changes sobre la tabla de watchlist)",
+   "version_or_state_2026_08": "Pro incluye 500 conexiones concurrentes y 5M mensajes/mes — órdenes de magnitud por encima de lo que necesita este caso de uso.",
+   "why": "Es 'nice to have'; las alertas por email (cron + Resend/SMTP) cubren el 90% del valor con menos superficie.",
+   "verified": true,
+   "docs_source": "https://supabase.com/pricing"
+  }
+ ],
+ "cost_estimate": "Supuestos explícitos: (a) plan Pro $25/mes con $10 de compute credits incluidos; (b) embeddings halfvec(1024) = 2 KB/vector + índice HNSW m=16 ≈ 1.5-3× el tamaño de los vectores; (c) texto completo promedio 30-50 KB/documento (leyes/gacetas, TOAST-comprimido) + tsvector/GIN ≈ 0.5-1× el texto; (d) 1 embedding por documento en el caso base — si se trocea a nivel de artículo (recomendado para citas ancladas), multiplicar vectores ×3-5; (e) precios verificados hoy en supabase.com/pricing; (f) el coste del PROVEEDOR de embeddings es externo a Supabase y NO está verificado (sin presupuesto de búsqueda web): estimarlo aparte antes de comprometerse. — ESCENARIO 50k documentos: vectores 100 MB + HNSW ~200-300 MB + texto/FTS 2-4 GB → DB total 3-5 GB, cabe en los 8 GB incluidos; compute Micro ($10, cubierto por créditos) o Small $15; egress de una PWA pequeña ≪250 GB. Total: ~US$25-35/mes (+ ~US$1-10 one-off de embeddings externos del corpus inicial). El plan Free (500 MB) NO alcanza ni para este escenario con texto completo. — ESCENARIO 500k documentos: base sin chunking: vectores 1 GB + HNSW 2-3 GB + texto/FTS 12-20 GB → DB 15-25 GB → disco extra ~7-17 GB ≈ US$0.9-2.2/mes; RAM para servir HNSW con latencia decente: Medium 4 GB ($60/mes; Small $15 funciona con iterative scans y latencias peores). Total: ~US$78-92/mes (Pro 25 + Medium 60 − 10 créditos + disco ~2 + egress dentro de cuota). Con chunking ×3-4 por artículo (1.5-2M vectores): vectores 3-4 GB + HNSW 6-10 GB → Large 8 GB RAM ($110) y ~30-40 GB de disco → ~US$130-155/mes. Branches de preview: +$0.01344/hora solo mientras viven (~$10/mes si uno permanente en Micro).",
+ "gaps": [
+  "pg_search/ParadeDB (BM25) NO está disponible en Supabase gestionado: la página de docs devuelve 404 y el buscador oficial no lo conoce. No hay BM25 nativo; ts_rank/ts_rank_cd no es BM25. No pude contrastar contra changelog/blog porque el presupuesto de WebSearch de la sesión estaba agotado — si existe un anuncio reciente fuera de las docs, no lo vi (confidence=medium en la negativa).",
+  "gte-small (inferencia embebida) es solo-inglés y trunca a 512 tokens (cita textual de docs): los embeddings en español DEBEN ser externos, lo que añade un proveedor, una API key y un coste no-Supabase al sistema. El coste del proveedor externo NO quedó verificado hoy (verified_by_fetch=false).",
+  "No verifiqué con proyecto vivo: (1) que Postgres 17 sea el default exacto de proyectos nuevos, (2) la versión instalada de pgvector (las docs implican ≥0.8.0), (3) que unaccent esté en pg_available_extensions (contrib estándar, confianza alta pero sin fetch directo). Los tres se confirman en 2 minutos al crear el proyecto.",
+  "CPU time de Edge Functions = 2 s por request: parsear PDFs grandes (gacetas de cientos de páginas) puede excederlo aunque el wall-clock Pro sea 400 s. El plan debe incluir troceo por páginas vía cola o un worker de parsing externo — sin decidir esto, la ingesta de gacetas es el eslabón débil.",
+  "El plan Free se pausa tras 1 semana de inactividad y su DB es de 500 MB: inviable para el monitor diario en producción; el presupuesto real empieza en $25/mes.",
+  "La cuota de invocaciones de Edge Functions incluida en el plan Free no aparecía especificada en la página de pricing al fetchearla (el Pro sí: 2M).",
+  "El scraping de portales oficiales colombianos con JS pesado (SECOP, algunas páginas del Congreso) puede no ser resoluble con pg_net/fetch plano desde Edge Functions; puede requerir un renderizador externo (Playwright fuera de Supabase) — fuera del alcance de esta verificación.",
+  "El schema diff declarativo NO cubre ALTER de políticas RLS, DML ni comentarios: las políticas de seguridad de datos personales necesitan migraciones explícitas versionadas aparte.",
+  "Branching vía dashboard está marcado 'beta' en docs y el MCP indica que requiere plan pago."
+ ],
+ "key_insights": [
+  "La guía oficial 'Automatic embeddings' de Supabase ES el pipeline de ingesta de regwatch-co ya diseñado: triggers → pgmq → pg_cron (cada 10 s) → pg_net → Edge Function → update + pgmq.delete, con Vault para credenciales y visibility timeout como retry. No hay que inventar arquitectura, hay que instanciarla con fuentes colombianas.",
+  "La receta oficial de búsqueda híbrida (hybrid_search con RRF, k=50, pesos configurables) está completa en SQL y se adapta al español cambiando dos líneas: to_tsvector('spanish', unaccent(...)) y halfvec(1024). Los pesos permiten sesgar a léxico para «ley 2277 de 2022» y a semántico para «normas que afectan IA en salud».",
+  "1024 dims es una elección afortunada: cabe bajo el límite de 2.000 del tipo vector sin trucos, y halfvec la deja en 2 KB/fila; además coincide exactamente con bge-m3, que el usuario ya opera localmente vía Ollama en career-ops — el mismo modelo puede servir para prototipar el índice offline y para producción vía API.",
+  "La restricción dura de Edge Functions no es la duración (400 s Pro) sino el CPU time de 2 s por request: descargar y almacenar PDFs es I/O y cabe; parsearlos es CPU y puede no caber. El patrón oficial /tmp (512 MB en pago) + EdgeRuntime.waitUntil + colas está pensado justo para esto.",
+  "El contrato de evidencia de v1 mapea 1:1 a primitivas Supabase: snapshot del original en Storage (URL + captured_at + hash en la fila), jerarquía probatoria como columna con CHECK, RLS para lo personal, archivado de pgmq como log auditable de capturas, y citas ancladas resolviendo el chunk (artículo) que sustenta cada respuesta.",
+  "El stack de desarrollo AI-first está maduro: MCP oficial remoto con read_only y project_ref, agent-skills instalables, declarative schemas para migraciones generadas, y branches de preview a $0.01344/hora — el flujo completo de 'Claude Code opera el proyecto con guardarraíles' existe hoy.",
+  "Supabase Cron soporta granularidad de segundos y tiene UI propia, pero la guía recomienda ≤8 jobs concurrentes y ≤10 min por job: el escaneo diario debe partirse por fuente (un job por portal), no ser un monolito."
+ ],
+ "recommendation": "Arquitectura Supabase-céntrica recomendada (a agosto 2026, todo verificado contra docs/pricing oficiales salvo lo marcado en gaps): proyecto Pro ($25/mes) en Postgres 17. Núcleo de datos: tablas `documents` (norma/proyecto/sentencia/CONPES con source_url, captured_at, hash, tier probatorio primaria>institucional>secundaria y estado de vigencia solo asignable con fuente primaria — CHECK constraints) y `chunks` (artículo/sección) con `fts tsvector GENERATED (to_tsvector('spanish', unaccent_immutable(texto)))` + GIN, y `embedding halfvec(1024)` + HNSW halfvec_cosine_ops (pgvector ≥0.8, iterative scans para filtros por vigencia/tipo). Búsqueda: función RPC `hybrid_search` calcada de la receta oficial RRF (k=50) con pesos ajustables por tipo de consulta; QA con citas = retrieval híbrido a nivel de chunk + LLM externo que solo puede citar chunk_ids recuperados. Ingesta diaria: Supabase Cron (un job por fuente oficial, <10 min) → pg_net → Edge Functions fetchers que guardan el original en Storage (bucket evidence, URL firmada) y encolan en pgmq; embeddings asíncronos con el patrón oficial automatic-embeddings llamando a un modelo multilingüe EXTERNO (bge-m3 1024d o text-embedding-3-large@1024 — gte-small embebido es solo-inglés y queda descartado); API keys en Vault. Parsing de PDFs: en Edge Functions solo si cabe en 2 s de CPU (trocear por páginas vía cola); gacetas pesadas a un worker externo. PWA: supabase-js + Auth magic link/OAuth, RLS sobre alertas y búsquedas guardadas, corpus público anon read-only; Realtime opcional para watchlists. Desarrollo: declarative schemas + db diff, preview branches por PR ($0.01344/h), MCP oficial en read_only contra producción, agent-skills instaladas. Coste: ~US$25-35/mes con 50k documentos (Micro/Small); ~US$78-92/mes con 500k sin chunking (Medium 4 GB); ~US$130-155/mes con 500k troceados a nivel de artículo (~1.5-2M vectores, Large 8 GB). Decisión pendiente clave antes de construir: confirmar en el proyecto recién creado versión de PG/pgvector y presencia de unaccent, y elegir proveedor de embeddings multilingüe con precio verificado ese día."
+}

@@ -1,0 +1,153 @@
+{
+ "especialidad": "ingesta — versiones, viabilidad y coste del stack de recolección (Crawlee/Playwright/feedsmith/unpdf/Mistral OCR/GitHub Actions)",
+ "verdicts": [
+  {
+   "claim": "crawlee 3.18.1 (publicada 2026-08-12; verificada vía registry.npmjs.org el 2026-08-16)",
+   "verdict": "confirmed",
+   "evidence": "curl -s https://registry.npmjs.org/crawlee | python3 → `crawlee: latest=3.18.1 published=2026-08-12T15:42:17.524Z license=Apache-2.0`. Fecha exacta al día.",
+   "severity": "low"
+  },
+  {
+   "claim": "playwright 1.62.1",
+   "verdict": "confirmed",
+   "evidence": "`playwright: latest=1.62.1 published=2026-07-30T16:38:49.134Z license=Apache-2.0`",
+   "severity": "low"
+  },
+  {
+   "claim": "feedsmith 2.9.6 (publicada 2026-07-14, activa); fast-xml-parser 5.11.0; unpdf 1.8.1; pdf-parse 2.4.5",
+   "verdict": "confirmed",
+   "evidence": "`feedsmith: latest=2.9.6 published=2026-07-14T19:30:01.576Z` · `fast-xml-parser: 5.11.0 (2026-08-16)` · `unpdf: 1.8.1 (2026-08-13)` · `pdf-parse: 2.4.5 (2025-10-20)`. Las cuatro exactas.",
+   "severity": "low"
+  },
+  {
+   "claim": "Las cuatro opciones de cortesía de Crawlee (respectRobotsTxtFile, maxRequestsPerMinute, sameDomainDelaySecs, maxConcurrency) existen con esos nombres exactos en BasicCrawlerOptions",
+   "verdict": "confirmed",
+   "evidence": "Descargado el tarball real y leído el .d.ts, no la doc web: `curl -sL registry.npmjs.org/@crawlee/basic/-/basic-3.18.1.tgz | tar xz` → `grep -n` en package/internals/basic-crawler.d.ts → línea 161 `sameDomainDelaySecs?: number;`, 201 `maxConcurrency?: number;`, 207 `maxRequestsPerMinute?: number;`, 259 `respectRobotsTxtFile?: boolean | {`. Los cuatro nombres literales.",
+   "severity": "low"
+  },
+  {
+   "claim": "rss-parser sigue en 3.13.0 publicada 2023-04-11 — 3+ años sin release: descartado / «está efectivamente abandonado»",
+   "verdict": "partially",
+   "correction": "El hecho es exacto (`rss-parser: latest=3.13.0 published=2023-04-11T22:23:28.212Z`), pero «abandonado» sobredescribe el estado del proyecto: el repo NO está archivado y tiene actividad en 2026. La conclusión práctica (elegir feedsmith) no cambia — los commits recientes son cosméticos, no desarrollo.",
+   "evidence": "curl api.github.com/repos/rbren/rss-parser → `pushed_at 2026-03-25T19:44:43Z archived False stars 1526`. Últimos commits: `2026-02-05 Merge pull request #302 ... rename-bobby-to-robert`, `2026-02-05 ... remove-earthporn-test-references`, `2026-02-05 Capitalize Robert Brennan properly`. Renombrados y limpieza de tests, cero features.",
+   "severity": "low"
+  },
+  {
+   "claim": "feedsmith parsea RSS/Atom/JSON Feed/RDF con namespaces (dc, media)",
+   "verdict": "confirmed",
+   "evidence": "Tarball 2.9.6 desempaquetado. dist/index.d.ts exporta `parseAtomFeed, parseFeed, parseJsonFeed, parseOpml, parseRdfFeed, parseRssFeed` (+ detect* y generate*). `ls dist/namespaces/` incluye literalmente `dc` y `media` (y otros 30: itunes, podcast, content, georss…). El parser universal `parseFeed` existe, que es lo que la receta necesita.",
+   "severity": "low"
+  },
+  {
+   "claim": "unpdf como primera pasada que decide si hay capa de texto ANTES de pagar OCR; el router 'digital vs escaneado' (¿texto extraído > umbral POR PÁGINA?)",
+   "verdict": "confirmed",
+   "evidence": "Tarball unpdf 1.8.1, dist/index.d.mts:129 → `extractText(data, options?: {mergePages?: false}): Promise<{totalPages: number; text: string[]}>`. Devuelve un array de texto POR PÁGINA más totalPages — exactamente la granularidad que el router asume, no hay que derivarla. Además exporta `renderPageAsImage` y `extractTextItems`, útiles para el handoff a OCR.",
+   "severity": "low"
+  },
+  {
+   "claim": "Precio verificado en la página oficial: Mistral OCR $4/1.000 páginas, Document AI $5/1.000. Modelo alias mistral-ocr-latest = OCR 4.1",
+   "verdict": "confirmed",
+   "evidence": "curl mistral.ai/pricing/api + extracción de la tarjeta del modelo: `OCR 4.1 New — The world's best document extraction and understanding model. OCR $4 / 1000 pages · Document AI $5 / 1000 pages · mistral-ocr-latest`. Los tres datos literales.",
+   "severity": "low"
+  },
+  {
+   "claim": "opción Batch «at half price» → ~$2/1.000 páginas",
+   "verdict": "confirmed",
+   "evidence": "NO verificable con curl: el HTML servido trae solo el precio estándar y todos los `data-multiplier=\"1\"`; el descuento lo aplica JS al pulsar la pestaña. Con Playwright, click en `.js-tab[data-value=batch]` → la tarjeta pasa a `OCR $2 / 1000 pages · Document AI $2.5 / 1000 pages`. Tooltip literal: «High-volume processing, at half price, for maximum efficiency.» El $2 es exacto.",
+   "severity": "low"
+  },
+  {
+   "claim": "Mistral OCR vía Batch API como motor por defecto (el ~$2/1.000 depende de que /v1/ocr sea batcheable)",
+   "verdict": "confirmed",
+   "evidence": "docs.mistral.ai/capabilities/batch → lista literal de endpoints soportados: «we currently support /v1/embeddings, /v1/chat/completions, /v1/fim/completions, /v1/moderations, /v1/chat/moderations, **/v1/ocr**, /v1/classifications, /v1/conversations, /v1/audio/transcriptions». Y «reducing compute costs while running large workloads at a 50% discount». El descuento no es un multiplicador cosmético de la web de precios: el endpoint es batcheable de verdad.",
+   "severity": "high"
+  },
+  {
+   "claim": "salida markdown con tablas (table_format: markdown|html); formato de tablas y header/footer extraction requieren OCR 2512+",
+   "verdict": "confirmed",
+   "evidence": "docs.mistral.ai/capabilities/document_ai/basic_ocr → `table_format` admite null (inline), `markdown`, `html`; parámetros `extract_header`/`extract_footer`; y literalmente «Table formatting as well as header and footer extraction is only available for OCR 2512 or newer». La cita del informe es textual. (Extra no citado: `include_blocks` requiere OCR 4+.)",
+   "severity": "low"
+  },
+  {
+   "claim": "PDF nativo de Claude: límites 32 MB/request y 600 páginas (100 si contexto <1M)",
+   "verdict": "confirmed",
+   "evidence": "platform.claude.com/docs/en/build-with-claude/pdf-support, tabla de requisitos: «Maximum request size | 32 MB» y «Maximum pages per request | 600 (100 when the request's context window is under 1M tokens)». Coincidencia palabra por palabra con el informe.",
+   "severity": "low"
+  },
+  {
+   "claim": "1.500-3.000 tokens de texto/página + tokens de imagen",
+   "verdict": "confirmed",
+   "evidence": "Mismo doc, §Estimate your costs: «Each page typically uses 1,500–3,000 tokens per page depending on content density» y «Image token costs: Because each page is converted into an image, the same image-based cost calculations are applied». Literal.",
+   "severity": "low"
+  },
+  {
+   "claim": "Haiku 4.5: $1/$5 por MTok → ~$0.002-0.004/pág de input; Batch API al 50%",
+   "verdict": "partially",
+   "correction": "Los precios del modelo son exactos, pero el suelo de $0.002/pág es inalcanzable: el doc dice que CADA página se convierte en imagen y los image tokens se cobran siempre. Una página tamaño carta reescalada a 1568px de lado largo son ~2.500 tokens de imagen además de los 1.500-3.000 de texto → ~$0.003-0.0055/pág, no $0.002-0.004. No cambia la conclusión («marginal frente al valor del dato») y el coste agregado que el informe da para la doble pasada ($0.005-0.01/pág) sí queda en rango.",
+   "evidence": "Skill claude-api, tabla de modelos vigente: `Claude Haiku 4.5 | claude-haiku-4-5 | 200K | $1.00 | $5.00`. Batch: «runs asynchronously at 50% cost». Cálculo: (1.500 texto + ~2.500 imagen) tok × $1/MTok = $0.004 mínimo realista.",
+   "severity": "low"
+  },
+  {
+   "claim": "GitHub Actions: uso GRATIS e ilimitado en repos públicos con runners estándar (2.000 min/mes si fuera privado)",
+   "verdict": "confirmed",
+   "evidence": "docs.github.com/billing → «GitHub Actions usage is free for self-hosted runners and for public repositories that use standard GitHub-hosted runners»; plan Free = «2,000» min/mes para repos privados. El informe acota bien a runners estándar; el doc añade «Larger runners are always charged for, even when used by public repositories».",
+   "severity": "low"
+  },
+  {
+   "claim": "cron mínimo cada 5 min; «The schedule event can be delayed during periods of high loads… High load times include the start of every hour»; auto-desactivación a los 60 días sin actividad en repo público",
+   "verdict": "confirmed",
+   "evidence": "docs.github.com/actions/…/events-that-trigger-workflows, las tres citas textuales: «The shortest interval you can run scheduled workflows is once every 5 minutes.» · «The schedule event can be delayed during periods of high loads of GitHub Actions workflow runs. High load times include the start of every hour.» · «In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred in 60 days.» Coincidencia exacta con el informe, comillas incluidas.",
+   "severity": "low"
+  },
+  {
+   "claim": "job hasta 6 h, workflow run hasta 35 días",
+   "verdict": "confirmed",
+   "evidence": "docs.github.com/actions/reference/limits: «Each job in a workflow can run for up to 6 hours of execution time» y el límite de 35 días por workflow run («If a workflow run reaches this limit, the workflow run is cancelled»).",
+   "severity": "low"
+  },
+  {
+   "claim": "Supabase Edge Functions: 150s wall-clock (Free) / 400s (pago), 2s de CPU, 256 MB — sin Chromium (Deno). Sus límites lo descartan como motor de scraping",
+   "verdict": "confirmed",
+   "evidence": "supabase.com/docs/guides/functions/limits: «Free plan: 150s», «Paid plans: 400s», «Maximum CPU Time: 2s», «Maximum Memory: 256MB». Los cuatro números exactos; la inferencia arquitectónica (fan-out y alertas sí, scraping no) se sostiene sobre ellos.",
+   "severity": "low"
+  },
+  {
+   "claim": "Docling (MIT, IBM Research, 65k stars): OCR + TableFormer local en CPU, $0 — el plan B self-host",
+   "verdict": "partially",
+   "correction": "Estrellas y licencia exactas y el proyecto está muy vivo. «IBM Research» es la procedencia histórica, no la gobernanza actual: el repo vive en la org `docling-project` (donado a LF AI & Data), no en la de IBM. Irrelevante para la decisión técnica, relevante si alguien va a citar el respaldo institucional en el README del proyecto.",
+   "evidence": "curl api.github.com/repos/docling-project/docling → `full_name docling-project/docling · stars 65224 · license MIT · pushed 2026-08-19T14:21:44Z · archived False`. 65.224 ≈ «65k stars», exacto.",
+   "severity": "low"
+  },
+  {
+   "claim": "Gemini 2.5 Flash: 258 tokens imagen/página + texto nativo NO cobrado",
+   "verdict": "confirmed",
+   "evidence": "ai.google.dev/gemini-api/docs/document-processing: «Each document page is equivalent to 258 tokens» y «You are not charged for tokens originating from the extracted native text in PDFs». Las dos mitades del claim, textuales. (Sostiene el key_insight 0.)",
+   "severity": "low"
+  },
+  {
+   "claim": "Crawlee 3.18 orquesta Playwright 1.62 (PlaywrightCrawler)",
+   "verdict": "confirmed",
+   "evidence": "@crawlee/playwright 3.18.1 declara `peerDependencies: {playwright: \"*\", idcac-playwright: \"^0.2.0\"}` con ambos `optional: true`. Matiz: es AUSENCIA de restricción de versión, no evidencia positiva de que 1.62 funcione — nada bloquea la combinación, pero no hay un rango que la certifique. Riesgo bajo y detectable en el primer smoke test.",
+   "severity": "low"
+  },
+  {
+   "claim": "Aritmética del cost_estimate: $2/1.000 batch → $4-6/mes con 2.000-3.000 págs; backfill de 50.000 págs ≈ $100 (~$200 estándar)",
+   "verdict": "confirmed",
+   "evidence": "Recalculado contra los precios que verifiqué: 50.000 × $2/1.000 = $100 y × $4/1.000 = $200 ✓. 2.000-3.000 × $2/1.000 = $4-6/mes ✓, estándar $8-12 ✓. Internamente consistente, sin errores de orden de magnitud.",
+   "severity": "low"
+  }
+ ],
+ "omissions": [
+  "**Los términos de uso de GitHub Actions no aparecen en el informe.** Enumera tres «trampas verificadas» de GA (retrasos en :00, mínimo 5 min, auto-disable a 60 días) — todas de rendimiento, todas degradantes. No cita la restricción de política: los GitHub Terms for Additional Products prohíben usar Actions para «any activity that places a burden on our servers, where that burden is disproportionate to the benefits provided to users» (con «serverless applications» de ejemplo) y, con runners hospedados, «any other activity unrelated to the production, testing, deployment, or publication of the software project associated with the repository where GitHub Actions are used». Es zona gris defendible —aquí el repo ES el scraper, y miles de colectores OSS corren justo este patrón, sin evidencia de enforcement contra ellos— pero es una condición que el informe debía nombrar y no nombra. Lo que cambia no es la arquitectura (el informe ya diseña colectores portables) sino el DISPARADOR de la vía de escape: hoy está descrita como «cuando GA duela» por rendimiento; debe incluir «si GA se retira» por política, que es binario y no avisa.",
+  "**El coste de almacenamiento se asigna fuera de la capa que lo crea.** El supuesto (4) del cost_estimate dice que «el proyecto Supabase se imputa a la capa de almacenamiento/consulta, no a ingesta» — pero el contrato de evidencia que el propio informe declara innegociable (key_insight 4: «raw bytes + URL + captured_at + content_hash se persisten ANTES de cualquier parseo») es precisamente lo que genera ese almacenamiento. El plan Free de Supabase da «1 GB file storage», «500 MB database size» y «5 GB egress» (verificado en supabase.com/pricing); el backfill de 50.000 páginas de gaceta escaneada son varios GB de PDF crudo y revienta el Free tier antes de terminar. Pro son «from $25/month» (100 GB incluidos, luego $0.0213/GB). El «~$5-15/mes de ingesta» es honesto solo bajo un supuesto contable que el propio contrato de evidencia invalida: el coste real todo-incluido está más cerca de $30-40/mes.",
+  "**El tope de concurrencia de GitHub Actions no está citado.** El plan da «20» jobs concurrentes en runners estándar (máx. 5 en macOS), según docs.github.com/actions/reference/limits. El plan contempla «~15-30 fuentes con corrida diaria»: si los colectores se abren en fan-out como jobs paralelos, se roza o se pasa el techo. No es fatal —los jobs por encima del tope se encolan, no fallan— pero convierte una corrida «paralela» de 30-90 min en una serializada parcialmente, y el informe dimensiona la ventana de ejecución sin ese dato.",
+  "**No se comprobó el robots.txt de ningún portal .gov.co real, y la política lo trata como innegociable.** El informe fija `respectRobotsTxtFile: true` como requisito ético en todo colector (rec 11) y a la vez admite en el gap 0 que no verificó SUIN-Juriscol, Gaceta del Congreso, senado/camara.gov.co, DNP ni Corte Constitucional. Si el robots.txt de alguno de ellos deniega las rutas que el colector necesita, Crawlee las saltará y el colector devolverá CERO filas sin error — exactamente la forma de fallo que apareció en los informes hermanos. La comprobación es de minutos por dominio y debe hacerse ANTES de comprometer la política, no después.",
+  "**El límite operativo de páginas de la ruta de votaciones es 100, no 600.** El informe cita bien el doc («600 páginas (100 si contexto <1M)») pero no aterriza la consecuencia: recomienda Claude Haiku 4.5 para el volumen, que tiene ventana de 200K — por debajo de 1M — así que su tope real es 100 páginas por request. Las Gacetas del Congreso superan esa cifra con frecuencia, y la ruta de votaciones es el camino crítico declarado del informe. Hace falta trocear por páginas o usar un modelo de 1M para esa pasada; subir el PDF por la Files API NO levanta el tope (los límites son del payload completo del request).",
+  "**Nota de método, no del informe:** el precio batch de $2/1.000 páginas es invisible para curl. El HTML servido por mistral.ai/pricing/api trae solo la tarifa estándar y todos los precios con `data-multiplier=\"1\"`; el 50% lo aplica JavaScript al pulsar la pestaña «Batch». Una auditoría que solo hubiera hecho curl habría marcado como `unverifiable` una cifra que es exacta. Es el reverso del error que hundió a un informe hermano (contar elementos tras ejecutar JS y creer que el HTML servido los traía): aquí la trampa va en la otra dirección."
+ ],
+ "architecture_changing": [
+  "El almacenamiento del contrato de evidencia debe presupuestarse DENTRO de la capa de ingesta, no fuera. Persistir los raw bytes de 50.000 páginas escaneadas antes de parsear supera el Free tier de Supabase (1 GB de file storage, 500 MB de base) por un orden de magnitud, lo que obliga a Pro ($25/mes) o a una decisión de diseño que el informe no plantea: object storage separado y más barato (R2/B2) para el crudo, dejando Postgres para lo derivado. Esa bifurcación cambia el esquema de persistencia y hay que tomarla antes del backfill, no después. El «~$5-15/mes» del informe pasa a ~$30-40/mes todo incluido.",
+  "La ruta de validación de votaciones necesita troceado por páginas desde el diseño. Con Haiku 4.5 (200K de contexto) el tope es 100 páginas por request, y las Gacetas lo exceden con normalidad: la receta tal como está escrita falla contra una gaceta de 300 páginas. Hay que decidir ahora entre segmentar el PDF por página de tabla (que además abarata la pasada, porque solo se envían las páginas de votación) o reservar un modelo de 1M de contexto para ese paso. Es el camino crítico declarado del propio informe."
+ ],
+ "overall": "Este informe llegó COMPLETO (23.572 bytes, JSON válido: 13 recommendations, cost_estimate, 10 gaps, 6 key_insights y recommendation; ningún campo truncado) y es, con diferencia, el más sólido de la serie. Cero refutados de 22 veredictos, y no por falta de intentos: fui a por los siete números de versión, los cuatro nombres de opción de Crawlee, los dos precios de Mistral, las cinco citas de GitHub Actions, los cuatro límites de Supabase y las dos cifras de Claude, y todos salieron exactos — varios coincidiendo palabra por palabra con la documentación oficial. Las versiones no las verifiqué por la web sino contra registry.npmjs.org, y los nombres de opción de Crawlee no contra la doc HTML sino descomprimiendo el tarball de @crawlee/basic 3.18.1 y leyendo el .d.ts; ahí es donde un informe flojo se rompe, y este no se rompió. Cuatro veredictos parciales, todos de matiz y ninguno que mueva una decisión: rss-parser no tiene release desde 2023 (cierto) pero su repo no está archivado y tuvo commits cosméticos en 2026, así que «abandonado» sobredescribe; el suelo de $0.002/pág de Haiku es inalcanzable porque los image tokens de cada página son obligatorios (~$0.003-0.0055 real); Docling ya no vive en la org de IBM sino en docling-project bajo LF AI & Data; y el tope de 600 páginas de PDF está bien citado pero no es el que aplica al modelo que el propio informe recomienda. Comprobé además la aritmética del cost_estimate contra los precios unitarios que verifiqué y es internamente consistente (50.000 × $2/1.000 = $100; 2.000-3.000 págs = $4-6/mes; estándar dobla limpio). Lo que NO miré, y lo declaro porque veintitantos veredictos pueden leerse como «lo audité todo»: (a) los precios de SaaS de scraping de la rec 2 —Firecrawl, ScrapingBee, Browserbase—, aunque señalo que los $20/mes de Browserbase no son solo una alternativa descartada, aparecen como contingencia dentro del cost_estimate; (b) la rec 7, que el propio informe marca `verified=false` por ser estándar HTTP estable; (c) los precios de Trigger.dev y Fly.io de la rec 10, que sí están en la recomendación y no en las alternativas — quedan sin verificar por presupuesto de tiempo, y son los que sostienen el «+$6-10/mes» de la vía de escape. También hice un repaso de los 10 gaps declarados y son honestos: el gap 2 (si los commits del GITHUB_TOKEN resetean el contador de 60 días) es genuinamente indeterminable porque la doc de GitHub nunca define «repository activity», y flaggearlo fue lo correcto, no un descuido. Donde esta auditoría aporta algo no es refutando sino en dos huecos: el coste de almacenamiento, que el supuesto (4) asigna a otra capa cuando es el contrato de evidencia de ESTA capa el que lo genera —y que rompe el Free tier de Supabase durante el backfill—, y la restricción de términos de uso de GitHub Actions, que el informe no nombra: es zona gris defendible, no una prohibición, pero convierte la vía de escape a Fly/Trigger.dev de «cuando GA duela» en «también si GA se retira», y eso es un disparador distinto. Añado una advertencia de método por si el plan se reverifica más adelante: el precio batch de $2/1.000 páginas de Mistral no existe en el HTML servido —lo calcula JavaScript al pulsar una pestaña—, así que una comprobación con curl lo daría por no verificable cuando es exacto."
+}

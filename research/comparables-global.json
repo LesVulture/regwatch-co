@@ -1,0 +1,473 @@
+{
+ "projects": [
+  {
+   "name": "GovTrack.us",
+   "url": "https://www.govtrack.us/",
+   "country": "EE.UU.",
+   "status": "active — post del sitio fechado 2026-08-12 («House passes congressional stock buying ban») visto en vivo",
+   "scope": "Seguimiento del Congreso de EE.UU.: bills, votaciones, legisladores, análisis estadísticos (ideología, liderazgo, prognosis, text incorporation), alertas",
+   "stack": "Python 3.8 + Django 4.1, Xapian/Solr para búsqueda, Nginx/Gunicorn (repo govtrack/govtrack.us-web, 3.671 commits)",
+   "license": "Código en GitHub; datos vía el commons unitedstates/congress (CC0)",
+   "features": [
+    "Prognosis de aprobación por bill: DOS regresiones logísticas encadenadas — P(salir de comité) × P(aprobación en piso) — verificado leyendo bill/prognosis.py",
+    "~40 factores literales del código: introduced_first90days, sponsor_minority, sponsor_committee_member_majority, sponsor_leader_majority, cosponsors_bipartisan (≥1/3 del partido minoritario), cosponsors_crosspartisan, cosponsors_committeemember, reintroduced_of_reported, companion / companion_bipartisan, prefijos de título (startswith:...)",
+    "Se reentrena por Congreso con los bills del Congreso anterior (build_model(congress)) y se testea contra el siguiente (test_prognosis); los modelos quedan VERSIONADOS como código: prognosis_model_113.py, _116.py, _117.py + archivos _test",
+    "Análisis de ideología por patrones de co-patrocinio y de liderazgo vía PageRank (página /about/analysis)",
+    "Alertas y trackers por usuario; membresía «Hide The Ads»"
+   ],
+   "data_model_notes": "No scrapea él mismo el grueso: consume el commons unitedstates/congress (bills, votos, enmiendas desde Congress.gov/GovInfo). Separación total entre adquisición de datos (commons CC0 comunitario) y producto (sitio propio).",
+   "what_works": [
+    "Supervivencia 20+ años como «small, wholly independent organization» (texto literal del footer) con ingresos mixtos: ads + Patreon + membresías",
+    "Externalizar el scraping a un commons con más usuarios que GovTrack reparte el costo de mantenimiento",
+    "El prognosis es honesto: modelo simple, factores interpretables, publicado con metodología y código abiertos"
+   ],
+   "what_fails": [
+    "El último modelo de prognosis versionado en el repo es del Congreso 117 (2021-22): señal de que hasta el proyecto de referencia deja de reentrenar sus modelos cuando el mantenedor es uno solo",
+    "La página /about devuelve 403 a fetchers no-browser (bot-blocking agresivo)"
+   ],
+   "lessons_for_us": [
+    "Un «prognosis» creíble para proyectos de ley colombianos no necesita ML sofisticado: 2 regresiones logísticas con factores de trámite (autor en bancada de gobierno, ponente coordinador, número de firmantes multipartido, reintroducción de PL archivado, mensaje de urgencia) es defendible y explicable",
+    "Versionar el modelo entrenado como archivo en el repo (auditable) en vez de un binario opaco",
+    "Separar el motor de adquisición (open source, reutilizable por terceros) del producto: crea comunidad que ayuda a mantener los scrapers",
+    "Modelo de sostenibilidad realista: donaciones recurrentes (Patreon) + membresía sin ads, no venta de datos"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Playwright sobre https://www.govtrack.us/about/analysis (snapshot 2026-08-19, tabs Ideology/Leadership/Prognosis/Text Incorporation; footer «Launched more than 20 years ago»); WebFetch de github.com/govtrack/govtrack.us-web, api.github.com/.../contents/bill (prognosis.py 36.8KB + modelos 113/116/117) y raw prognosis.py (factores literales)",
+   "confidence": "high"
+  },
+  {
+   "name": "Open States (Plural)",
+   "url": "https://open.pluralpolicy.com/ (docs: https://docs.openstates.org/api-v3/)",
+   "country": "EE.UU. (50 estados + DC + PR)",
+   "status": "active — openstates.org hace 301 a pluralpolicy.com/open; repo scrapers con 22.203 commits y actividad; página dice «Open States is now Plural / SAI360»",
+   "scope": "Datos legislativos de las 50 legislaturas estatales: bills, votos, personas, comités, eventos; API v3 + bulk data; ~200 scrapers OSS en Python",
+   "stack": "Python + Poetry, Docker/docker-compose, framework de scraping propio migrando a «spatula» (scrapers/ legacy vs scrapers_next/), pre-commit + DeepSource; salida JSON validada → import a PostgreSQL → API v3",
+   "license": "Scrapers OSS; datos de personas CC0 (dominio público)",
+   "features": [
+    "API v3: /jurisdictions, /people, /people.geo (representante por ubicación), /bills, /committees, /events; API key gratuita por registro (X-API-KEY)",
+    "Repo «people» separado: YAML por estado editado A MANO (legislature/executive/municipalities/retired/committees), 11.727 commits — abandonaron scrapear personas porque los cambios son infrecuentes y el scraping degradaba calidad",
+    "Flujo scraper → JSON intermedio en _data/{estado}/ → validación de esquema (saltable con --nonstrict) → import a Postgres → API"
+   ],
+   "data_model_notes": "Modelo Open Civic Data (heredero de Popolo): Jurisdiction como unidad de partición; Person con múltiples roles; Bill con actions, sponsors, votes, versions. La validación de esquema ENTRE scraper y base de datos es la barrera anti-basura.",
+   "what_works": [
+    "Sobrevivió a la muerte de su patrocinador original (Sunlight Foundation) siendo adoptado por una empresa (Plural, 2021: «Plural is carrying that legacy forward from the Open States project, which we adopted in 2021») que lo usa como motor de su producto comercial",
+    "La doc admite sin drama que «los scrapers se rompen» cuando los estados cambian sus sitios; el reporte es vía issues de GitHub",
+    "Datos de personas curados a mano en git: cada cambio es un PR revisable con historia"
+   ],
+   "what_fails": [
+    "La migración scrapers → scrapers_next lleva años a medio camino (dos frameworks conviviendo)",
+    "Rate limits y tiers de la API v3 ya no están documentados públicamente tras la absorción en Plural"
+   ],
+   "lessons_for_us": [
+    "PATRÓN CLAVE para regwatch-co: congresistas/partidos/bancadas en YAML versionado en git y editado a mano (cambian poco: elecciones, reemplazos, cambios de bancada), scrapers solo para lo que cambia a diario (gacetas, trámites, votaciones)",
+    "Validación de esquema obligatoria entre scraper y Supabase: el scraper emite JSON intermedio, un validador decide si entra — nunca escribir del scraper directo a la BD",
+    "Un scraper por fuente/cámara como módulo independiente con CLI propio, para poder correr y depurar uno solo",
+    "people.geo (¿quién me representa? por ubicación) es una feature de alto valor ciudadano y barata si hay datos de circunscripción"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de docs.openstates.org/api-v3/, github.com/openstates/openstates-scrapers, github.com/openstates/people, docs.openstates.org/contributing/scrapers/, y redirect openstates.org→pluralpolicy.com/open + open.pluralpolicy.com (2026-08-19)",
+   "confidence": "high"
+  },
+  {
+   "name": "LegiScan",
+   "url": "https://legiscan.com/legiscan (docs cliente: https://api.legiscan.com/docs/)",
+   "country": "EE.UU.",
+   "status": "active — schedules 2026 publicados, trends con bills de la sesión 2025-26 vistos en vivo",
+   "scope": "Base nacional: legislación de los 50 estados + Congreso, con textos completos, sponsors, estados y roll calls; API JSON + datasets semanales; plataforma de tracking GAITS",
+   "stack": "API JSON pull/push; cliente PHP de referencia con esquema de BD (ERD público en https://api.legiscan.com/dl/Database_ERD.png)",
+   "license": "LegiScan API licenciada CC BY 4.0 (declarado en la página)",
+   "features": [
+    "3 niveles (texto literal capturado): Public API gratis «limited to 30,000 queries per month»; Pull API suscripción «100,000-250,000 queries per month»; Push API enterprise que «fully replicates the national database with updates every 4 hours as standard or optionally every 15 minutes»",
+    "4 modos de sincronización del daemon cliente: Monitored (lista de bills), State (todo un estado), Search nacional full-text con corte de relevancia, State Search",
+    "Datasets semanales (bulk) + getDataset por API; middleware signaling para avisar a un sistema tercero cuando un bill cambia",
+    "Precios: fee anual por número de estados cubiertos («Congress is a single ‘state’»); nonprofits 501(c) con descuento; lista exacta solo en PDF embebido (no leído)"
+   ],
+   "data_model_notes": "El ERD público es una referencia útil: bill / bill_text (versiones) / sponsor / roll_call / vote / session / body / committee, con change_hash por bill para sincronización incremental (el patrón push/pull entero gira alrededor de detectar cambios).",
+   "what_works": [
+    "Negocio de UNA cosa: ser la capa de datos que otros revenden — «This data can then be used to power commercial & public product offerings»",
+    "El tier gratis de 30k queries/mes crea el embudo y el ecosistema",
+    "Vender REPLICACIÓN (push cada 4h/15min) en vez de solo API: los clientes serios quieren la BD entera local"
+   ],
+   "what_fails": [
+    "Cloudflare bloquea todo fetch no-browser (tuvimos que pasar el challenge con Playwright)",
+    "Precios en PDF embebido, no en HTML"
+   ],
+   "lessons_for_us": [
+    "Diseñar desde el día 1 el change_hash por registro y un getMasterList barato: la sincronización incremental es el producto, no un extra",
+    "Publicar datasets semanales versionados (dump por sesión legislativa) además de la API: sirve a investigadores y es un backup público de facto",
+    "El modelo de precios por jurisdicción cubierta no aplica a Colombia (una sola), pero el de niveles gratis/pull/push sí"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "Playwright sobre https://legiscan.com/legiscan tras challenge de Cloudflare (snapshot 2026-08-19 con el texto literal de los 3 tiers) y https://legiscan.com/pricing (estructura anual por estados; PDF embebido no legible). Cifras en USD del PDF: NO verificadas",
+   "confidence": "high"
+  },
+  {
+   "name": "Congress.gov API (Library of Congress)",
+   "url": "https://api.congress.gov/ (repo: https://github.com/LibraryOfCongress/api.congress.gov)",
+   "country": "EE.UU.",
+   "status": "active — repo oficial con 828 commits, 980 stars, issues monitoreados por el equipo de Congress.gov",
+   "scope": "API oficial v3 del Congreso: bills, amendments, members, committees, nominations, treaties, congressional record; XML y JSON",
+   "stack": "API REST con key de api.data.gov",
+   "license": "Datos públicos del gobierno de EE.UU.",
+   "features": [
+    "Rate limit verificado: «5,000 requests per hour»; paginación offset con máximo 250 registros por página",
+    "ChangeLog público en el repo con endpoints afectados y fechas — la API se versiona y comunica cambios como un producto",
+    "Soporte vía issues de GitHub atendidos por el equipo oficial"
+   ],
+   "data_model_notes": "Cada respuesta lleva bloques Request/Pagination/Data uniformes. Es el techo aspiracional: la fuente oficial COMO API. Colombia no tiene equivalente — regwatch-co v2 es, en la práctica, la construcción privada de esta capa.",
+   "what_works": [
+    "Una institución oficial manteniendo API pública con changelog y soporte en GitHub — reduce a cero el scraping para quien construye encima (GovTrack y LegiScan la consumen)"
+   ],
+   "what_fails": [
+    "El sitio api.congress.gov rinde poco contenido a fetchers (la doc real vive en el repo GitHub)"
+   ],
+   "lessons_for_us": [
+    "Estructura de respuesta uniforme (request/pagination/data) en la API propia de regwatch-co",
+    "Publicar un CHANGELOG de la API y del esquema desde el día 1: los consumidores downstream (incluido el propio frontend) lo necesitan",
+    "5.000 req/h con key gratuita es una referencia de generosidad razonable para un tier público"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de github.com/LibraryOfCongress/api.congress.gov (2026-08-19): rate limit, formatos, changelog, actividad",
+   "confidence": "high"
+  },
+  {
+   "name": "TheyWorkForYou (mySociety)",
+   "url": "https://www.theyworkforyou.com/",
+   "country": "Reino Unido",
+   "status": "active — calendario parlamentario cargado hasta 2027, votaciones recientes de Comunes y Lores en portada",
+   "scope": "Hansard con búsqueda, perfiles de MPs/peers con registros de votación interpretados, alertas por email, declaraciones de intereses; cubre Westminster, Escocia, Irlanda del Norte y Senedd galés",
+   "stack": "Corpus parseado del Hansard (proyecto parlparse); operado por mySociety",
+   "license": "OSS de mySociety (código público en GitHub)",
+   "features": [
+    "Alertas por email por keyword, por diputado o por tema — la feature de retención central desde hace ~20 años",
+    "Registros de votación RESUMIDOS en lenguaje natural por posición temática («votó consistentemente a favor de X»), no solo la lista cruda de divisiones",
+    "Perfiles con intereses económicos declarados junto a la actividad parlamentaria"
+   ],
+   "data_model_notes": "Cuatro parlamentos en un solo modelo persona/discurso/votación. La interpretación editorial de votaciones (agrupar divisiones en «posturas») es curaduría humana encima de datos crudos — valiosa y riesgosa: mySociety publica la metodología de cada postura.",
+   "what_works": [
+    "Supervivencia 20+ años vía estructura DUAL verificada: mySociety = charity (donaciones/grants) + SocietyWorks Ltd = subsidiaria comercial que vende servicios a gobiernos locales y financia la caridad",
+    "Alertas por email como núcleo: producto simple, valor recurrente, sin app"
+   ],
+   "what_fails": [
+    "Public Whip (el proyecto hermano de votaciones, hoy de terceros) quedó rezagado — ver entrada aparte: depender de un solo mantenedor externo para los votos es frágil"
+   ],
+   "lessons_for_us": [
+    "El digest/alerta por email por keyword y por congresista es la feature #1 a copiar: crea hábito sin exigir visitas",
+    "Si se interpreta el sentido de una votación (postura pro/contra de un tema), publicar la metodología y las divisiones que la componen — es el equivalente UX del contrato de evidencia de regwatch",
+    "Estructura de sostenibilidad: entidad sin ánimo de lucro + brazo comercial que vende el mismo motor a instituciones"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de theyworkforyou.com y mysociety.org/about (2026-08-19); primer intento a /about/ dio 502, homepage confirmó todo",
+   "confidence": "high"
+  },
+  {
+   "name": "The Public Whip",
+   "url": "https://www.publicwhip.org.uk/",
+   "country": "Reino Unido",
+   "status": "stale — las votaciones más recientes listadas en portada son del 19 de mayo de 2025 (~15 meses de rezago a 2026-08); operado por Bairwell Ltd, «not-for-profit, open source website created in 2003»",
+   "scope": "Registros de votación (divisions) de Comunes y Lores con análisis de rebeldía por whip",
+   "lessons_for_us": [
+    "Caso de libro de muerte lenta: el sitio no anuncia cierre, pide donaciones, y aun así los datos llevan más de un año congelados — la «muerte» de estos proyectos no es un banner, es la frescura",
+    "regwatch-co debe exponer «última captura exitosa por fuente» como métrica pública: es el detector honesto de su propio deterioro (y ya existe el precedente interno: scan-coverage)"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de publicwhip.org.uk (2026-08-19): últimas divisiones visibles 2025-05-19; texto literal «The Public Whip is a not-for-profit, open source website created in 2003», mantenido por Bairwell Ltd",
+   "confidence": "high"
+  },
+  {
+   "name": "ParlTrack",
+   "url": "https://parltrack.org/",
+   "country": "UE (Parlamento Europeo)",
+   "status": "active pero perpetuamente «BETA»; contadores vivos (4.603 MEPs, 23.885 dossiers, 44.648 votaciones, 1.272.091 enmiendas); fecha de última actualización no visible en portada",
+   "scope": "Dossiers legislativos (OEIL), MEPs, votaciones y enmiendas del Parlamento Europeo; dumps JSON completos",
+   "license": "Datos ODbL v1.0; software AGPL v3+",
+   "features": [
+    "Dumps JSON descargables de TODO el dataset — el producto es el dump, no la web",
+    "Existe desde 2011, hospedado por AS250.net Foundation"
+   ],
+   "what_works": [
+    "Publicar el dataset entero como dump con licencia abierta le dio vida más allá de su web: investigadores y otras plataformas lo consumen"
+   ],
+   "what_fails": [
+    "Proyecto de esfuerzo esencialmente individual/voluntario sin modelo de financiación visible; sin fecha de frescura en portada, el usuario no puede juzgar si está al día"
+   ],
+   "lessons_for_us": [
+    "Publicar dumps completos crea resiliencia: si el servicio muere, los datos sobreviven",
+    "Anti-patrón a evitar: no mostrar la fecha de última actualización — regwatch debe estampar la frescura por fuente en la UI"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de parltrack.org (2026-08-19): contadores, licencias, dumps, «BETA», desde 2011",
+   "confidence": "medium"
+  },
+  {
+   "name": "HowTheyVote.eu",
+   "url": "https://howtheyvote.eu/ (repos: https://github.com/HowTheyVote)",
+   "country": "UE (Parlamento Europeo)",
+   "status": "active — repo principal actualizado 2026-08-17 y repo de datos 2026-08-15 (visto en la página de la org)",
+   "scope": "Votaciones nominales (roll-call) del pleno del PE desde el 9º término: ~24.800 votos de 1.278 MEPs; excluye votaciones secretas, a mano alzada, de comisión y enmiendas (limitación declarada)",
+   "stack": "Backend Python (Poetry) + frontend Node, Docker Compose, Caddy; scrapers como pipelines CLI (htv pipeline members|sessions|rcv-list|press) + background worker; 2.257 commits",
+   "license": "AGPL-3.0 (código); datos ODbL + DbCL",
+   "features": [
+    "Datos disponibles ~30 minutos después de la publicación oficial durante plenarias",
+    "Export semanal automático del dataset a un repo GitHub («data») en CSV/JSON — el commit semanal es un heartbeat público",
+    "Cruza 3 fuentes oficiales: roll-call votes + Observatorio Legislativo (OEIL) + comunicados de prensa del PE para dar contexto a cada voto"
+   ],
+   "data_model_notes": "Alcance deliberadamente estrecho (solo roll-calls de pleno) con las exclusiones DECLARADAS en el about — comunicación de incertidumbre ejemplar: dicen exactamente qué NO cubren.",
+   "what_works": [
+    "Proyecto de 2 personas sostenible por alcance mínimo bien delimitado + financiación por grants (Prototype Fund del ministerio alemán de investigación 2021, luego MIZ Babelsberg) + sponsors en especie",
+    "El repo de datos con commits semanales hace la frescura auditable por cualquiera"
+   ],
+   "what_fails": [
+    "Sin tests de fixtures visibles en el README (no documentan estrategia anti-rotura públicamente)"
+   ],
+   "lessons_for_us": [
+    "Cada scraper como pipeline CLI independiente (htv pipeline X) — exactamente la arquitectura que le sirve a regwatch para Senado/Cámara/SUIN/Corte/CONPES",
+    "Declarar en la página «Qué no cubrimos y por qué» — traducción UX directa del contrato de evidencia de v1",
+    "Espejar el dataset a GitHub con commits automáticos: heartbeat público + backup + canal para investigadores"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de howtheyvote.eu/about, github.com/HowTheyVote (fechas de actualización de repos) y github.com/HowTheyVote/howtheyvote (2026-08-19)",
+   "confidence": "high"
+  },
+  {
+   "name": "abgeordnetenwatch.de",
+   "url": "https://www.abgeordnetenwatch.de/api",
+   "country": "Alemania",
+   "status": "active — API v2 operativa con fair-use documentado",
+   "scope": "Bundestag + parlamentos estatales + Parlamento Europeo (diputados alemanes): políticos, mandatos, votaciones nominales (polls), actividades secundarias (ingresos extra), y su feature insignia: preguntas ciudadanas públicas a diputados",
+   "features": [
+    "API JSON sin autenticación: /parliaments, /parliament-periods, /politicians, /candidacies-mandates, /polls; filtrado complejo, paginación, entidades relacionadas embebibles",
+    "Rate limit por fair-use: 30 requests/minuto/IP, HTTP 429 al excederlo, y una instrucción social: consultas masivas entre 22:00 y 06:00",
+    "Datos bajo CC0 1.0"
+   ],
+   "data_model_notes": "Modelo centrado en el MANDATO (candidacies-mandates) como entidad puente persona↔periodo-parlamentario↔partido: resuelve limpiamente cambios de bancada y reemplazos — relevante para el mapa de partidos/bancadas de regwatch.",
+   "what_works": [
+    "API abierta sin key con datos CC0: máxima reutilización con costo de gobernanza mínimo",
+    "El mecanismo pregunta-ciudadana→respuesta-pública crea contenido único que ningún dato oficial tiene"
+   ],
+   "lessons_for_us": [
+    "Modelar mandato/curul como entidad propia (no como atributo del congresista): en Colombia los reemplazos (silla vacía, renuncias, curules de paz) lo exigen",
+    "CC0 + rate limit blando + guía de horario es una política de API completa en 3 líneas"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de abgeordnetenwatch.de/api (2026-08-19): endpoints, 30 req/min, CC0, HTTP 429",
+   "confidence": "high"
+  },
+  {
+   "name": "NosDéputés.fr (Regards Citoyens)",
+   "url": "https://www.nosdeputes.fr/",
+   "country": "Francia",
+   "status": "stale/pausado — banner literal: «Ce site présente les travaux des députés de la précédente législature» y «NosDéputés.fr reviendra d'ici quelques mois avec une nouvelle version pour les députés élus en 2024»; a 2026-08 la promesa lleva ~2 años sin cumplirse",
+   "scope": "Actividad de diputados de la Asamblea Nacional francesa: intervenciones, enmiendas, presencia, votaciones",
+   "lessons_for_us": [
+    "El asesino identificado: el CAMBIO DE LEGISLATURA (disolución de 2024). Un rediseño del ciclo político obliga a re-bootstrap de personas, comisiones y datos, y un proyecto voluntario puede no volver de eso",
+    "Para regwatch-co: planear DESDE EL DISEÑO la transición de legislatura 2026→2030 (elecciones legislativas colombianas marzo 2026 ya pasaron; la próxima es 2030) y el cambio de gobierno agosto 2026 — que el arranque de una legislatura nueva sea una migración con script, no un proyecto nuevo",
+    "Un aviso honesto de pausa es mejor que datos silenciosamente viejos — pero la promesa con fecha vaga («quelques mois») envejece mal; mejor estados explícitos: activo / pausado / archivado"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de nosdeputes.fr (2026-08-19) con ambos textos literales del banner",
+   "confidence": "high"
+  },
+  {
+   "name": "OpenParliament.ca",
+   "url": "https://openparliament.ca/ (repo: https://github.com/michaelmulley/openparliament)",
+   "country": "Canadá",
+   "status": "active — actividad más reciente visible del 18 de junio de 2026 (voto #173, tercera lectura de C-30; el Parlamento está en receso de verano, así que es actual)",
+   "scope": "Cámara de los Comunes: debates (Hansard), bills, votaciones, perfiles de diputados; «This is not a government site. Not even sort of.»",
+   "stack": "Python 3.12 + Django, PostgreSQL, Docker; 1.042 commits; AGPLv3",
+   "features": [
+    "Dump completo de la BD parlamentaria descargable (openparliament.ca/data-download/) para cargar en Postgres",
+    "README explícito: «This is the source code for a specific site and isn't adapted for reuse»"
+   ],
+   "what_works": [
+    "Proyecto esencialmente de UNA persona (Michael Mulley) vivo 15+ años: alcance contenido + stack aburrido (Django+Postgres) + dump público como válvula de escape"
+   ],
+   "what_fails": [
+    "Bus factor = 1; la API pública bloquea fetchers (403) sin doc visible"
+   ],
+   "lessons_for_us": [
+    "Stack aburrido y alcance contenido es la estrategia de supervivencia de los proyectos unipersonales — regwatch-co es un proyecto de una persona: Django/Postgres aquí valida la elección Supabase/Postgres simple",
+    "Ofrecer el dump completo de la BD reduce la presión sobre la API y deja legado si el sitio muere"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de openparliament.ca (2026-08-19, actividad 2026-06-18) y github.com/michaelmulley/openparliament; /api/ devolvió 403",
+   "confidence": "high"
+  },
+  {
+   "name": "Openparlamento (openpolis)",
+   "url": "https://parlamento19.openpolis.it/ (redirect 301 desde parlamento.openpolis.it)",
+   "country": "Italia",
+   "status": "active — eventos legislativos de agosto de 2026 visibles, decretos en conversión, votaciones recientes en ambas cámaras; contadores vivos («356 leggi aprobadas en esta legislatura», «126 voti di fiducia del I Governo Meloni»)",
+   "scope": "Parlamento italiano (legislatura XIX): actos, votaciones, votos de confianza, filtros por año/mes/cámara/tipo",
+   "data_model_notes": "Patrón de URL por legislatura (parlamento19.*): cada legislatura es un sitio/dataset con URL propia y la raíz redirige a la vigente — resuelve elegantemente el problema que mató a NosDéputés",
+   "what_works": [
+    "Sobrevive dentro de una fundación de datos (openpolis) con múltiples productos y newsletter — no depende de un voluntario",
+    "Aísla legislaturas por subdominio: lo viejo queda archivado y navegable, lo nuevo arranca limpio"
+   ],
+   "lessons_for_us": [
+    "Adoptar el patrón «legislatura como partición»: URLs y datasets de regwatch particionados por cuatrienio (2022-2026, 2026-2030), con redirect a la vigente — archiva sin romper enlaces",
+    "Contadores agregados de la legislatura (leyes aprobadas, mensajes de urgencia usados) son UX barata y con gancho editorial"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de parlamento.openpolis.it → 301 → parlamento19.openpolis.it (2026-08-19) con eventos de agosto de 2026",
+   "confidence": "high"
+  },
+  {
+   "name": "EUR-Lex + ELI (European Legislation Identifier)",
+   "url": "https://eur-lex.europa.eu/eli-register/about.html",
+   "country": "UE + 21 jurisdicciones (a enero de 2023)",
+   "status": "active como estándar — ontología v1.5 y ontología de impacto v1.0 publicadas en 2024; ELI-DL (draft legislation) desde 2020",
+   "scope": "Identificador semántico estándar para legislación: URIs estables + ontología de metadatos + embebido RDFa/JSON-LD",
+   "features": [
+    "Pilar 1 — plantilla URI: /eli/{jurisdicción}/{agente}/{año}/{mes}/{día}/{tipo}/{identificador natural}/{nivel}/{punto en el tiempo}/{versión}/{idioma}",
+    "Pilar 2 — ontología (FRBR): distingue la NORMA abstracta de sus VERSIONES consolidadas en el tiempo y sus expresiones por idioma",
+    "Pilar 3 — metadatos embebidos en el HTML (RDFa/JSON-LD); Pilar 4 — protocolo de sincronización por feeds Atom",
+    "Creado por conclusiones del Consejo de la UE de octubre de 2012"
+   ],
+   "data_model_notes": "LA pieza conceptual para el problema núcleo de regwatch («vigente a fecha X»): el eje /point-in-time/{fecha}/version separa la identidad de la norma de su estado temporal. Colombia NO implementa ELI, pero regwatch puede acuñar URIs internas ELI-like: /eli/co/ley/2022/2294/vigente-a/2026-08-16",
+   "lessons_for_us": [
+    "Adoptar el esquema URI ELI-like como ID canónico interno de normas en Supabase: estable, legible, y con la dimensión temporal (punto en el tiempo) integrada",
+    "Modelar norma-abstracta vs versión-consolidada como entidades distintas (FRBR work/expression) — es lo que permite responder «¿qué decía esta ley cuando pasó X?»"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "La página oficial eur-lex.europa.eu/eli-register/about.html devolvió contenido vacío al fetch (página JS); verificado vía en.wikipedia.org/wiki/European_Legislation_Identifier (2026-08-19): plantilla URI, 4 pilares, conclusiones Consejo oct-2012, ontología v1.5 (2024), 21 jurisdicciones a ene-2023. Fuente secundaria: bajar un punto la confianza",
+   "confidence": "medium"
+  },
+  {
+   "name": "Akoma Ntoso / OASIS LegalDocML",
+   "url": "https://docs.oasis-open.org/legaldocml/akn-core/v1.0/os/part1-vocabulary/akn-core-v1.0-os-part1-vocabulary.html",
+   "country": "Estándar internacional (OASIS)",
+   "status": "estable/congelado — OASIS Standard v1.0 del 29 de agosto de 2018; sin versión posterior",
+   "scope": "Vocabulario XML para documentos parlamentarios, legislativos y judiciales: 8 estructuras (bill/act, debate, debateReport, judgment, doc, collection, amendment, portion), ~310 elementos y 69 atributos",
+   "lessons_for_us": [
+    "NO adoptarlo como formato de almacenamiento para v2: 310 elementos es un costo de marcado enorme para un equipo de una persona; ninguno de los trackers exitosos analizados (GovTrack, Open States, HowTheyVote) lo usa internamente",
+    "SÍ saquear sus distinciones conceptuales: separación contenido-autoral vs adiciones-editoriales, y la tipología de 8 clases de documento, que mapea bien a gaceta/ponencia/texto aprobado/sentencia",
+    "Si algún día se exporta a estándar (interoperabilidad con academia/registros), Akoma Ntoso es el destino — diseñar el esquema Postgres para que la exportación sea posible, no nativa"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch del documento OASIS (2026-08-19): fecha 2018-08-29, 8 estructuras, ~310 elementos/69 atributos. El sitio akomantoso.org devolvió 403",
+   "confidence": "high"
+  },
+  {
+   "name": "Popolo",
+   "url": "https://www.popoloproject.com/ (repo: https://github.com/popolo-project/popolo-spec)",
+   "country": "Estándar internacional",
+   "status": "dormant — último push del repo popolo-spec: 2023-02-13 (no archivado, 109 stars, 36 issues abiertos); el sitio sigue en línea con texto de su época activa",
+   "scope": "Especificación de datos legislativos: Person, Organization, Membership, Post, Motion, VoteEvent, Count, Vote, Area, Event, Speech; adoptada históricamente por mySociety, Sunlight, g0v, y base del modelo Open Civic Data",
+   "lessons_for_us": [
+    "Usarlo como VOCABULARIO de diseño (nombres y relaciones de entidades ya battle-tested), no como dependencia: el estándar está congelado pero sus conceptos viven en Open States/OCD",
+    "Su tríada Person–Membership–Organization con Post (curul) es el esqueleto correcto para el mapa persona/partido/bancada/comisión de regwatch",
+    "Advertencia de meta-nivel: hasta los estándares cívicos mueren cuando su comunidad patrocinadora (Sunlight) desaparece — otra razón para no acoplarse a estándares vivos de terceros"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de popoloproject.com y api.github.com/repos/popolo-project/popolo-spec (2026-08-19): pushed_at 2023-02-13, archived=false",
+   "confidence": "high"
+  },
+  {
+   "name": "unitedstates/congress (el commons de scrapers)",
+   "url": "https://github.com/unitedstates/congress",
+   "country": "EE.UU.",
+   "status": "active como commons comunitario (783 commits; fecha exacta del último commit no capturada)",
+   "scope": "Scrapers/fetchers en Python de bills, enmiendas, votaciones nominales y textos (Congress.gov + GovInfo), en dominio público CC0",
+   "lessons_for_us": [
+    "El patrón institucional más importante del análisis: GovTrack y Sunlight Foundation, COMPETIDORES, fusionaron sus scrapers en un repo neutral CC0 en 2013 bajo una org de GitHub sin dueño («unitedstates») — el commons sobrevivió a la muerte de Sunlight",
+    "Para regwatch-co: publicar los scrapers de fuentes colombianas como repo CC0/MIT separado del producto invita a que Congreso Visible, medios o academia los coadopten — el seguro de vida del proyecto"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de github.com/unitedstates/congress (2026-08-19): CC0, historia GovTrack+Sunlight 2013, componentes",
+   "confidence": "high"
+  },
+  {
+   "name": "FiscalNote (PolicyNote)",
+   "url": "https://fiscalnote.com/",
+   "country": "EE.UU./global",
+   "status": "active — homepage promociona PolicyNote, API con district matching, transcripciones presidenciales en 60 min",
+   "scope": "Enterprise: policy intelligence sobre «12,000+ gobiernos, todos los 50 estados, Congreso y 100+ países»; VoterVoice (advocacy), CQ (noticias), PolicyNote API",
+   "features": [
+    "Alertas + análisis con IA",
+    "Sin precios públicos: demo/sales",
+    "Servicios profesionales con analistas humanos (PolicyNote+) encima del software"
+   ],
+   "lessons_for_us": [
+    "El techo comercial vende COBERTURA (todo, en todas partes) + IA + analistas humanos; regwatch no compite ahí — compite en profundidad de UNA jurisdicción con procedencia verificable",
+    "La capa «analista humano como servicio» encima del tracker es el upsell natural si regwatch alguna vez monetiza (y encaja con el perfil profesional de Daniel)"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de fiscalnote.com (2026-08-19). Cambios de propiedad/adquisiciones: NADA visible en homepage, no verificado",
+   "confidence": "medium"
+  },
+  {
+   "name": "Quorum",
+   "url": "https://www.quorum.us/",
+   "country": "EE.UU./UE",
+   "status": "active — «2,000+ policy teams» como clientes (Toyota, Uber, Walmart)",
+   "scope": "Enterprise: tracking legislativo (Congreso, 50 estados, UE), grassroots, stakeholder management, PAC; asistente IA «Quincy» y búsqueda semántica conversacional",
+   "features": [
+    "Dashboard «one view of how you influence a legislator»: une tracking con CRM de relaciones",
+    "Sin precios públicos"
+   ],
+   "lessons_for_us": [
+    "Su diferenciador es unir el QUÉ (norma) con el QUIÉN (relación con el legislador) en una vista — para regwatch, enlazar cada proyecto de ley con autores/ponentes/votos ya da la mitad de ese valor sin construir un CRM",
+    "La búsqueda semántica conversacional como feature comercial de 2026 valida la apuesta de v2 por búsqueda híbrida + preguntas en lenguaje natural"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de quorum.us (2026-08-19)",
+   "confidence": "medium"
+  },
+  {
+   "name": "BillTrack50",
+   "url": "https://www.billtrack50.com/info/pricing",
+   "country": "EE.UU.",
+   "status": "active — precios públicos vigentes verificados",
+   "scope": "Tracker asequible 50 estados + Congreso + regulaciones: alertas, widgets embebibles, stakeholder pages, scorecards, resúmenes por IA",
+   "features": [
+    "Plan CITIZEN gratis: búsqueda ilimitada de bills y legisladores (sin tracking ni alertas)",
+    "Legislación: $1,000/año por estado o Congreso ($84/mes) — $5,000/año todos los estados + Congreso ($420/mes)",
+    "Regulaciones: $500/año por estado/federal — $2,500/año todo",
+    "Usuarios ILIMITADOS y API incluida en toda suscripción; política declarada: «We keep our pricing low for everyone; we don't offer special pricing for certain organizations»",
+    "Widgets/stakeholder pages: listas de bills embebibles en sitios de terceros — el tracker como infraestructura de comunicación de sus clientes"
+   ],
+   "lessons_for_us": [
+    "ANCLA DE PRECIO para una eventual monetización de regwatch-co: $1.000 USD/año por una jurisdicción es el precio de mercado del tier «asequible» en EE.UU.; Colombia soportaría menos, pero el orden de magnitud (cientos de USD/año, no miles) queda fijado",
+    "Usuarios ilimitados + precios planos publicados = arma competitiva contra los enterprise opacos (FiscalNote/Quorum)",
+    "Los widgets embebibles (lista viva de proyectos por tema para incrustar en un sitio de gremio/ONG) son un canal de distribución que ningún comparable colombiano ofrece"
+   ],
+   "verified_by_fetch": true,
+   "evidence": "WebFetch de billtrack50.com (menú → href exacto) y billtrack50.com/info/pricing (2026-08-19): tabla completa de precios",
+   "confidence": "high"
+  }
+ ],
+ "patterns": [
+  "MODELO DE DATOS — convergencia total en 6 entidades: Bill (con versiones de texto), Action/Event (hitos de trámite con fecha y actor), Vote/VoteEvent (con Count agregado y Vote individual), Person, Organization (partido/comisión/cámara) y Membership/Mandate como entidad puente persona↔organización↔periodo (Popolo, OCD/Open States, abgeordnetenwatch, LegiScan ERD). Para Colombia añadir dos que ningún comparable de trámite tiene bien: NormaVigente con eje temporal FRBR/ELI (norma abstracta vs versión consolidada a fecha X) y Sentencia como modificador de vigencia — el diferencial real de regwatch-co.",
+  "MODELO DE DATOS — la legislatura como partición: Open States particiona por jurisdiction+session, Openparlamento por subdominio de legislatura (parlamento19.*), GovTrack entrena modelos por Congreso. El cambio de legislatura es también el asesino de proyectos (NosDéputés, pausado 2+ años tras la disolución de 2024): diseñar la transición de cuatrienio como migración con script, no como proyecto nuevo.",
+  "DATOS DE PERSONAS ≠ SCRAPING: Open States abandonó scrapear legisladores y los mantiene en YAML versionado a mano (repo people, CC0, 11.7k commits) porque cambian poco y el scraping degradaba calidad. Congresistas, partidos y bancadas colombianas deben ser archivos curados en git con historia de PRs, no salida de scraper.",
+  "ANTI-FRAGILIDAD — el pipeline de 3 etapas es universal: scraper → artefacto intermedio validado (JSON contra esquema en Open States; TSV en el propio career-ops) → import a la BD. Nadie escribe del scraper a la base. La validación intermedia es la barrera anti-basura y el punto de replay.",
+  "ANTI-FRAGILIDAD — la frescura como métrica pública: HowTheyVote hace commit semanal de su dataset a GitHub (heartbeat auditable), LegiScan sincroniza por change_hash, y los muertos se reconocen porque NO la muestran (ParlTrack sin fecha visible, Public Whip congelado desde 2025-05 sin aviso). «Última captura exitosa por fuente» debe ser un dato de primera clase en la UI de regwatch.",
+  "PROCEDENCIA — los honestos declaran el negativo: HowTheyVote lista explícitamente qué NO cubre (votaciones secretas, a mano alzada, comisiones); TheyWorkForYou publica la metodología de cada postura de votación; GovTrack publica el código de su prognosis. La versión UX del contrato de evidencia de v1 es una página permanente de «qué no cubrimos y por qué» + metodología enlazada desde cada dato interpretado.",
+  "UX — el trío que se repite en TODOS los vivos: (1) página de bill con timeline de trámite y estado actual, (2) alertas por email por keyword/tema/bill/legislador con digest diario o semanal — la feature de retención #1 de TheyWorkForYou, GovTrack y BillTrack50 —, y (3) perfil de legislador con su historial de votos y autoría. Los widgets embebibles de BillTrack50 son el cuarto elemento diferenciador barato.",
+  "SOSTENIBILIDAD — los supervivientes de 20 años tienen ingresos MIXTOS y alcance contenido: GovTrack (ads+Patreon+membresías, org de 1-2 personas), mySociety (charity + subsidiaria comercial SocietyWorks), openpolis (fundación multi-producto), OpenParliament.ca (1 persona, stack aburrido, dump público). Los muertos/pausados eran voluntariado puro sin institución detrás (NosDéputés, Public Whip, Popolo tras la muerte de Sunlight).",
+  "SOSTENIBILIDAD — el commons de scrapers como seguro de vida: unitedstates/congress (GovTrack+Sunlight, CC0, org GitHub neutral) sobrevivió a la muerte de uno de sus dos padres. Publicar los scrapers colombianos como repo abierto separado del producto invita a coadopción (academia, medios, Congreso Visible) y protege el proyecto del bus factor 1.",
+  "MERCADO — dos pisos sin escalera: enterprise opaco (FiscalNote, Quorum: sin precios, con IA conversacional y analistas humanos) y asequible transparente (BillTrack50: $1k-5k/año publicados, usuarios ilimitados, API incluida; LegiScan API: gratis hasta 30k queries/mes). En Colombia no existe NINGUNO de los dos pisos con datos diarios verificables — el hueco es el piso BillTrack50/LegiScan, no el piso FiscalNote."
+ ],
+ "gaps": [
+  "Precios exactos en USD de LegiScan (Pull/Push API y GAITS): la lista vive en un PDF embebido (LegiScan_Price_List.pdf) que no se pudo leer; solo quedó verificada la estructura (fee anual por estado, 3 tiers, descuento 501(c)).",
+  "Tiers y rate limits actuales de la Open States API v3 bajo Plural: la doc pública ya no los especifica; open.pluralpolicy.com solo confirma key gratuita por registro. La mención «Open States is now Plural / SAI360» sugiere una adquisición de Plural por SAI360 que NO pude verificar de forma independiente.",
+  "Precios de FiscalNote y Quorum: no públicos (demo/sales) — solo verificable contactando ventas. Posibles cambios de propiedad de FiscalNote en 2025-2026: nada visible en su homepage, no verificado.",
+  "GovTrack: la página /about (historia y financiación detallada) devuelve 403 a fetchers; historia reconstruida desde footer, GitHub y página de metodología. El modelo de prognosis vigente podría ser aún el del Congreso 117 (último versionado en el repo) — no confirmado si reentrenaron fuera de git.",
+  "Página oficial ELI de EUR-Lex no renderizó (contenido vacío, requiere JS); los 4 pilares y fechas se verificaron contra Wikipedia (fuente secundaria). Colombia no aparece como implementador de ELI (consistente con la lista de 21 jurisdicciones a 2023, todas europeas), pero no se verificó una fuente colombiana que lo descarte.",
+  "Frescura real de ParlTrack: contadores vivos pero sin fecha de última actualización visible; no se validó contra un dossier reciente.",
+  "unitedstates/congress: fecha exacta del último commit no capturada (el fetch resumió actividad sin fecha).",
+  "Se agotó el presupuesto de WebSearch de la sesión (200/200 usado por procesos previos), así que toda la verificación fue por WebFetch/Playwright directo a URLs conocidas; no hubo búsqueda exploratoria de comparables adicionales (p.ej. proyectos LATAM tipo DecideChile/Congreso Abierto Perú quedaron fuera de este barrido).",
+  "El navegador Playwright es compartido con otros agentes de este workflow (pestañas con fuentes colombianas abiertas): dos navegaciones fueron pisadas; LegiScan /pricing/api quedó sin capturar por esa contención."
+ ],
+ "key_insights": [
+  "El prognosis de GovTrack — la feature «mágica» que regwatch podría querer copiar — es en realidad dos regresiones logísticas encadenadas (P(salir de comité) × P(aprobación)) con ~40 factores interpretables de trámite y patrocinio, entrenadas con los bills del Congreso anterior y versionadas como archivos .py en el repo. Es replicable para Colombia con los datos que regwatch ya planea capturar (autoría, bancada, ponencias, mensaje de urgencia, reintroducciones), y su valor está en la explicabilidad, no en la precisión.",
+  "La decisión de arquitectura más contraintuitiva y más validada: NO scrapear personas. Open States mantiene legisladores en YAML a mano tras años de scraping fallido. Para regwatch: congresistas/partidos/bancadas en archivos versionados, scrapers solo para gacetas, trámites y votaciones.",
+  "Los proyectos de este tipo no mueren con un banner: mueren por staleness silencioso (Public Whip: 15 meses congelado mientras pide donaciones) o por el cambio de legislatura (NosDéputés: «vuelve en unos meses» desde 2024). Los dos antídotos observados: frescura por fuente como dato público de primera clase, y la legislatura como partición migrable por script.",
+  "El contrato de evidencia de v1 tiene traducción UX exacta en los mejores comparables: HowTheyVote declara qué NO cubre, TheyWorkForYou publica metodología por cada voto interpretado, GovTrack publica el código de sus análisis. La incertidumbre declarada no es un costo — es el diferenciador visible frente a la prensa y a los agregadores con IA.",
+  "Existe un patrón institucional de supervivencia en 3 capas, todas verificadas: (1) datos crudos como commons abierto (unitedstates/congress CC0 sobrevivió a la muerte de Sunlight), (2) dumps públicos versionados como heartbeat y legado (HowTheyVote, ParlTrack, OpenParliament.ca), (3) producto con ingresos mixtos encima (GovTrack: ads+Patreon; mySociety: charity+subsidiaria). Un proyecto unipersonal como regwatch-co debería implementar las capas 1 y 2 desde el día 1 porque son las que no dependen de que su autor siga disponible.",
+  "El precio de mercado del tracking legislativo «asequible» está publicado y verificado: $1.000 USD/año por jurisdicción (BillTrack50, usuarios ilimitados y API incluida) y API de datos gratis hasta 30.000 queries/mes (LegiScan). En Colombia ese piso de mercado está VACÍO: nadie ofrece datos legislativos diarios verificables ni por API ni por suscripción asequible — los incumbentes locales (Congreso Visible, servicios jurídicos tipo Legis/Tirant) no juegan en esa cancha.",
+  "La búsqueda semántica + preguntas en lenguaje natural que v2 planea es exactamente lo que el enterprise está vendiendo en 2026 (Quincy de Quorum, PolicyNote AI de FiscalNote), pero ninguno la ancla a fuente primaria con procedencia checkeable — la combinación «respuesta conversacional + cita anclada a gaceta/diario oficial con fecha de captura» no la tiene ni el enterprise."
+ ],
+ "recommendation": "Construir regwatch-co v2 como «LegiScan de una sola jurisdicción con la ética de HowTheyVote», en tres capas separadas desde el día 1: (1) CAPA COMMONS — scrapers de fuentes colombianas como repo abierto (MIT/CC0) independiente del producto, un scraper = un pipeline CLI por fuente (patrón htv de HowTheyVote), emitiendo JSON intermedio validado contra esquema ANTES de tocar Supabase (patrón Open States), con change_hash por registro para sincronización incremental (patrón LegiScan) y «última captura exitosa por fuente» como dato de primera clase; personas/partidos/bancadas NO se scrapean: van en YAML curado en git (patrón openstates/people), modelando el mandato/curul como entidad puente (patrón abgeordnetenwatch) — crítico para reemplazos y cambios de bancada colombianos. (2) CAPA DATOS — esquema Postgres con las 6 entidades convergentes (bill/action/vote/person/organization/membership) más las dos que ningún comparable de trámite tiene y que son el foso de regwatch: norma con eje temporal FRBR/ELI-like (URI interna tipo /eli/co/ley/2022/2294/vigente-a/{fecha}, separando norma abstracta de versión consolidada) y sentencia como modificador de vigencia; particionar por legislatura con la transición 2030 diseñada como migración (la lección de la muerte de NosDéputés); dumps semanales versionados a GitHub como heartbeat público y seguro de vida. (3) CAPA PRODUCTO — copiar el trío UX universal (timeline de trámite por proyecto, alertas email por keyword/tema/congresista con digest, perfil de congresista con votos y autoría), añadir el prognosis a la GovTrack (dos regresiones logísticas explicables con factores de trámite colombiano, modelo versionado en el repo) solo cuando haya ≥1 legislatura completa de datos de entrenamiento, y como página permanente el contrato de evidencia en versión UX: «qué cubrimos, qué no, y por qué», con jerarquía probatoria visible en cada registro. No competir con el enterprise (FiscalNote/Quorum) en cobertura ni IA conversacional genérica: la ventaja defendible y hoy inexistente en el mercado —incluido el enterprise— es la respuesta en lenguaje natural cuya cada afirmación ancla a fuente primaria colombiana con URL y fecha de captura. Precio ancla si se monetiza: por debajo del piso BillTrack50 ($1.000 USD/año), con tier API gratuito estilo LegiScan (30k queries/mes) para sembrar ecosistema."
+}

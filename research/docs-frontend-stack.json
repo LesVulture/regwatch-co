@@ -1,0 +1,112 @@
+{
+ "area": "frontend-stack",
+ "overall": "Las seis versiones fijadas en §9 de PLAN-V2.md son **exactas al 2026-08-19**: `next@16.3.1`, `react@19.2.8`, `typescript@7.0.2` y `tailwindcss@4.3.3` son literalmente el tag `latest` del registro npm hoy, y Node 24 (v24.19.0 «Krypton», 2026-08-03) es el LTS activo y el default de Vercel. Ninguna versión es inventada. Los dos flags que el plan activa desde el día 1 (`cacheComponents`, `partialPrefetching`) existen, son opciones top-level de `next.config.ts` y el propio post de 16.3 confirma que serán default en la próxima major. Los números de Vercel Hobby (1.000.000 de invocaciones, 100 GB de Fast Data Transfer) también son correctos. Tres cosas fallan: (1) **«Serwist» sin nombrar paquete es la trampa del plan** — con Next 16, donde Turbopack es el bundler por defecto, `@serwist/next` es la integración webpack; la que toca es `@serwist/turbopack@9.5.12`, con `createSerwistRoute` + `SerwistProvider`, un API completamente distinto que el plan no describe; (2) **«Coste $0 cubre la beta» está incompleto de forma que puede romper el proyecto**: el límite que muerde en una app SSR con chat de IA no son las invocaciones sino **Active CPU: 4 CPU-hrs/mes**, y el Hobby está restringido a **uso no comercial y personal** por las fair-use guidelines — hay que resolver eso antes de exponer un producto público; (3) el plan trata TS7 en `next build` como automático y no lo es (requiere `typescript@^7` local **y** el flag `useTypeScriptCli`). Además §9 ignora dos cambios de convención de Next 16 que son gratis en greenfield y caros después (`middleware.ts` → `proxy.ts`, params async con los helper types `PageProps<'/ruta'>`) y, sobre todo, **no dice cómo se invalida el caché tras cada corrida de colectores** — que es exactamente el patrón `cacheTag`/`cacheLife` + `revalidateTag` para el que `cacheComponents` existe, y el hueco de mayor valor de toda la sección. El aviso de iOS/Safari 26.5 sobre Web Push no pude verificarlo (presupuesto de WebSearch agotado en la sesión) y queda marcado `no_verificable`, no refutado.",
+ "findings": [
+  {
+   "item": "Next.js 16.3.1",
+   "plan_dice": "Next.js **16.3.1** (App Router, con `cacheComponents` y `partialPrefetching` activados desde el día 1 — Vercel anuncia que serán el default)",
+   "realidad": "npm dist-tag `latest` de `next` = 16.3.1 exactamente, con `engines.node: \">=20.9.0\"`. El post oficial de 16.3 está publicado el 3 de agosto de 2026 y confirma verbatim: «The behaviors behind Instant Navigations will become the default in a future major version». Ambos flags son opciones top-level de `next.config.ts` (no `experimental.*`): `cacheComponents: true, partialPrefetching: true`.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/next/latest + https://nextjs.org/blog/next-16-3 + Context7 /vercel/next.js (docs/01-app/02-guides/incremental-static-regeneration-cache-components.mdx)",
+   "accion": "Ninguna sobre la versión. `cacheComponents` reemplaza a `experimental.ppr` y a `experimental.useCache`; `unstable_cache` queda sustituido por `'use cache'` — que el plan no use esos nombres viejos al implementar."
+  },
+  {
+   "item": "React 19.2.8",
+   "plan_dice": "React 19.2.8",
+   "realidad": "npm dist-tag `latest` de `react` = 19.2.8. Next 16 pide `react ^19` como peer dependency.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/react/latest",
+   "accion": "Ninguna. Fijar `react` y `react-dom` a la misma versión exacta."
+  },
+  {
+   "item": "TypeScript 7.0.2 (compilador nativo en Go)",
+   "plan_dice": "**TypeScript 7.0.2** (compilador nativo en Go, 10x, integrado en `next build`)",
+   "realidad": "npm dist-tag `latest` de `typescript` = 7.0.2, `engines.node: \">=16.20.0\"`. El post de Next 16.3 lo confirma: «Typescript 7 was released last month, which is a 10x faster native port». PERO **no está «integrado» de oficio**: hay que instalar `typescript@^7` como dependencia local y activar la configuración `useTypeScriptCli` para que `next build` lo use en el type-check. La versión y el «10x» son correctos; el «integrado» sobrevende un paso que sí hay que dar.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/typescript/latest + https://nextjs.org/blog/next-16-3 §Faster type checking with TypeScript 7 (→ /docs/app/api-reference/config/next-config-js/useTypeScriptCli)",
+   "accion": "Reescribir el paréntesis: «integrado en `next build` vía el flag `useTypeScriptCli` + `pnpm add -D typescript@^7`». Añadir el flag al checklist de la Fase 0."
+  },
+  {
+   "item": "Tailwind CSS 4.3.3",
+   "plan_dice": "Tailwind 4.3.3 + shadcn/ui",
+   "realidad": "npm dist-tag `latest` de `tailwindcss` = 4.3.3. No hay línea 5.x publicada.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/tailwindcss/latest",
+   "accion": "Ninguna."
+  },
+  {
+   "item": "Node 24 LTS",
+   "plan_dice": "Node 24 LTS",
+   "realidad": "Correcto y además es el default del host. El índice oficial de releases da v24.19.0 (2026-08-03) con `lts: \"Krypton\"`; toda la línea v26.x (hasta v26.7.0, 2026-08-05) sale con `lts: false` — es la Current, no LTS. Vercel lista como versiones disponibles 24.x (**default**), 22.x y 20.x. Next 16 solo exige `>=20.9.0`, así que 24 es elección, no requisito.",
+   "status": "vigente",
+   "fuente": "https://nodejs.org/dist/index.json + https://vercel.com/docs/functions/runtimes/node-js/node-js-versions",
+   "accion": "Declarar `\"engines\": {\"node\": \"24.x\"}` en el `package.json` del monorepo para que el runtime de Vercel quede fijado explícitamente y no dependa del default (que cambiará a 26.x cuando entre en LTS en octubre de 2026)."
+  },
+  {
+   "item": "Serwist para el service worker (paquete sin especificar)",
+   "plan_dice": "**Serwist** para el service worker (`next-pwa` está muerto desde 2022 y Turbopack lo descarta definitivamente)",
+   "realidad": "Serwist existe y está vivo (`serwist@9.5.12`, publicado el 2026-07-22), pero **el plan no nombra el paquete y el implícito obvio es el equivocado**. `@serwist/next@9.5.12` es la integración atada al ciclo de vida de **webpack** (`withSerwist`); Next 16 usa Turbopack por defecto. El paquete correcto es **`@serwist/turbopack@9.5.12`** (dist-tag `latest`, engines `node>=18`, peers `next>=14`, `react>=18`, `esbuild>=0.25` opcional), con un API distinto: `import { withSerwist } from \"@serwist/turbopack\"`, un route handler `createSerwistRoute({ swSrc: \"app/sw.ts\", additionalPrecacheEntries, useNativeEsbuild: true })` y `<SerwistProvider swUrl=\"/serwist/sw.js\">` en el layout. La documentación lo llama «configurator mode»: un paso de build externo que corre DESPUÉS del prerender de Next, lo que además permite precachear automáticamente las rutas prerenderizadas — algo que la vieja integración webpack no podía. Ojo con el estado de versiones: `serwist` y `@serwist/turbopack` tienen `latest = 9.5.12` y `preview = 10.0.0-preview.14`; Serwist 10 lleva en preview desde 2025 y NO está estable. La premisa sobre next-pwa se sostiene: su `latest` sigue siendo 5.6.0, sin releases nuevos.",
+   "status": "desactualizado",
+   "fuente": "https://registry.npmjs.org/@serwist/turbopack + https://registry.npmjs.org/serwist + https://serwist.pages.dev/docs/next/turbo + https://serwist.pages.dev/docs/next/config (vía Context7 /websites/serwist_pages_dev) + https://registry.npmjs.org/next-pwa",
+   "accion": "Cambiar «**Serwist**» por «**`@serwist/turbopack` 9.5.12** (configurator mode — bundler-agnóstico, corre tras el prerender de Next y precachea las rutas generadas), NO `@serwist/next`, que es la ruta webpack». Fijar la versión en el 9.5.x estable y **no** usar el dist-tag `preview` (10.0.0-preview.14). Presupuestar el paso de build externo en la Fase 5."
+  },
+  {
+   "item": "shadcn/ui (sin versión fijada)",
+   "plan_dice": "Tailwind 4.3.3 + shadcn/ui",
+   "realidad": "El CLI `shadcn` está en 4.18.0 (`engines.node >=20.18.1`), muy por delante de las series 2.x/3.x que la mayoría de guías todavía asumen. El scaffolding actual es `pnpm dlx shadcn@latest init -t next`. Desde la 3.x el CLI trae dos cosas que el plan no aprovecha: **registries con namespace** (`\"registries\": {\"@acme\": \"https://acme.com/r/{name}.json\"}` en `components.json`, o `npx shadcn@latest registry add @acme=...`) y un **MCP server** propio (`npx shadcn@latest mcp init`) que deja al agente resolver componentes desde cualquier registro compatible.",
+   "status": "vigente",
+   "fuente": "https://registry.npmjs.org/shadcn/latest + https://ui.shadcn.com/docs/installation/next + /docs/registry/getting-started + /docs/registry/mcp + /docs/mcp (vía Context7 /websites/ui_shadcn)",
+   "accion": "Fijar `shadcn@4.18.0` en el plan igual que se fijan las demás. Añadir `npx shadcn@latest mcp init` al arranque de la Fase 0: este proyecto se construye con agentes y el MCP de shadcn es exactamente la superficie que necesitan."
+  },
+  {
+   "item": "Vercel Hobby: «1M invocaciones, 100 GB/mes»",
+   "plan_dice": "**Coste: $0** — plan Hobby de Vercel (1M invocaciones, 100 GB/mes) cubre la beta.",
+   "realidad": "Las dos cifras citadas son **correctas y actuales**: la tabla de recursos del Hobby da «Function Invocations: First 1,000,000» y la tabla de límites da «Fast Data Transfer: 100 GB» (Hobby) frente a 1 TB (Pro). Edge Requests: hasta 1.000.000.",
+   "status": "vigente",
+   "fuente": "https://vercel.com/docs/plans/hobby (last_updated 2026-06-16) + https://vercel.com/docs/limits (last_updated 2026-08-03)",
+   "accion": "Ninguna sobre estas dos cifras. Pero ver el hallazgo siguiente: son las dos que NO limitan."
+  },
+  {
+   "item": "Conclusión «Coste $0 cubre la beta» (lo que el plan omite del Hobby)",
+   "plan_dice": "**Coste: $0** — plan Hobby de Vercel (1M invocaciones, 100 GB/mes) cubre la beta.",
+   "realidad": "Faltan dos datos y uno de ellos es de política, no de capacidad. (1) **Active CPU: 4 CPU-hrs/mes** y **Provisioned Memory: 360 GB-hrs** — para una app con SSR de resultados de búsqueda y un chat con citas (AI SDK), el techo que se toca primero es el de CPU activa, no el de invocaciones; a partir de ahí el precio de referencia es $0,128/hora. (2) La página del Hobby dice explícitamente: «As stated in the fair use guidelines, the Hobby plan restricts users to **non-commercial, personal use only**». regwatch-co se describe en el plan como producto público con API, MCP server y alertas por email — si eso califica como no comercial es una decisión que le corresponde a Daniel, pero **el plan no puede seguir tratando el $0 como un hecho cerrado sin resolverla**. (3) Si se excede un límite en Hobby, en general hay que esperar 30 días para volver a usar la feature — no hay degradación suave. El salto es a Pro, con asientos de desarrollador a $20/usuario/mes.",
+   "status": "desactualizado",
+   "fuente": "https://vercel.com/docs/plans/hobby + https://vercel.com/docs/limits + https://vercel.com/docs/limits/fair-use-guidelines#commercial-usage",
+   "accion": "Reescribir el bloque de coste: presupuestar en **Active CPU (4 CPU-hrs)**, no en invocaciones; añadir la restricción de uso no comercial como decisión abierta de la Fase 5 (igual que la pausa por inactividad de Supabase ya figura como verificación pendiente en §8); y anotar que exceder límites en Hobby implica ventana de 30 días, no facturación de excedente."
+  },
+  {
+   "item": "AI SDK 7 + AI Elements",
+   "plan_dice": "AI SDK 7 + AI Elements para el chat con citas",
+   "realidad": "No verificado en esta pasada: queda fuera del área frontend-stack asignada y tiene su propia fuente de investigación (`research/ai-layer.json`). No hay evidencia aquí ni a favor ni en contra.",
+   "status": "no_verificable",
+   "fuente": "n/a — asignar al área ai-layer",
+   "accion": "Verificar `ai@latest` y `@ai-sdk/react` en el pase de ai-layer. Dato colateral recogido de `research/frontend.json`: allí se afirma que `@ai-sdk/react` pide `react ^19.2.1`, coherente con el pin de React 19.2.8."
+  },
+  {
+   "item": "iOS Safari 26.5: Web Push exige app en pantalla de inicio y no hay `beforeinstallprompt`",
+   "plan_dice": "en iOS (hasta Safari 26.5) el Web Push **exige la app instalada en pantalla de inicio** y no existe `beforeinstallprompt`",
+   "realidad": "No pude confirmarlo ni refutarlo en esta sesión: el presupuesto de WebSearch se agotó (200/200) y MDN no expuso la tabla de compatibilidad por iOS en el fetch. La afirmación es plausible y coincide con el comportamiento histórico de WebKit desde iOS 16.4, pero **el número de versión concreto «26.5» no está verificado contra release notes de WebKit**, y el plan lo enuncia como hecho.",
+   "status": "no_verificable",
+   "fuente": "intento: https://developer.mozilla.org/en-US/docs/Web/API/Push_API (sin tabla de compat en la respuesta)",
+   "accion": "Verificar contra las release notes de WebKit / la documentación de Apple antes de cerrar §9, o bajar el tono a «hasta donde llega la documentación de WebKit consultada el YYYY-MM-DD». La **decisión** que se deriva (email como canal principal, push como complemento) es sólida por otras razones —es la feature de retención #1 en los comparables— así que el riesgo está en la cita, no en la conclusión."
+  }
+ ],
+ "best_practices": [
+  "**Invalidación de caché atada a la ingesta — el hueco de mayor valor de §9.** El plan activa `cacheComponents` pero nunca dice cómo se invalida el dato normativo tras una corrida de colectores. El patrón documentado es exactamente la forma de la carga de regwatch (shell estático + datos que cambian a diario): marcar los lectores con `'use cache'` + `cacheTag('norma:{id}')`/`cacheTag('proyecto:{id}')` + `cacheLife(...)`, y disparar `revalidateTag` al final de cada colector. Además se pueden definir perfiles propios en `next.config.ts` (`cacheLife: { normativa: { stale, revalidate, expire } }`) para declarar la latencia por fuente que el contrato de evidencia §10.4 ya exige mostrar en la UI. Fuente: /docs/01-app/03-api-reference/05-config/01-next-config-js/cacheLife.mdx y /docs/01-app/02-guides/client-side-data-fetching/tanstack-query.mdx.",
+  "**`middleware.ts` ya no existe: la convención es `proxy.ts` con `export function proxy(request)`.** Cambio landed en 15.6.0-canary.54, con codemod `npx @next/codemod@canary middleware-to-proxy .`. En un proyecto greenfield esto es gratis (nacer con el nombre correcto) y caro si se escribe mal y hay que migrar. Ojo: la propia documentación de Vercel sobre `experimental.nodeMiddleware` todavía usa ejemplos con `middleware.ts`.",
+  "**`params` y `searchParams` son asíncronos, y Next genera helper types por ruta.** La forma correcta hoy es `export default async function Page(props: PageProps<'/norma/[id]'>) { const { id } = await props.params }`. El plan tiene muchísimas rutas dinámicas (norma, artículo, proyecto de ley, congresista, sentencia) — establecerlo como convención en la Fase 0.",
+  "**`catchError` de `next/error` con `retry()` en vez de `error.tsx` a secas.** Nuevo en 16.3: error boundaries que NO interfieren con `notFound()`/`redirect()` y que exponen un `retry()` capaz de re-renderizar Server Components fallidos. Para una UI que lee de fuentes de gobierno notoriamente inestables (el plan documenta que basedoc solo responde por HTTP y que el 443 hace timeout), esto es justo la primitiva que hace falta.",
+  "**`instant()` de `@next/playwright` para tests de regresión de navegación.** El plan ya compromete Playwright en el stack. El helper permite afirmar qué UI debe verse instantáneamente durante una navegación y falla si un refactor la ralentiza — el complemento natural de activar `partialPrefetching` desde el día 1.",
+  "**Codemods de adopción de los dos flags que el plan enciende.** `cache-components-instant-false` y `remove-partial-prefetch`, ambos versión 16.3.0. Activar los flags no es solo poner `true`: hay una ruta de adopción por página/layout que el plan no menciona.",
+  "**`experimental.useOffline` + el hook `useOffline` de `next/offline` COMPLEMENTAN a Serwist, no lo sustituyen.** Lo que hace: mantener pendientes navegaciones, fetches y Server Actions cuando cae la red y reintentarlas al reconectar, más un hook para mostrar un banner. Lo que NO hace: instalabilidad, manifest, precaching, push. `research/frontend.json` lo describe como que «cubre parte del offline básico sin escribir service worker propio» — cierto solo a medias, y conviene decirlo explícito en §9 para que nadie concluya que se puede eliminar el service worker.",
+  "**No desactivar el disk cache de Turbopack, y cachearlo en CI.** En 16.3 el FileSystem cache pasa a `next build` y está activado por defecto (builds repetidos de 1,4x a 5,5x más rápidos), junto con memory eviction en dev (hasta 90% menos RAM). Vale la pena persistir el directorio de caché entre corridas de CI, que es donde el plan tendrá lint + tests + validación de esquema desde la Fase 0.",
+  "**`next dev` escribe y mantiene un bloque `AGENTS.md` versionado apuntando a los docs empaquetados en `node_modules`.** Es directamente relevante: este proyecto se construye con agentes y el plan ya trata la procedencia documental como asunto de primera clase. Vercel retiró sus Skills de Next.js precisamente porque esto las sustituye.",
+  "**Rust React Compiler (experimental) para el ciclo de desarrollo.** `reactCompiler: true` + `experimental.turbopackRustReactCompiler: true` corre el compilador dentro de Turbopack en vez de por Babel: -34% de tiempo a página lista en frío y -46% en caliente, siempre que se haya salido de Babel del todo. Elimina la memoización manual; el plan no menciona el React Compiler en absoluto.",
+  "**`import.meta.glob` de Turbopack para leer ficheros locales desde Server Components con HMR.** El plan tiene fixtures versionados, un YAML curado del censo de congresistas y dumps semanales a git; este API (compatible con Vite) es la forma nativa de cargarlos sin un paso de build propio.",
+  "**Root params (`import { lang } from 'next/root-params'`) si hay segmento raíz.** Evita el prop-drilling de params globales y funciona dentro de scopes `'use cache'`. Aplica si aparece un `[lang]` o un segmento de legislatura por encima del layout raíz.",
+  "**shadcn como plataforma de distribución, no solo como copiar-pegar.** `shadcn@latest init -t next` para el scaffolding, `registries` con namespace en `components.json` para un registro propio de componentes de regwatch (línea de tiempo de trámite, ficha de congresista, badge de frescura por fuente — los tres se repiten en toda la app), y `npx shadcn@latest mcp init` para que el agente los resuelva. Fijar `shadcn@4.18.0`.",
+  "**`next lint` está eliminado** (codemod `next-lint-to-eslint-cli`, 15.4.2-canary.55). La elección de Biome que el plan ya hace es coherente con eso; dejarlo escrito evita que alguien intente `next lint` en la Fase 0 y crea que algo está roto.",
+  "**Dos ganancias de 16.3 que salen gratis y conviene nombrar: `prefetchInlining`** (los prefetch pequeños se agrupan, menos peticiones — relevante en Hobby, donde Edge Requests tiene techo de 1M) **y los immutable static assets** vía la API de adapters (reutilización de assets inmutables entre despliegues).",
+  "**Presupuestar en Active CPU, no en invocaciones, y resolver la cláusula de uso no comercial del Hobby antes de la Fase 5.** Es la mejor práctica de infraestructura que el plan se salta: 4 CPU-hrs/mes y 360 GB-hrs de memoria aprovisionada son los límites que muerden en SSR + chat con citas, y el Hobby está restringido por fair-use a uso no comercial y personal. Fijar además `\"engines\": {\"node\": \"24.x\"}` para no heredar el cambio de default cuando Node 26 entre en LTS en octubre de 2026."
+ ]
+}

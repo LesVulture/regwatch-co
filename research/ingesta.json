@@ -1,0 +1,174 @@
+{
+ "recommendations": [
+  {
+   "component": "Framework de scraping (colectores)",
+   "recommended": "Crawlee para JS/TS: CheerioCrawler para portales estáticos y PlaywrightCrawler para portales con JS, compartiendo cola, storage y política de cortesía",
+   "version_or_state_2026_08": "crawlee 3.18.1 (publicada 2026-08-12; verificada vía registry.npmjs.org el 2026-08-16). Mantenimiento muy activo.",
+   "why": "Un solo framework cubre ambos modos de fetch con la misma cola y reintentos, y trae de serie exactamente la política que exige scrapear portales estatales: respectRobotsTxtFile, maxRequestsPerMinute, sameDomainDelaySecs, maxConcurrency (nombres verificados en la doc de API de BasicCrawlerOptions). Menos fontanería propia que Playwright puro.",
+   "verified": true,
+   "docs_source": "https://registry.npmjs.org/crawlee + https://crawlee.dev/js/api/basic-crawler/interface/BasicCrawlerOptions",
+   "cost": "$0 (Apache-2.0, open source)",
+   "alternatives_considered": [
+    "Playwright puro (más código propio de colas/retries)",
+    "Cheerio suelto (sin gestión de cola ni cortesía)",
+    "Firecrawl/ScrapingBee (SaaS innecesario para ~10-30 portales .gov.co conocidos)"
+   ]
+  },
+  {
+   "component": "Navegador headless",
+   "recommended": "Playwright (lo usa PlaywrightCrawler de Crawlee; el proyecto ya lo usa para liveness en career-ops, know-how existente)",
+   "version_or_state_2026_08": "playwright 1.62.1 (verificada vía registry.npmjs.org el 2026-08-16)",
+   "why": "Estándar de facto para portales gubernamentales con JS; se instala sin fricción en GitHub Actions (ubuntu runners); Crawlee lo orquesta.",
+   "verified": true,
+   "docs_source": "https://registry.npmjs.org/playwright",
+   "cost": "$0"
+  },
+  {
+   "component": "Scraping SaaS (evaluado — NO recomendado como base)",
+   "recommended": "Ninguno como capa base. Browserbase Developer ($20/mes) solo como fallback puntual si algún portal bloquea las IPs de los runners de GitHub Actions",
+   "version_or_state_2026_08": "Precios verificados el 2026-08-16: Firecrawl cloud Free 1.000 créditos/mes, Hobby $16/mes (anual) = 5.000 créditos, 1 crédito/página scrapeada; self-host bajo AGPL-3.0 (SDKs MIT). ScrapingBee desde $19.99/mes = 75.000 créditos (multiplicadores por JS/proxy no publicados en la página). Browserbase Free = 1 h navegador y 3 concurrentes; Developer $20/mes = 100 h incl., luego $0.12/h.",
+   "why": "El gasto fijo no se justifica: las fuentes son portales estatales enumerables, sin anti-bot agresivo típico, y el presupuesto objetivo es ~$0. Firecrawl brilla en crawling abierto de sitios desconocidos, que no es este caso.",
+   "verified": true,
+   "docs_source": "https://www.firecrawl.dev/pricing + https://github.com/firecrawl/firecrawl + https://www.scrapingbee.com/#pricing + https://www.browserbase.com/pricing",
+   "cost": "$0 previsto; $20/mes solo si se activa el fallback Browserbase",
+   "caveats": "Si un portal exige IP colombiana o bloquea datacenters, evaluar antes un worker residente (Fly/Railway) que un SaaS de proxies."
+  },
+  {
+   "component": "Parseo RSS/Atom (feeds de prensa como señal temprana)",
+   "recommended": "feedsmith como parser principal; fast-xml-parser como capa baja para XML no estándar (sitemaps estatales, feeds rotos)",
+   "version_or_state_2026_08": "feedsmith 2.9.6 (publicada 2026-07-14, activa). fast-xml-parser 5.11.0. rss-parser sigue en 3.13.0 publicada 2023-04-11 — 3+ años sin release: descartado. Todo verificado vía registry.npmjs.org el 2026-08-16.",
+   "why": "feedsmith es TS-first, mantenido, y parsea RSS/Atom/JSON Feed/RDF con namespaces (dc, media), que es lo que traen los feeds de prensa; rss-parser está efectivamente abandonado.",
+   "verified": true,
+   "docs_source": "https://registry.npmjs.org/feedsmith + https://registry.npmjs.org/rss-parser (fecha de última publicación)",
+   "cost": "$0",
+   "alternatives_considered": [
+    "rss-parser 3.13.0 (abandonado desde 2023)",
+    "fast-xml-parser solo (demasiado bajo nivel como parser único)"
+   ]
+  },
+  {
+   "component": "Extracción de texto de PDFs digitales (con capa de texto)",
+   "recommended": "unpdf como primera pasada universal: extrae texto y decide si hay capa de texto útil ANTES de pagar OCR",
+   "version_or_state_2026_08": "unpdf 1.8.1 (basado en pdf.js, serverless-friendly); pdf-parse 2.4.5 como alternativa. Verificadas vía registry.npmjs.org el 2026-08-16.",
+   "why": "La mayoría de leyes/decretos recientes en SUIN/Función Pública son PDFs digitales: extraerlos cuesta $0. El router 'digital vs escaneado' (¿texto extraído > umbral por página?) es la palanca de coste más importante del pipeline.",
+   "verified": true,
+   "docs_source": "https://registry.npmjs.org/unpdf + https://registry.npmjs.org/pdf-parse",
+   "cost": "$0"
+  },
+  {
+   "component": "OCR de PDFs escaneados (gacetas, normas históricas)",
+   "recommended": "Mistral OCR 4.1 vía Batch API como motor por defecto; salida markdown con tablas (table_format: markdown|html)",
+   "version_or_state_2026_08": "Modelo alias mistral-ocr-latest = OCR 4.1. Precio verificado el 2026-08-16 en la página oficial: OCR $4/1.000 páginas, Document AI $5/1.000; opción Batch «at half price» → ~$2/1.000 páginas. Formato de tablas y header/footer extraction requieren OCR 2512+.",
+   "why": "Mejor relación coste/estructura sin GPU propia: markdown directamente indexable con tablas separadas, batch asíncrono ideal para backfill. A $2-4/1.000 págs, OCR-izar decenas de miles de páginas de gaceta cuesta decenas de dólares, no miles.",
+   "verified": true,
+   "docs_source": "https://mistral.ai/pricing/api/ + https://docs.mistral.ai/capabilities/document_ai/basic_ocr/",
+   "cost": "$4/1.000 páginas estándar; ~$2/1.000 en batch. 3.000 págs nuevas/mes ≈ $6-12/mes.",
+   "caveats": "Calidad sobre gacetas colombianas escaneadas antiguas SIN benchmark propio: correr piloto de ~100 páginas contra transcripción manual antes del backfill. El precio de la variante con annotations no está desglosado en la página.",
+   "alternatives_considered": [
+    "Gemini 2.5 Flash: 258 tokens imagen/página + texto nativo NO cobrado → el más barato (~$0.0001/pág input a $0.30/MTok) pero salida menos determinista y riesgo de alucinación en tablas (verificado en ai.google.dev)",
+    "Docling (MIT, IBM Research, 65k stars): OCR + TableFormer local en CPU, $0 — la opción self-host si el presupuesto llega a $0 estricto, a cambio de velocidad",
+    "Marker: código Apache-2.0 pero pesos bajo OpenRail-M modificado (gratis solo <$5M revenue); GPU recomendada",
+    "LlamaParse: 1.000 créditos=$1.25, Fast 1 crédito/pág (~$0.00125), Agentic 10 (~$0.0125); Free tier 10K créditos/mes",
+    "AWS Textract: Tables $15/1.000 págs (Oregón) — 4-7x más caro que Mistral",
+    "unstructured OSS (Apache-2.0, activo; su SaaS: 15.000 págs gratis/mes, $0.03/pág después)",
+    "Reducto: $0.015/crédito tras 15.000 gratis, orientado enterprise"
+   ]
+  },
+  {
+   "component": "Tablas de votaciones (dato crítico del contrato de evidencia)",
+   "recommended": "Doble pasada obligatoria: OCR estructurado (Mistral/Docling) + verificación con LLM con PDF nativo (Claude Haiku 4.5 para volumen, Sonnet para casos duros) que valide aritmética (sí+no+ausencias vs quórum) y emita confidence; guardar siempre el PDF original y la página de la tabla",
+   "version_or_state_2026_08": "PDF nativo de Claude verificado en docs oficiales el 2026-08-16: 1.500-3.000 tokens de texto/página + tokens de imagen; límites 32 MB/request y 600 páginas (100 si contexto <1M). Haiku 4.5: $1/$5 por MTok → ~$0.002-0.004/pág de input; Batch API al 50%.",
+   "why": "Una votación mal transcrita rompe el contrato de evidencia entero. La validación aritmética cruzada convierte el OCR probabilístico en un dato auditable o en una incertidumbre declarada — nunca en un dato inventado.",
+   "verified": true,
+   "docs_source": "https://platform.claude.com/docs/en/build-with-claude/pdf-support.md (fetched) + tabla de precios del skill claude-api (cache 2026-06-24)",
+   "cost": "~$0.005-0.01 por página de votación con doble pasada (OCR + Haiku); marginal frente al valor del dato",
+   "caveats": "Nunca publicar una votación con una sola pasada de OCR. Si las dos pasadas discrepan y no hay quórum que cierre, el registro sale con confidence=low y se encola para revisión humana."
+  },
+  {
+   "component": "Detección de cambios, idempotencia y dedup",
+   "recommended": "Hash SHA-256 sobre contenido normalizado (colapsar whitespace, excluir bloques dinámicos: fechas de render, contadores) + condicionales HTTP (If-None-Match/ETag, If-Modified-Since) donde el servidor los honre + UPSERT con UNIQUE(source_id, url_canonica) y comparación de content_hash; diff estructurado campo a campo solo cuando el hash cambia, persistido como historial de estados del trámite",
+   "version_or_state_2026_08": "Patrón de diseño sobre estándar HTTP (RFC 9110 §Conditional Requests) y Postgres ON CONFLICT — no es un producto con versión. No verificado por fetch hoy (es estándar estable), por eso verified=false.",
+   "why": "Es lo que hace sostenible el OCR de pago: solo se paga por documento nuevo o cambiado. Y es la implementación técnica del contrato de evidencia: raw bytes + URL + captured_at + hash se guardan ANTES de cualquier parseo; parseo y OCR son derivados reproducibles.",
+   "verified": false,
+   "docs_source": "https://www.rfc-editor.org/rfc/rfc9110 (§13, Conditional Requests) — no fetched hoy",
+   "cost": "$0",
+   "caveats": "Muchos portales estatales no emiten ETag/Last-Modified fiables: el hash normalizado es la fuente de verdad; los condicionales HTTP son solo ahorro de ancho de banda."
+  },
+  {
+   "component": "Orquestación principal de jobs recurrentes",
+   "recommended": "GitHub Actions cron en repo público: un workflow diario por grupo de colectores, con jitter propio y keepalive",
+   "version_or_state_2026_08": "Verificado en docs.github.com el 2026-08-16: uso GRATIS e ilimitado en repos públicos con runners estándar (2.000 min/mes si fuera privado); cron mínimo cada 5 min; «The schedule event can be delayed during periods of high loads… High load times include the start of every hour»; job hasta 6 h, workflow run hasta 35 días; «In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred in 60 days».",
+   "why": "$0, corre Playwright/Chromium sin fricción, jobs largos, logs y artefactos, y el repo ya versiona los colectores y sus fixtures. Ningún serverless gestionado gratuito corre navegador + 30-60 min de scraping.",
+   "verified": true,
+   "docs_source": "https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows + https://docs.github.com/en/billing/concepts/product-billing/github-actions + https://docs.github.com/en/actions/reference/limits",
+   "cost": "$0 (repo público, runners estándar)",
+   "caveats": "No programar en minuto :00 (usar p.ej. «17 8 * * *» UTC = 3:17am Colombia) + sleep aleatorio 0-300s como jitter. Mitigar el auto-disable de 60 días: el commit diario de estado/logs del propio workflow cuenta como actividad, pero confirmar que los commits del GITHUB_TOKEN resetean el contador (ver gaps). La hora exacta NO está garantizada: el monitor de última corrida es el guardián, no el cron."
+  },
+  {
+   "component": "Orquestación DB-side (fan-out, mantenimiento, alertas)",
+   "recommended": "Supabase Cron (pg_cron) + pg_net para tareas ligeras: refresh de vistas materializadas, chequeo de source_runs.last_success_at, invocación HTTP de Edge Functions para notificar",
+   "version_or_state_2026_08": "Verificado en supabase.com/docs el 2026-08-16: Supabase Cron sobre pg_cron, granularidad desde 1 segundo; recomendación oficial ≤8 jobs concurrentes y ≤10 min por job. Edge Functions: 150s wall-clock (Free) / 400s (pago), 2s de CPU, 256 MB — sin Chromium (Deno).",
+   "why": "El estado del pipeline vive en Postgres; que la alarma de «fuente muerta» también viva ahí elimina un componente. Pero sus límites (2s CPU, sin navegador) lo descartan como motor de scraping.",
+   "verified": true,
+   "docs_source": "https://supabase.com/docs/guides/cron + https://supabase.com/docs/guides/functions/limits",
+   "cost": "Incluido en el proyecto Supabase existente ($0 en Free)",
+   "alternatives_considered": [
+    "Vercel Cron: Hobby limitado a 1 ejecución/día con precisión ±59 min y functions de 300s máx (Pro: cada minuto, 800s/1800s beta) — verificado en vercel.com/docs; insuficiente e inadecuado para scraping",
+    "Cloudflare Workers ($5/mes) + Queues + Browser Rendering (10h/mes incl., luego $0.09/h) + Workflows: stack completo y barato, verificado, pero ata a workerd, Playwright solo vía CDP remoto, y añade una plataforma entera para lo que GA ya hace gratis"
+   ]
+  },
+  {
+   "component": "Ruta de escalado (cuando GitHub Actions duela)",
+   "recommended": "Trigger.dev v4 cloud (Hobby $10/mes) si lo que falta es observabilidad/retries/concurrencia; worker persistente en Fly.io si lo que falta es un proceso siempre-vivo",
+   "version_or_state_2026_08": "Verificado el 2026-08-16: Trigger.dev Free $5 créditos/mes y 10 schedules; Hobby $10/mes ($10 créditos, 100 schedules); Pro $50/mes; «Tasks can run for as long as you need, with no timeouts»; compute por segundo (micro $0.0000169/s); versión actual v4.5.x. Fly.io: shared-cpu-1x 256MB $0.0028/h ≈ $2.02/mes, 1GB $0.0082/h ≈ $5.92/mes (+$0.15/GB-30d rootfs parado). Railway: Hobby $5/mes con $5 de uso incl. (~$20/vCPU-mes + $10/GB-mes). Modal: Starter con $30 créditos gratis/mes, CPU $0.0000131/core/s.",
+   "why": "Migración incremental: los colectores Crawlee son funciones puras que se ejecutan igual en un runner de GA, un task de Trigger.dev o un contenedor Fly. No comprar la solución antes de tener el problema.",
+   "verified": true,
+   "docs_source": "https://trigger.dev/pricing + https://fly.io/docs/about/pricing/ + https://railway.com/pricing + https://modal.com/pricing + https://www.inngest.com/pricing",
+   "cost": "$0 hoy; $6-10/mes cuando se active",
+   "alternatives_considered": [
+    "Inngest (Free 50k ejecuciones/mes, Pro desde $99/mes — salto de precio brusco para este caso)",
+    "Modal ($30 créditos/mes gratis es generoso pero es Python-first y este stack es TS)"
+   ]
+  },
+  {
+   "component": "Política de cortesía (obligatoria en todo colector)",
+   "recommended": "User-Agent identificado tipo «regwatch-co/2.x (+https://github.com/<owner>/regwatch-co; bot de monitoreo normativo)» — con URL de contacto del repo, sin email personal embebido; respectRobotsTxtFile:true; maxConcurrency 1-2 por dominio; sameDomainDelaySecs 2-5 con jitter; maxRequestsPerMinute 10-20; backoff exponencial 1s→2s→4s→…→60s (máx 5 intentos) honrando Retry-After en 429/503; ventana nocturna Colombia (UTC-5); nunca scrapear lo que una API o feed oficial ya entrega",
+   "version_or_state_2026_08": "Las cuatro opciones de Crawlee citadas existen con esos nombres exactos (verificado en la doc de API el 2026-08-16). Los umbrales concretos son política propia, no verificables externamente.",
+   "why": "Portales estatales con infraestructura frágil: la cortesía es requisito ético y de supervivencia (evitar bloqueos). robots.txt se respeta aunque legalmente no obligue.",
+   "verified": true,
+   "docs_source": "https://crawlee.dev/js/api/basic-crawler/interface/BasicCrawlerOptions",
+   "cost": "$0"
+  },
+  {
+   "component": "Patrón de colectores y monitoreo",
+   "recommended": "Un colector por fuente con interfaz común (discover → fetch → parse → normalize → upsert); fixtures versionados (HTML/XML/PDF reales congelados) con tests de snapshot en CI para que un cambio de layout rompa tests, no producción en silencio; tabla source_runs (source_id, started_at, finished_at, ok, items_seen, items_new, error_detail) escrita al final de cada corrida; alerta vía pg_cron cuando now() - last_success_at > 2× cadencia de la fuente",
+   "version_or_state_2026_08": "Patrón de diseño propio (heredado del patrón scan/coverage de career-ops v1) — no es un producto con versión.",
+   "why": "Los portales estatales cambian layout sin aviso. El monitor de última corrida exitosa distingue «no hay novedades» de «el colector lleva 2 semanas roto», que es la diferencia entre un monitor y una ilusión de monitor.",
+   "verified": false,
+   "docs_source": "n/a — patrón de arquitectura, sin fuente externa que verificar",
+   "cost": "$0"
+  }
+ ],
+ "cost_estimate": "Supuestos explícitos: (1) repo PÚBLICO en GitHub → minutos de Actions gratis e ilimitados en runners estándar (verificado docs.github.com 2026-08-16); (2) ~15-30 fuentes con corrida diaria de 30-90 min totales; (3) ~2.000-3.000 páginas escaneadas NUEVAS/mes tras el backfill, resto PDFs digitales vía unpdf ($0); (4) el proyecto Supabase se imputa a la capa de almacenamiento/consulta, no a ingesta; (5) validación LLM solo en tablas de votaciones (~200-500 págs/mes). Estado estable: GitHub Actions $0 + stack OSS (Crawlee/Playwright/feedsmith/unpdf) $0 + Mistral OCR batch ~$2/1.000 págs → $4-6/mes (estándar $8-12) + validación Claude Haiku ~$1-3/mes = **~$5-15/mes de ingesta**. One-time backfill de 50.000 páginas de gacetas escaneadas: ~$100 con Mistral batch (~$200 estándar). Ruta de escalado si GA se queda corto: +$10/mes (Trigger.dev Hobby) o +$6/mes (Fly.io shared-cpu-1x 1GB). Contingencia anti-bloqueo: +$20/mes (Browserbase Developer) solo si se activa.",
+ "gaps": [
+  "No verifiqué hoy los portales colombianos concretos (SUIN-Juriscol, Gaceta del Congreso, senado.gov.co/camara.gov.co, DNP-CONPES, Corte Constitucional, datos.gov.co con su API SODA): la decisión Cheerio-vs-Playwright y la existencia de feeds/APIs por fuente debe verificarse fuente a fuente antes de escribir cada colector — es la tarea del especialista de fuentes y condiciona cuántos colectores necesitan navegador.",
+  "Calidad de Mistral OCR 4.1 sobre gacetas colombianas escaneadas antiguas: sin benchmark propio; correr piloto de ~100 páginas contra transcripción manual antes de pagar el backfill.",
+  "GitHub Actions: no confirmé si los commits hechos por el propio workflow con GITHUB_TOKEN resetean el contador de 60 días de inactividad (la doc dice «repository activity» sin definirla); si no lo hacen, hace falta un keepalive con PAT o re-enable manual.",
+  "ScrapingBee: los multiplicadores de créditos por JS rendering/proxy premium no aparecen en la página consultada (cifra exacta no verificada — irrelevante porque no se recomienda).",
+  "AWS Textract: precios verificados solo para us-west-2/Oregón ($1.50 detect, $15 tables por 1.000 págs); us-east-1 no mostrado en la página; soporte de español en AnalyzeDocument no re-verificado hoy.",
+  "Reducto: mapeo créditos↔páginas no público (solo $0.015/crédito tras 15.000 gratis); Growth/Enterprise sin precio publicado.",
+  "Datalab (API hosted de Marker): precio por página no verificado (solo consta $5 de créditos al registrarse).",
+  "LlamaParse: los créditos por modo (Fast 1, Cost-effective 3, Agentic 10, Agentic Plus 45 por página) provienen de docs de developers.llamaindex.ai vía búsqueda, no de la página oficial de pricing (que solo confirma 1.000 créditos=$1.25 y 10K créditos gratis/mes) — confianza media.",
+  "Vercel: límites de cron y functions verificados en docs oficiales, pero el precio por asiento del plan Pro no se verificó hoy.",
+  "Firecrawl self-host: la guía de self-hosting existe (AGPL-3.0) pero no leí sus limitaciones en detalle frente a la versión cloud."
+ ],
+ "key_insights": [
+  "El coste de OCR colapsó en 2025-2026: Mistral OCR 4.1 a $4/1.000 páginas ($2 en batch) y Gemini a 258 tokens/página con texto nativo gratis hacen que OCR-izar TODO el histórico de gacetas cueste decenas de dólares — el cuello de botella ya no es el coste sino la validación de calidad en tablas de votaciones.",
+  "En repo público, GitHub Actions es un scheduler gratuito con jobs de 6 h y Chromium incluido, pero con tres trampas verificadas: retrasos en el minuto :00 de cada hora, mínimo 5 min entre crons, y auto-desactivación de workflows programados a los 60 días sin actividad del repo — jitter, horario valle y keepalive son parte del diseño, no opcionales.",
+  "Los cron serverless gestionados NO sirven para scraping con navegador: Vercel Hobby está capado a 1 ejecución/día con ±59 min de imprecisión y 300s, y Supabase Edge Functions a 2s de CPU/400s sin Chromium — su rol correcto es fan-out, mantenimiento de DB y alertas (pg_cron con granularidad de 1 segundo).",
+  "La detección de cambios barata (SHA-256 de contenido normalizado + ETag/If-Modified-Since + UPSERT idempotente) es la palanca económica del sistema: convierte el OCR de pago en un coste marginal que solo se paga por documento nuevo o cambiado.",
+  "El contrato de evidencia de v1 se implementa EN la ingesta, no encima de ella: raw bytes + URL + captured_at + content_hash se persisten antes de cualquier parseo (parseo y OCR son derivados reproducibles), y las votaciones exigen doble pasada OCR+LLM con validación aritmética o salen como confidence=low — la incertidumbre se declara, nunca se rellena.",
+  "Dos hallazgos de mantenimiento que cambian elecciones por defecto: rss-parser lleva sin release desde abril de 2023 (feedsmith, publicado en julio de 2026, es el reemplazo activo), y Crawlee 3.18 trae de serie robots.txt, delay por dominio y rate limit — la política de cortesía no hay que escribirla a mano."
+ ],
+ "recommendation": "Stack de ingesta recomendado a agosto de 2026, todo verificado contra fuentes oficiales el 2026-08-16: colectores en TypeScript con Crawlee 3.18 (CheerioCrawler para portales estáticos, PlaywrightCrawler con Playwright 1.62 para los que exigen JS), un colector por fuente con interfaz común, fixtures versionados con tests de snapshot y tabla source_runs con alerta de última corrida exitosa. Feeds de prensa con feedsmith 2.9.6 (rss-parser está abandonado desde 2023). PDFs: unpdf 1.8.1 como primera pasada gratuita y router digital-vs-escaneado; Mistral OCR 4.1 vía Batch API (~$2/1.000 páginas, salida markdown con tablas) para escaneados, con Docling (MIT, local) como plan B a coste cero y doble pasada de validación con Claude Haiku 4.5 (PDF nativo, 1.500-3.000 tokens/página) exclusivamente en tablas de votaciones, con chequeo aritmético contra quórum. Detección de cambios con SHA-256 de contenido normalizado + condicionales HTTP + UPSERT idempotente en Supabase, guardando raw+URL+captured_at+hash antes de parsear (el contrato de evidencia vive aquí). Orquestación: GitHub Actions cron en repo público ($0, jobs de 6 h, Chromium sin fricción) con jitter, horario valle (~3am Colombia evitando el minuto :00) y keepalive contra el auto-disable de 60 días; Supabase pg_cron/pg_net para fan-out, refresh de vistas y la alarma de fuente muerta; escalar a Trigger.dev v4 ($10/mes) o un worker Fly.io (~$6/mes) solo cuando GA duela. Política de cortesía innegociable en cada colector: UA identificado con URL del repo (sin email personal), respectRobotsTxtFile, 1-2 concurrencia por dominio, 2-5s de delay con jitter, backoff exponencial honrando Retry-After. Coste total de ingesta en estado estable: ~$5-15/mes, más ~$100 one-time para el backfill OCR de 50.000 páginas."
+}

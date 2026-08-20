@@ -1,0 +1,211 @@
+{
+ "verdicts": [
+  {
+   "claim": "CP art. 138 fue modificado por el Acto Legislativo 2 de 2023: segundo periodo 16 feb–20 jun (antes 16 mar), veda 16-feb/15-mar para estatutarias y reformas constitucionales, y en año de elecciones al Congreso inicia el 16 de marzo.",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991_pr004.html — verbatim: «ARTICULO 138. <Artículo modificado por el artículo 1 del Acto Legislativo 2 de 2023...> ...El primer periodo de sesiones comenzará el 20 de julio y terminará el 16 de diciembre; el segundo periodo iniciará el 16 de febrero y concluirá el 20 de junio. Entre el 16 de febrero y el 15 de marzo no podrán tramitarse proyectos de leyes estatutarias ni reformas a la Constitución. En el periodo de sesiones en el que se lleven a cabo las elecciones al Congreso de la República, este periodo iniciará el 16 de marzo...»",
+   "severity": "high"
+  },
+  {
+   "claim": "Ley 5 art. 224 sigue diciendo «desde el 16 de marzo»: contradicción vigente entre la CP reformada y la ley orgánica sin actualizar; el modelo debe versionar el calendario por legislatura.",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0005_1992_pr006.html — verbatim: «ARTÍCULO 224. PERIODOS ORDINARIOS SUCESIVOS. ...Dos períodos ordinarios de sesiones comprenden una legislatura, a saber: el primero, que comienza el 20 de julio y termina el 16 de diciembre; y el segundo, desde el 16 de marzo hasta el 20 de junio.» Sin nota de modificación legislativa (solo «Notas del Editor»).",
+   "severity": "high"
+  },
+  {
+   "claim": "Ley 5 art. 142 enumera 17 materias de iniciativa privativa del Gobierno.",
+   "verdict": "refuted",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0005_1992_pr004.html — el artículo 142 enumera al menos 20 numerales (1 PND … 14 exenciones … 16 situado fiscal <Ver Notas del Editor> … 18 <Numeral CONDICIONALMENTE EXEQUIBLE> referendo … 20 leyes aprobatorias de tratados). No son 17.",
+   "correction": "El conteo correcto es ≥20 numerales; además el num. 18 está CONDICIONALMENTE EXEQUIBLE y el 16 (situado fiscal) tiene notas del editor por reformas posteriores. Si el modelo va a tasar materias, debe hacerlo por numeral con su propio estado de constitucionalidad, no con un total en prosa.",
+   "severity": "medium"
+  },
+  {
+   "claim": "`archivo_causa` incluye `negado_en_comision_art157` (Ley 5).",
+   "verdict": "refuted",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0005_1992_pr004.html — «ARTÍCULO 157. INICIACIÓN DEL DEBATE. <Artículo modificado por el artículo 8 de la Ley 2390 de 2024>...» no trata del archivo. Y http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991_pr005.html — CP art. 157 son los cuatro requisitos para que un proyecto sea ley.",
+   "correction": "El archivo por negación en comisión sale de Ley 5 art. 166 («Negado un proyecto en su totalidad o archivado indefinidamente... si la Plenaria rechaza la apelación se procederá a su archivo»), con la vía de reconsideración de CP art. 159. Renombrar la causa a `negado_en_comision_art166` y añadir `no_apelado`/`apelacion_rechazada_art166`.",
+   "severity": "medium"
+  },
+  {
+   "claim": "`en_control_previo_corte` aplica «solo estatutarias, CP 153».",
+   "verdict": "refuted",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991_pr008.html — CP art. 241 num. 8: «Decidir definitivamente sobre la constitucionalidad de los proyectos de ley que hayan sido objetados por el Gobierno como inconstitucionales, y de los proyectos de leyes estatutarias»; num. 10: «Decidir definitivamente sobre la exequibilidad de los tratados internacionales y de las leyes que los aprueben. Con tal fin, el Gobierno los remitirá a la Corte, dentro de los seis días siguientes a la sanción de la ley»; num. 2: control previo de la convocatoria a referendo o Asamblea Constituyente.",
+   "correction": "El estado debe cubrir al menos tres rutas distintas: (a) estatutarias, ex ante, CP 153/241-8; (b) proyectos objetados por inconstitucionalidad tras insistencia, CP 167/241-8; (c) tratados y su ley aprobatoria, control automático POSTERIOR a la sanción (6 días), CP 241-10 — que no es «previo» y por tanto no encaja en el mismo estado.",
+   "severity": "medium"
+  },
+  {
+   "claim": "«Entre la aprobación en una cámara y el inicio del debate en la otra ≥15 días (Ley 5 art. 183)», y «CP art. 160 y Ley 5 art. 168: entre primero y segundo debate ≥8 días».",
+   "verdict": "partially",
+   "evidence": "CP art. 160 (…pr005.html) contiene AMBAS reglas: «Entre el primero y el segundo debate deberá mediar un lapso no inferior a ocho días, y entre la aprobación del proyecto en una de las cámaras y la iniciación del debate en la otra, deberán transcurrir por lo menos quince días.» Ley 5 art. 168 (…pr004.html) contiene SOLO los 8 días: «ARTÍCULO 168. LAPSO ENTRE DEBATES. Entre el primero y segundo debates deberá mediar un lapso no inferior a ocho (8) días.» Ley 5 art. 183 (…pr005.html) sí contiene los 15 días y la excepción por sesión conjunta.",
+   "correction": "La sede constitucional de las dos reglas es CP art. 160; Ley 5 art. 168 desarrolla solo la de 8 días y art. 183 solo la de 15. Citar art. 168 para la regla de 15 días es incorrecto.",
+   "severity": "low"
+  },
+  {
+   "claim": "Ley 5 art. 140 (mod. art. 13 Ley 974/2005) enumera 11 sujetos de iniciativa legislativa.",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0005_1992_pr004.html — los 11 numerales están verbatim, terminando en «10. El Fiscal General de la Nación. 11. El Defensor del Pueblo.» Ojo: CP art. 156 solo lista SIETE órganos (no incluye Fiscal ni Defensor) — la ampliación viene de Ley 974/2005, no de la Constitución.",
+   "severity": "medium"
+  },
+  {
+   "claim": "Ley 5 art. 141: iniciativa popular 5% censo / 30% concejales / 30% diputados.",
+   "verdict": "confirmed",
+   "evidence": "…/ley_0005_1992_pr004.html verbatim; concuerda con CP art. 155 («cinco por ciento del censo electoral... o el treinta por ciento de los concejales o diputados del país»).",
+   "severity": "low"
+  },
+  {
+   "claim": "Ley 5 art. 143: tributos y presupuesto → Cámara; relaciones internacionales → Senado.",
+   "verdict": "confirmed",
+   "evidence": "…/ley_0005_1992_pr004.html verbatim; sede constitucional en CP art. 154 inc. final: «Los proyectos de ley relativos a los tributos iniciarán su trámite en la Cámara de Representantes y los que se refieran a relaciones internacionales, en el Senado.»",
+   "severity": "low"
+  },
+  {
+   "claim": "Modificaciones de la Ley 2390 de 2024 a los arts. 144, 150, 153, 156, 157, 165 y 222 de la Ley 5 (medios digitales, ponente coordinador, plazo 5–15 días calendario, publicación en Gaceta dentro de 3 días).",
+   "verdict": "confirmed",
+   "evidence": "…/ley_0005_1992_pr004.html y …_pr006.html: «ARTÍCULO 144 ... <modificado por el artículo 5 de la Ley 2390 de 2024>», «ARTÍCULO 150 ... artículo 6», «ARTÍCULO 153 ... artículo 14 ... entre cinco (5) a quince (15) días calendarios», «ARTÍCULO 156 ... artículo 7 ... Su publicación se hará en la Gaceta del Congreso dentro de los tres (3) días siguientes», «ARTÍCULO 157 ... artículo 8», «ARTÍCULO 165 ... artículo 9», «ARTÍCULO 222 ... artículo 10». Y la propia Ley 2390: «LEY ORGÁNICA 2390 DE 2024 (julio 26) Diario Oficial No. 52.829 de 26 de julio de 2024» (http://www.secretariasenado.gov.co/senado/basedoc/ley_2390_2024.html).",
+   "severity": "low"
+  },
+  {
+   "claim": "Ley 5 art. 163 («enmiendas que impliquen erogación») está derogado por el art. 71 de la Ley 179 de 1994, y por eso el mensaje de urgencia es CP 163 y no Ley 5 art. 163.",
+   "verdict": "confirmed",
+   "evidence": "…/ley_0005_1992_pr004.html: «ARTÍCULO 163. ENMIENDAS QUE IMPLIQUEN EROGACIÓN O DISMINUCIÓN DE INGRESOS. <Derogado expresamente por el artículo 71 de la Ley 179 de 1994>.» El trámite de urgencia está en CP art. 163 y Ley 5 art. 191 (30 días, repetible, prelación), ambos verificados.",
+   "severity": "medium"
+  },
+  {
+   "claim": "Ley 5 art. 169 num. 3 («por disposición reglamentaria») es INEXEQUIBLE.",
+   "verdict": "confirmed",
+   "evidence": "…/ley_0005_1992_pr004.html: «3. Por disposición reglamentaria. <Numeral INEXEQUIBLE>».",
+   "severity": "low"
+  },
+  {
+   "claim": "CP art. 161 (mod. AL 1 de 2003 art. 9): conciliadores en igual número, definen por mayoría, publicación con ≥1 día de anticipación, y «si después de la repetición del segundo debate persiste la diferencia, se considera negado el proyecto».",
+   "verdict": "confirmed",
+   "evidence": "…/constitucion_politica_1991_pr005.html, verbatim.",
+   "severity": "high"
+  },
+  {
+   "claim": "CP art. 162 / Ley 5 art. 190: tránsito de legislatura solo si recibió primer debate; «Ningún proyecto podrá ser considerado en más de dos legislaturas»; las estatutarias quedan excluidas.",
+   "verdict": "confirmed",
+   "evidence": "CP 162 verbatim (…pr005.html) y Ley 5 art. 190 (…/ley_0005_1992_pr005.html): «TRÁNSITO DE LEGISLATURA. Los proyectos distintos a los referidos a leyes estatutarias que no hubieren completado su trámite en una legislatura y fueren aprobados en primer debate en alguna de las Cámaras, continuarán su curso en la siguiente...»",
+   "severity": "high"
+  },
+  {
+   "claim": "CP art. 166 / Ley 5 art. 198: plazos de objeción 6 / 10 / 20 días según el número de artículos; vencidos sin objeción el Presidente debe sancionar. Ley 5 arts. 199/200/201/202/203 (Corte en 6 días, archivo por discrepancia, sanción por el Presidente del Congreso, 30 días para subsanar vicios).",
+   "verdict": "confirmed",
+   "evidence": "CP 166 y 167 verbatim (…pr005.html); Ley 5 arts. 196–203 verbatim (…/ley_0005_1992_pr005.html), incluido «ARTÍCULO 202. VICIOS SUBSANABLES ... dentro de los treinta (30) días siguientes a su devolución».",
+   "severity": "medium"
+  },
+  {
+   "claim": "§17 «Mayorías» del hallazgo enumera los supuestos de mayoría especial.",
+   "verdict": "partially",
+   "evidence": "Falta la insistencia frente a objeciones: CP art. 167 «El Presidente sancionará sin poder presentar objeciones el proyecto que, reconsiderado, fuere aprobado por la mitad más uno de los miembros de una y otra Cámara» (…pr005.html). También falta CP art. 376 (ley que convoca Asamblea Constituyente: «mayoría de los miembros de una y otra Cámara») y CP art. 378 (ley de referendo constitucional, misma mayoría), verificados en …pr012.html.",
+   "correction": "Añadir a la tabla de mayorías: insistencia ante objeciones = mayoría absoluta (CP 167); leyes de convocatoria a Asamblea Constituyente y a referendo constitucional = mayoría absoluta (CP 376/378).",
+   "severity": "medium"
+  },
+  {
+   "claim": "Actos legislativos: Ley 5 arts. 221–227 y CP 375 (10 miembros, 20% concejales/diputados, 5% censo; dos periodos ordinarios y consecutivos; mayoría simple en 1ª vuelta y absoluta en 2ª; en 2ª vuelta solo iniciativas de la 1ª).",
+   "verdict": "confirmed",
+   "evidence": "CP 375 (…/constitucion_politica_1991_pr012.html): «Podrán presentar proyectos de acto legislativo el Gobierno, diez miembros del Congreso, el veinte por ciento de los concejales o de los diputados y los ciudadanos... al cinco por ciento del censo electoral vigente... Aprobado en el primero de ellos por la mayoría de los asistentes, el proyecto será publicado por el Gobierno. En el segundo período la aprobación requerirá el voto de la mayoría de los miembros de cada Cámara.» Ley 5 arts. 223, 225 (mod. art. 7 Ley 186/1995), 226 y 227 verbatim (…/ley_0005_1992_pr006.html).",
+   "severity": "medium"
+  },
+  {
+   "claim": "Los «8 debates» de un acto legislativo son derivados, no citados textualmente en ninguna norma.",
+   "verdict": "confirmed",
+   "evidence": "Ni CP 375 ni Ley 5 arts. 221–227 mencionan un número de debates; art. 227 remite supletoriamente al proceso ordinario. Verificado en las dos páginas citadas.",
+   "severity": "low"
+  },
+  {
+   "claim": "Ley 3 de 1992 art. 2 (mod. art. 1 Ley 754/2002): C1 19/35, C2 13/19, C3 15/29, C4 15/27, C5 13/19, C6 13/18, C7 14/19; parágrafo 1 especialidad, parágrafo 2 decide el Presidente, parágrafo 3 (Ley 1921/2018) curules de oposición en Comisiones Primeras.",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0003_1992.html — todas las cifras coinciden verbatim, incluidos los tres parágrafos. Nota útil para el enrutamiento del ejemplo «IA en salud»: «salud» es Comisión Séptima, mientras «investigación científica y tecnológica; sistemas digitales de comunicación e informática» es Comisión Sexta — un proyecto de IA en salud puede repartirse a cualquiera de las dos.",
+   "severity": "medium"
+  },
+  {
+   "claim": "La Ley Estatutaria 1909 de 2018 (DO 50.649, 9-jul-2018) se expidió «En virtud del Procedimiento Legislativo Especial para la Paz», lo que justifica un campo `procedimiento` con valor `especial_paz`.",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_1909_2018.html — «LEY <ESTATUTARIA> 1909 DE 2018 (julio 9) Diario Oficial No. 50.649 de 9 de julio de 2018 ... EL CONGRESO DE COLOMBIA En virtud del Procedimiento Legislativo Especial para la Paz DECRETA:»",
+   "severity": "medium"
+  },
+  {
+   "claim": "Código Civil arts. 71 y 72 (derogación expresa/tácita, total/parcial; la tácita deja vigente lo que no pugna).",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/codigo_civil_pr002.html — ambos artículos verbatim.",
+   "severity": "medium"
+  },
+  {
+   "claim": "CPACA (Ley 1437 de 2011) art. 91: pérdida de fuerza ejecutoria por suspensión provisional, desaparición de fundamentos, 5 años sin ejecutar, condición resolutoria.",
+   "verdict": "partially",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_1437_2011_pr002.html — el artículo tiene CINCO numerales; el hallazgo omite el 5º: «5. Cuando pierdan vigencia.» Además el encabezado lleva «<Ver Notas del Editor>».",
+   "correction": "Añadir la causal 5 («cuando pierdan vigencia») al mapeo de `decaida_perdida_fuerza_ejecutoria`, y modelar la excepción del art. 92 (excepción de pérdida de ejecutoriedad, resuelta en 15 días), que crea un estado disputado, no automático.",
+   "severity": "low"
+  },
+  {
+   "claim": "secretariasenado.gov.co es Avance Jurídico Casa Editorial S.A.S. (ISSN 1657-6241) y «prohíbe expresamente la copia, adaptación, transformación, reproducción, utilización y divulgación masiva» de las notas de vigencia.",
+   "verdict": "partially",
+   "evidence": "Pie de cualquier página, p. ej. http://www.secretariasenado.gov.co/senado/basedoc/ley_1909_2018.html: «Disposiciones analizadas por Avance Jurídico Casa Editorial S.A.S.© ... ISSN [1657-6241 (En linea)] ... En relación con estos valores jurídicos agregados, se encuentra prohibido por la normativa vigente su aprovechamiento EN PUBLICACIONES SIMILARES Y CON FINES COMERCIALES, incluidas -pero no únicamente- la copia, adaptación, transformación, reproducción, utilización y divulgación masiva...»",
+   "correction": "La prohibición está acotada por dos calificativos que el hallazgo suprime: «en publicaciones similares y con fines comerciales». La conclusión de diseño (no almacenar la prosa editorial; tratarla como lead) sigue siendo prudente, pero la cita tal como está redactada exagera el alcance de la restricción y no debe usarse como base jurídica en un documento del proyecto sin el matiz.",
+   "severity": "medium"
+  },
+  {
+   "claim": "El Gestor Normativo de Función Pública es la «fuente institucional primaria del grafo de afectaciones» y «resuelve el problema» del backbone estatal de vigencias.",
+   "verdict": "partially",
+   "evidence": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=4125 — el bloque «Vigencias(20)» existe y es extraíble («Modificado parcialmente por Acto Legislativo 02 de 2023», «Adicionado por Acto Legislativo 02 de 2021», etc.). PERO en la MISMA página, inmediatamente después del bloque: «Los datos publicados tienen propósitos exclusivamente informativos. El Departamento Administrativo de la Función Pública NO SE HACE RESPONSABLE DE LA VIGENCIA de la presente norma. Nos encontramos en un proceso permanente de actualización de los contenidos.» Además el bloque es demostrablemente INCOMPLETO: para la Constitución solo lista 20 relaciones, todas de 2019-2023, y omite reformas que el propio proyecto usa como ejemplo (AL 1 de 2003 sobre CP 161, AL 2 de 2004 sobre CP 152). También contiene ruido evidente: «Modificado por Decreto 0113 de 2023» sobre la Constitución.",
+   "correction": "Bajar el Gestor Normativo de «fuente institucional primaria» a LEAD institucional con disclaimer explícito: bajo el contrato de evidencia («vigente solo con fuente primaria»), una fuente que se declara no responsable de la vigencia no puede sostener por sí sola el estado `vigente`. El pipeline C del hallazgo (lead → descargar la norma afectante → citar su cláusula) ya es correcto; lo que hay que corregir es la etiqueta `jerarquia_evidencia` y la cobertura: `Vigencias(N)` no da el grafo completo.",
+   "severity": "high"
+  },
+  {
+   "claim": "«Derogatoria ORGÁNICA: Ley 153 de 1887 art. 3 — confirmado desde texto primario» (vía Decreto 780 de 2016 art. 4.1.1).",
+   "verdict": "unverifiable",
+   "evidence": "No pude leer el texto de la Ley 153 de 1887 art. 3: secretariasenado solo publica «Leyes desde 1992» y devuelve 404 en http://www.secretariasenado.gov.co/senado/basedoc/ley_0153_1887.html; el buscador del Gestor Normativo devolvió 403 (https://www.funcionpublica.gov.co/eva/gestornormativo/buscador.php?texto=Ley+153+de+1887); SUIN-Juriscol no respondió (ver omisiones). Tampoco pude leer el Decreto 780 de 2016 art. 4.1.1.",
+   "correction": "Lo que el hallazgo describe no es confirmación desde texto primario del art. 3 de la Ley 153 de 1887, sino la lectura de un decreto que lo CITA. Por el propio contrato de evidencia eso es `derivation: parsed_from_text` sobre la norma citante, no `declarado_en_norma` sobre la citada. Debe reetiquetarse y verificarse contra el texto de la Ley 153.",
+   "severity": "medium"
+  },
+  {
+   "claim": "CONPES 4144 «POLÍTICA NACIONAL DE INTELIGENCIA ARTIFICIAL», 14 de febrero de 2025, con numeración secuencial sin año.",
+   "verdict": "partially",
+   "evidence": "El PDF existe y responde 200 en el repositorio oficial del DNP: https://colaboracion.dnp.gov.co/CDT/Conpes/Económicos/4144.pdf — la ruta confirma la convención de numeración sin año. No pude extraer texto del PDF con las herramientas disponibles, de modo que el título exacto y la fecha «14 de febrero de 2025» quedan sin verificar por mí.",
+   "severity": "low"
+  },
+  {
+   "claim": "CP art. 150 num. 19 (leyes marco) — el hallazgo lo marcó «confidence: medium, no extraído verbatim».",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991_pr004.html — verbatim: «19. Dictar las normas generales, y señalar en ellas los objetivos y criterios a los cuales debe sujetarse el Gobierno para los siguientes efectos: a) Organizar el crédito público; b) Regular el comercio exterior y señalar el régimen de cambio internacional...; c) Modificar, por razones de política comercial los aranceles, tarifas y demás disposiciones concernientes al régimen de aduanas; d) Regular las actividades financiera, bursátil, aseguradora...». También confirmados verbatim el num. 10 (facultades extraordinarias: seis meses, mayoría absoluta, prohibiciones) y CP arts. 151, 152 (lit. f adicionado por el art. 4 del AL 2 de 2004) y 153.",
+   "correction": "Puede subirse a confidence alta.",
+   "severity": "low"
+  },
+  {
+   "claim": "CP art. 212: los decretos legislativos de guerra pueden ser reformados o derogados por el Congreso con 2/3.",
+   "verdict": "confirmed",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991_pr007.html — «...rigen durante el tiempo que ellos mismos señalen y dejarán de tener vigencia tan pronto se declare restablecida la normalidad. El Congreso podrá, en cualquier época, reformarlos o derogarlos con el voto favorable de los dos tercios de los miembros de una y otra cámara.» Nota: el hallazgo dice «rigen mientras dure la guerra»; el texto dice «durante el tiempo que ellos mismos señalen».",
+   "severity": "low"
+  },
+  {
+   "claim": "Ley 5 art. 207 desarrolla las materias de ley estatutaria del art. 152 CP.",
+   "verdict": "partially",
+   "evidence": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0005_1992_pr005.html — el art. 207 enumera SEIS materias (derechos fundamentales; administración de justicia; partidos; estatuto de la oposición y funciones electorales; participación ciudadana; estados de excepción) y NO incluye la igualdad electoral presidencial, que es el literal f) añadido a CP 152 por el art. 4 del AL 2 de 2004 (verificado en …/constitucion_politica_1991_pr004.html).",
+   "correction": "Hay una SEGUNDA divergencia CP-vs-Ley 5 que el hallazgo no detectó (solo reportó la del art. 224): el catálogo de materias estatutarias de la ley orgánica está desactualizado frente a la Constitución. El modelo debe tratar el catálogo de materias reservadas como dato versionado con fuente CP prevalente, igual que el calendario.",
+   "severity": "medium"
+  },
+  {
+   "claim": "Ley 5 art. 155: retiro por el autor solo antes de presentada la ponencia para primer debate y si es de iniciativa congresional.",
+   "verdict": "confirmed",
+   "evidence": "…/ley_0005_1992_pr004.html — verbatim, con una segunda vía que el hallazgo omite: «En los demás eventos se requerirá la aceptación de la Comisión o Cámara respectiva.»",
+   "correction": "El estado `retirado_por_autor` necesita una variante `retirado_con_autorizacion_comision_o_camara`; si no, el retiro de proyectos gubernamentales o post-ponencia queda sin representación.",
+   "severity": "low"
+  }
+ ],
+ "omissions": [
+  "ANUNCIO PREVIO DE VOTACIÓN (el vicio de procedimiento más litigado de Colombia) está completamente ausente del hallazgo. CP art. 160 inc. adicionado por el art. 8 del AL 1 de 2003, verbatim en …/constitucion_politica_1991_pr005.html: «Ningún proyecto de ley será sometido a votación en sesión diferente a aquella que previamente se haya anunciado. El aviso... lo dará la Presidencia de cada Cámara o Comisión en sesión distinta a aquella en la cual se realizará la votación.» Consecuencia de esquema concreta: `tramite_evento.tipo_evento` no tiene `anuncio_votacion`, y sin ese evento el sistema no puede ni reconstruir la cadena de anuncios ni detectar la irregularidad que más tumba leyes.",
+  "UNIDAD DE MATERIA (CP art. 158) ausente: «Todo proyecto de ley debe referirse a una misma materia y serán inadmisibles las disposiciones o modificaciones que no se relacionen con ella. El Presidente de la respectiva comisión rechazará las iniciativas que no se avengan con este precepto, pero sus decisiones serán APELABLES ANTE LA MISMA COMISIÓN.» Son dos huecos: (a) no hay evento/causa de rechazo por unidad de materia; (b) `canonical_bill_states` solo modela `apelado_ante_plenaria` (art. 166), y esta es una apelación DISTINTA, ante la misma comisión. CP 158 también ordena publicar en un solo texto la ley reformada parcialmente — insumo directo del modelo de versiones consolidadas.",
+  "REFERENDO DEROGATORIO DE LEYES (CP art. 170) ausente del enum `estado_vigencia`: «Un número de ciudadanos equivalente a la décima parte del censo electoral, podrá solicitar... un referendo para la derogatoria de una ley. La ley quedará derogada si así lo determina la mitad más uno de los votantes... siempre y cuando participe... una cuarta parte del censo. No procede... respecto de las leyes aprobatorias de tratados internacionales, ni de la Ley de Presupuesto, ni de las referentes a materias fiscales o tributarias.» Falta `derogada_por_referendo` y el `tipo_afectacion` correspondiente. Su gemelo constitucional, CP art. 377 («La reforma se entenderá derogada por el voto negativo de la mayoría de los sufragantes»), tampoco está.",
+  "RUTAS DE REFORMA CONSTITUCIONAL INCOMPLETAS. CP art. 374 (…/constitucion_politica_1991_pr012.html): «La Constitución Política podrá ser reformada por el Congreso, por una Asamblea Constituyente o por el pueblo mediante referendo.» El modelo solo contempla el acto legislativo. Faltan en `tipo_proyecto`/`procedimiento`: la ley que convoca la Asamblea Constituyente (CP 376) y la ley que somete a referendo un proyecto de reforma (CP 378, con la iniciativa del art. 155), ambas con mayoría absoluta y control previo de la Corte (CP 241-2/3).",
+  "PUBLICACIÓN POR EL GOBIERNO ENTRE VUELTAS de un acto legislativo (CP 375: «Aprobado en el primero de ellos por la mayoría de los asistentes, el proyecto será PUBLICADO POR EL GOBIERNO») no aparece ni como estado ni como `tramite_evento`. Es un requisito de trámite cuya omisión es vicio; entre `primera_vuelta_aprobada` y `segunda_vuelta_aprobada` falta el paso.",
+  "DECRETOS CON FUERZA DE LEY DEL PLAN NACIONAL DE DESARROLLO (CP art. 341) ausentes de `norm_types_hierarchy`. Evidencia: CP art. 241 num. 5 (…/constitucion_politica_1991_pr008.html) los nombra expresamente junto a los del art. 150-10: «decretos con fuerza de ley dictados por el Gobierno con fundamento en los artículos 150 numeral 10 y 341 de la Constitución». El enum `tipo_norma` solo tiene `decreto_ley` (facultades extraordinarias) y `decreto_legislativo` (estados de excepción).",
+  "MOTIVO DE LA OBJECIÓN NO MODELADO. Ley 5 art. 199: «La objeción a un proyecto de ley puede obedecer a razones de INCONSTITUCIONALIDAD o de INCONVENIENCIA», y solo la primera abre la ruta a la Corte. Los estados `objetado_total`/`objetado_parcial` no distinguen el motivo, de modo que el grafo no puede derivar si corresponde `en_control_previo_corte` o no. Falta también el estado de `insistencia_de_las_camaras` (CP 167) y el de `devuelto_para_rehacer_por_inexequibilidad_parcial` (CP 167 / Ley 5 art. 203), distinto de `devuelto_por_vicios_subsanables` (art. 202).",
+  "SUIN-JURISCOL (Sistema Único de Información Normativa, Ministerio de Justicia) no se menciona en ninguna parte del hallazgo, pese a que el propio secretariasenado enlaza a él al pie de cada norma («<Consultar norma en SUIN JURISCOL: http://www.suin.gov.co/viewDocument.asp?ruta=Leyes/30035429>», visto en la página de la Ley 1909 de 2018). Es la fuente estatal candidata más obvia frente al Gestor Normativo. ADVERTENCIA VERIFICADA: al intentar cargarlo el 2026-08-19 el host no respondió (http://www.suin-juriscol.gov.co/... → chrome-error, navegación agotada a 60s). No se pudo evaluar su cobertura ni su bloque de vigencias; su fragilidad debe entrar como riesgo de arquitectura, no ignorarse.",
+  "ENTIDADES DE EVIDENCIA FALTANTES: no hay entidad `gaceta` (Gaceta del Congreso) ni `diario_oficial`, solo campos `gaceta_numero` y `diario_oficial_numero` sueltos. El contrato de evidencia exige URL checkeable + fecha de captura POR REGISTRO; los textos de ponencias, textos aprobados y actas viven en gacetas concretas, y sin una entidad con URL y hash cada cita queda anclada a un número sin documento. Lo mismo para el Diario Oficial (la promulgación).",
+  "TRATADO ≠ LEY APROBATORIA: el modelo tiene `ley_aprobatoria_tratado` pero no una entidad para el tratado mismo, que tiene vigencia internacional propia (ratificación, depósito, entrada en vigor) distinta de la de la ley y del fallo de la Corte. CP 241-10 confirma que la Corte se pronuncia sobre AMBOS («los tratados internacionales Y las leyes que los aprueben»). Para preguntas de política sectorial (p. ej. instrumentos internacionales sobre datos o IA) esto importa.",
+  "PATRONES DE CITAS: NO EVALUABLES. El JSON de hallazgos llegó TRUNCADO a mitad de la entidad `sentencia` (corta en «decision (exequible|inexequible|exequible_condicionada|i»). La sección de patrones/regex de citas, los ejemplos que debían capturar y todo lo que siguiera a `sentencia` en la lista de entidades nunca llegaron. No emito ningún veredicto sobre cobertura de ejemplos ni sobre falsos positivos: no vi los patrones. Esta parte del encargo queda SIN CUBRIR y debe reenviarse completa.",
+  "Insumo para cuando se evalúen esos patrones (observado en las fuentes primarias, no en el hallazgo): los encabezados oficiales incorporan el TIPO dentro del nombre — «LEY <ESTATUTARIA> 1909 DE 2018», «LEY ORGÁNICA 2390 DE 2024» —, la Ley 5 usa numeración con letra y guion («61A», «61M», «63-1»), el DUR usa rutas de 5-6 niveles («2.5.3.2.1.1»), y las notas del editor usan formas como «<Artículo modificado por el artículo 13 de la Ley 974 de 2005>», «<Derogado expresamente por el artículo 71 de la Ley 179 de 1994>», «<Numeral INEXEQUIBLE>», «<Numeral CONDICIONALMENTE EXEQUIBLE>», «<Ver Notas del Editor>», «<sic. g)>». Cualquier regex tiene que contemplar además el ordinal con letra volada («ARTÍCULO 1o.», «ARTÍCULO 2o.»), que aparece de forma inconsistente frente a «ARTÍCULO 138.»."
+ ],
+ "overall": "Verifiqué artículo por artículo contra el texto en secretariasenado.gov.co (Constitución, Ley 5 de 1992, Ley 3 de 1992, Ley 1909 de 2018, Ley 2390 de 2024, Código Civil, CPACA) más el Gestor Normativo de Función Pública. RESULTADO GENERAL: el hallazgo es, en lo legal, notablemente sólido — el núcleo del proceso legislativo (calendario reformado por el AL 2 de 2023, iniciativa, reparto, ponencias, plazos entre debates, conciliación, objeciones, vicios, actos legislativos, estatutarias, comisiones) resiste el contraste verbatim, incluida la corrección crítica del calendario y la contradicción viva CP 138 vs Ley 5 art. 224, que confirmé palabra por palabra. No encontré ninguna fuente inventada ni ningún endpoint muerto entre los que pude alcanzar.\n\nLo que SÍ hay que corregir antes de construir: (1) el Gestor Normativo NO puede etiquetarse «fuente institucional primaria» — su propia página declara que «no se hace responsable de la vigencia» y su bloque Vigencias(20) para la Constitución está demostrablemente incompleto (solo 2019-2023, sin el AL 1 de 2003 ni el AL 2 de 2004 que el propio hallazgo usa) y con ruido evidente; el pipeline lead→norma afectante→cláusula ya es correcto, lo que falla es la etiqueta de jerarquía y el supuesto de cobertura. (2) «17 materias» del art. 142 es falso: son ≥20 numerales, con uno condicionalmente exequible. (3) `negado_en_comision_art157` es una cita mal asignada: el art. 157 de la Ley 5 es «iniciación del debate»; la sede es el art. 166. (4) `en_control_previo_corte (solo estatutarias)` es demasiado estrecho frente a CP 241-8 y 241-10. (5) La cita del copyright de Avance Jurídico suprime dos calificativos («en publicaciones similares y con fines comerciales») que cambian su alcance. (6) La «confirmación desde texto primario» de la Ley 153 de 1887 art. 3 no lo es: se leyó un decreto que la cita.\n\nY hay seis huecos de taxonomía con consecuencia de esquema directa: el anuncio previo de votación (CP 160, el vicio más litigado del país) sin evento; la unidad de materia (CP 158) y su apelación ante la propia comisión, distinta de la del art. 166; el referendo derogatorio de leyes (CP 170) y el de reformas (CP 377) sin estado de vigencia; las rutas de reforma por Asamblea Constituyente y referendo (CP 374/376/378) sin tipo de proyecto; los decretos con fuerza de ley del PND (CP 341, confirmado vía CP 241-5) fuera de la jerarquía; y la ausencia de entidades para Gaceta del Congreso y Diario Oficial, que el contrato de evidencia exige como ancla con URL por registro. Añado una segunda divergencia CP-vs-Ley 5 que el hallazgo no vio: el art. 207 de la Ley 5 lista seis materias estatutarias y no incorpora el literal f) que el AL 2 de 2004 añadió a CP 152.\n\nLIMITACIONES DE COBERTURA, para que se lean como tales: (a) el presupuesto de WebSearch de esta sesión estaba agotado (200/200) antes de empezar, así que trabajé solo con Playwright y WebFetch; (b) secretariasenado rechaza HTTPS (ECONNREFUSED en 200.7.106.227:443) — todo se leyó por HTTP con navegador real; (c) SUIN-Juriscol no respondió en absoluto; (d) el buscador del Gestor Normativo devuelve 403; (e) el PDF del CONPES 4144 existe en el repositorio del DNP pero no pude extraer su texto, así que la fecha «14 de febrero de 2025» queda sin verificar por mí; (f) no pude leer la Ley 153 de 1887 ni el Decreto 780 de 2016 (secretariasenado solo publica «Leyes desde 1992»). Nada de lo que no leí está marcado como refutado: va como `unverifiable` con el motivo. Y lo más importante: el JSON de hallazgos me llegó truncado a mitad de la entidad `sentencia`, de modo que la parte del encargo sobre patrones de citas —cobertura de los ejemplos y falsos positivos— no se pudo hacer y debe reenviarse."
+}

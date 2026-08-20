@@ -1,0 +1,355 @@
+{
+ "projects": [
+  {
+   "name": "Stanford RegLab — 'Hallucination-Free? Assessing the Reliability of Leading AI Legal Research Tools' (Magesh, Surani, Dahl, Suzgun, Manning, Ho)",
+   "url": "https://reglab.stanford.edu/publications/hallucination-free-assessing-the-reliability-of-leading-ai-legal-research-tools/",
+   "status": "active — publicado en Journal of Empirical Legal Studies 2025 (doi 10.1111/jels.12413); arXiv 2405.20362 (v1 mayo 2024)",
+   "scope": "Primera evaluación empírica PREREGISTRADA de herramientas RAG de investigación jurídica (Lexis+ AI, Westlaw AIAR, Ask Practical Law AI, GPT-4)",
+   "country": "US",
+   "evidence": "Fetch a reglab.stanford.edu y arxiv.org/abs/2405.20362 (2026-08-19): tipología correctness+groundedness; tasas por búsqueda web: Lexis+ AI 17%, Westlaw AIAR 33%, GPT-4 43%. Proveedores afirmaban '100% hallucination-free linked legal citations' (LexisNexis); el estudio lo declara 'overstated'.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "what_works": [
+    "Definir alucinación en DOS ejes: incorrecto (correctness) y mal fundamentado aunque la cita exista (groundedness)",
+    "Preregistro del dataset de queries antes de medir",
+    "Incluir preguntas con premisa falsa y de vigencia temporal"
+   ],
+   "what_fails": [
+    "RAG reduce ~2-3x pero NO elimina: 17-33% en herramientas comerciales grounded en corpus propietarios",
+    "El error más insidioso no es la cita inventada sino la cita real que NO sostiene la afirmación (misgrounding)"
+   ],
+   "lessons_for_us": [
+    "Medir groundedness por separado de correctness en nuestro gold set",
+    "Ninguna afirmación de marketing tipo 'sin alucinaciones': es refutable empíricamente",
+    "El corte apply/no-apply de una respuesta debe depender de si CADA afirmación resuelve a un fragmento de fuente primaria, no de que el sistema sea RAG"
+   ],
+   "data_model_notes": "Su tipología implica que una cita necesita 3 verificaciones: existe, dice lo que se le atribuye, y aplica a la pregunta."
+  },
+  {
+   "name": "Vals AI — VLAIR (feb 2025) y VLAIR Legal Research (oct 2025)",
+   "url": "https://www.vals.ai/vlair",
+   "status": "active — segundo reporte oct 2025; siguen publicando application reports (vals.ai/application-reports/vincent)",
+   "scope": "Benchmark independiente de herramientas legales de IA contra baseline de abogados humanos",
+   "country": "US",
+   "evidence": "Resúmenes de búsqueda (lawnext.com 2025-10, artificiallawyer.com 2025-02-27, vals.ai): feb 2025 — Harvey Assistant top score en 5 de 7 tareas; CoCounsel 73.2%-89.6%; Vincent AI 53.6%-72.7%; la IA superó a abogados en 4 tareas (extracción, Q&A documental, resumen, transcripciones) y perdió en 2 (redlining, EDGAR research). Oct 2025 — ChatGPT 80% ≈ herramientas legales 78-81%; vLex retiró a Vincent antes de publicar. NO fetché el PDF del reporte.",
+   "verified_by_fetch": false,
+   "confidence": "medium",
+   "what_works": [
+    "Baseline humano como vara de medir",
+    "Medición por TAREA, no puntaje único"
+   ],
+   "what_fails": [
+    "Un LLM general con web search ya empata a herramientas legales en accuracy cruda — el moat no es el modelo, es el corpus curado + trazabilidad + vigencia"
+   ],
+   "lessons_for_us": [
+    "Nuestro diferenciador NO puede ser 'responde bien': debe ser 'responde con fuente primaria colombiana verificable y estado de vigencia' — eso ChatGPT no lo da",
+    "Diseñar la eval interna por tareas (vigencia, trámite, votaciones, afectaciones) con baseline manual"
+   ]
+  },
+  {
+   "name": "Schwarcz et al. — 'AI-Powered Lawyering' (RCT con 127 estudiantes de derecho, U. Minnesota/Michigan)",
+   "url": "https://ssrn.com/abstract=5162111",
+   "status": "active — publicado 2025, versión journal 2026 (journals.sagepub.com/doi/10.1177/2755323X261427048)",
+   "scope": "Primer ensayo controlado aleatorizado: Vincent AI (RAG legal) vs o1-preview (reasoning) vs sin IA",
+   "country": "US",
+   "evidence": "Resultados de búsqueda coincidentes en 4 fuentes independientes (SSRN, umich repository, umn scholarship, lawnext 2025-03): participantes con Vincent AI produjeron ~la misma tasa de alucinaciones que quienes no usaron IA, con mejora sustancial de productividad y calidad; o1-preview mejoró profundidad analítica pero con más riesgo de alucinación. No fetché el paper completo.",
+   "verified_by_fetch": false,
+   "confidence": "high",
+   "what_works": [
+    "RAG legal bien construido = productividad sin costo en alucinaciones (con humano en el loop)"
+   ],
+   "lessons_for_us": [
+    "El humano verifica MEJOR cuando la herramienta le da el enlace al fragmento primario: optimizar la UX de verificación (quote + enlace + fecha de captura) importa tanto como el retrieval",
+    "vLex usó este RCT para su claim de '3.67× más confiabilidad': los RCT se convierten en material de venta — nuestro contrato de evidencia es también un activo de marketing"
+   ]
+  },
+  {
+   "name": "AI Law Librarians / LLRX — 'What the Science Says About Hallucinations in Legal Research' (síntesis, feb 2026)",
+   "url": "https://www.ailawlibrarians.com/2026/02/19/what-the-science-says-about-hallucinations-in-legal-research/",
+   "status": "active — publicado 2026-02-19",
+   "scope": "Síntesis 2024-2026 de la evidencia empírica sobre alucinaciones legales",
+   "evidence": "Fetch directo (2026-08-19). Seis patrones: (1) herramientas especializadas 15-25% promedio vs GPT-4 43-58% y Llama 2 88%; (2) SYCOPHANCY: ante una premisa legal falsa del usuario, la IA fabrica autoridades que la apoyan; (3) variación jurisdiccional dramática (LA 45%, Londres 55%, Sídney 61%); (4) derecho obsoleto sin búsqueda activa; (5) caída de 14 puntos al pasar de consulta simple a análisis multi-jurisdiccional; (6) PARADOJA DE CONFIANZA: cero correlación entre seguridad expresada y precisión.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "lessons_for_us": [
+    "Reformular la pregunta del usuario a forma NEUTRAL antes del retrieval (anti-sycophancy): '¿es cierto que la ley X prohíbe Y?' → 'qué dice la ley X sobre Y'",
+    "El tono del LLM jamás es señal: la UI muestra NIVEL DE EVIDENCIA (primaria/institucional/prensa + fecha), nunca 'confianza' del modelo",
+    "Preguntas compuestas (nuestro caso de uso objetivo: IA en salud) son las de mayor riesgo: descomponer en sub-consultas por norma antes de sintetizar"
+   ]
+  },
+  {
+   "name": "arXiv 2606.00898 — 'Citation Grounding Measures the Oracle: Graph Coverage Determines Reported LLM Hallucination Rates in Law' (2026)",
+   "url": "https://arxiv.org/abs/2606.00898",
+   "status": "active — mayo 2026, revisión agosto 2026",
+   "scope": "Metrología de la verificación de citas contra grafos de jurisprudencia",
+   "evidence": "Fetch directo al abstract (2026-08-19): con grafo disperso (4.7e5 registros) las tasas de 'grounding' medidas son 0.791-0.855; con grafo denso (3.3e8) suben a 0.989-0.999 — la métrica mide la COBERTURA del grafo verificador, no el desempeño del modelo; ningún par de sistemas resultó estadísticamente distinguible.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "lessons_for_us": [
+    "Si verificamos citas contra nuestro propio corpus Supabase, un hueco de cobertura produce falsos 'alucinación detectada' — el verificador DEBE distinguir 'cita no resuelve en el corpus' de 'cita inexistente', y reportar cobertura del corpus junto al veredicto",
+    "Publicar métricas de cobertura por fuente (ya lo hace el scan-coverage de career-ops) es prerrequisito de cualquier métrica de confiabilidad honesta"
+   ]
+  },
+  {
+   "name": "Harvey",
+   "url": "https://www.harvey.ai",
+   "status": "active — 'Introducing Harvey II' publicado 2026-08-18; Claude Opus 5 en producción desde 2026-07-24",
+   "scope": "Plataforma enterprise de IA legal (agentes end-to-end, no un buscador de normas)",
+   "country": "US (global enterprise)",
+   "stack": "Multi-modelo (Claude Opus 5, GPT-5.6 anunciados en su blog); agentes con 'matter context' y 'working memory' (Harvey II)",
+   "evidence": "Fetch a harvey.ai/products y harvey.ai/blog (2026-08-19): productos Agents, Vault, Knowledge ('Research complex legal, regulatory, and tax questions across domains'), Shared Spaces, Contract Intelligence, Command Center, Harvey Mobile; grounding: 'ground every answer in sources you trust' vía Ecosystem. La página NO detalla jurisdicciones ni menciona el partnership con LexisNexis (conocido de entrenamiento, no verificado hoy).",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "features": [
+    "Agentes end-to-end con contexto de asunto y memoria (Harvey II, ago 2026)",
+    "Vault para corpus documental del cliente",
+    "Knowledge para research regulatorio multi-dominio",
+    "Análisis de audio/video/imagen (ago 2026)"
+   ],
+   "what_works": [
+    "Ganó el VLAIR feb 2025 (top en 5/7 tareas): los WORKFLOWS especializados por tarea superan al chat genérico",
+    "Actualiza modelo base en semanas (Opus 5 a 6 semanas del release): desacoplar producto de modelo"
+   ],
+   "what_fails": [
+    "Cero transparencia pública sobre cómo ancla citas — el grounding es una promesa de marca, no un contrato verificable"
+   ],
+   "lessons_for_us": [
+    "Diseñar por WORKFLOW (¿qué normas afectan X? / timeline de un proyecto de ley / mapa de votación), no un chat único",
+    "Abstraer el LLM tras una interfaz para cambiar de modelo sin re-arquitectura"
+   ]
+  },
+  {
+   "name": "CoCounsel (Thomson Reuters)",
+   "url": "https://www.thomsonreuters.com/en/cocounsel",
+   "status": "active — plataforma insignia de TR, claim de ~1M usuarios",
+   "scope": "IA profesional grounded en corpus propietario (Westlaw, Practical Law, Checkpoint)",
+   "country": "US (global)",
+   "evidence": "Fetch directo (2026-08-19): 'Fiduciary-Grade AI™ built for high-stakes professional work'; 'answers grounded in our authoritative, proprietary content'; ediciones CoCounsel Legal / Essentials / Tax-Audit; deep research sobre Westlaw+Practical Law; pilares declarados: contenido autorizado, protección enterprise, expertise de dominio, 'transparencia verificable'.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "what_works": [
+    "El corpus curado ES el producto; la IA es la interfaz",
+    "Integración con el citator (KeyCite) para estado de las autoridades"
+   ],
+   "what_fails": [
+    "Stanford midió 33% de alucinación en Westlaw AIAR pese al 'trusted content': grounding en corpus propietario NO basta sin verificación por afirmación"
+   ],
+   "lessons_for_us": [
+    "'Fiduciary-grade' es la nueva retórica post-Stanford: la industria ya no vende 'sin alucinaciones', vende gobernanza — nuestro contrato de evidencia encaja exactamente ahí",
+    "El análogo del citator para regwatch: el grafo de afectaciones (deroga/modifica/inexequible) consultado en cada respuesta"
+   ]
+  },
+  {
+   "name": "Lexis+ AI → 'Lexis+ with Protégé' (LexisNexis)",
+   "url": "https://www.lexisnexis.com/en-us/products/lexis-plus-ai.page",
+   "status": "active — renombrado en febrero 2026",
+   "scope": "Asistente de IA sobre el corpus LexisNexis con validación de citas vía Shepard's",
+   "country": "US (global)",
+   "stack": "'Protégé Legal AI... blends multiple LLMs from leading providers'; Protégé General AI da acceso a modelos de OpenAI, Google y Anthropic",
+   "evidence": "Fetch directo (2026-08-19): 'Lexis+ AI® has been renamed Lexis+® with Protégé™' (feb 2026); Shepard's integrado: 'Validate citations and confirm the status and treatment of authorities directly within your research and drafting workflow'; la página EVITA el término 'hallucination-free' (que LexisNexis usó en 2023-24 y Stanford desmintió) y hoy dice 'grounded in authoritative LexisNexis sources'.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "what_works": [
+    "Shepard's en el flujo: el estado de la autoridad (vigente/tratada negativamente) se valida DENTRO de la respuesta, no en un paso aparte",
+    "Estrategia multi-modelo con routing por caso de uso"
+   ],
+   "what_fails": [
+    "Su claim '100% hallucination-free linked legal citations' de 2023 fue refutado con 17% medido: precedente directo de por qué no prometer de más"
+   ],
+   "lessons_for_us": [
+    "El patrón Shepard's ES nuestro norte: cada norma citada en una respuesta lleva su señal de vigencia calculada del grafo de afectaciones, inline",
+    "La retractación silenciosa de LexisNexis valida nuestra regla: 'vigente' SOLO con fuente primaria, e incertidumbre declarada"
+   ]
+  },
+  {
+   "name": "vLex Vincent AI (parte de Clio)",
+   "url": "https://vlex.com/vincent-ai",
+   "status": "active — Vincent Studio anunciado enero 2026; vLex adquirida por Clio (2025)",
+   "scope": "El comparable MÁS directo: asistente legal sobre base de datos global que INCLUYE Colombia, en español",
+   "country": "Global — cobertura explícita de Colombia, España, México, Chile, Perú, Brasil, Portugal, '100+ países'",
+   "evidence": "Fetch directo (2026-08-19): variantes de idioma es-CO, es-MX, es-CL, es-PE, es-ES y pt-BR; 'Proporciona memorandos completamente citados con enlaces directos a fuentes primarias' y 'Cada respuesta incluye citas adecuadas con enlaces directos a fuentes primarias'; 20+ workflows (research, comparación jurisdiccional, litigación, transacciones, perfiles de jueces); claim '3.67× más confiabilidad que LLMs líderes' (del RCT de Schwarcz); 'Vincent Studio' (ene 2026) = workflows no-code.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "what_works": [
+    "Enlace directo a fuente primaria como contrato de producto — exactamente nuestro contrato de evidencia, ya validado comercialmente en español y para Colombia",
+    "Un RCT independiente (Schwarcz) como evidencia de confiabilidad citable"
+   ],
+   "what_fails": [
+    "En VLAIR quedó por debajo de Harvey/CoCounsel (53.6-72.7%) y se retiró del benchmark de oct 2025 — cobertura amplia ≠ profundidad por jurisdicción",
+    "Es una plataforma de abogados por suscripción: no cubre el caso 'monitor ciudadano/policy de trámite legislativo + votaciones + CONPES' que es nuestro nicho"
+   ],
+   "lessons_for_us": [
+    "Vincent ya vende 'Colombia con citas primarias': nuestro espacio defendible es lo que Vincent NO hace — trámite en el Congreso en tiempo real, votaciones nominales, mapa de bancadas, CONPES, señal temprana de prensa con jerarquía probatoria explícita",
+    "Los memorandos citados (respuesta larga estructurada con citas por sección) son mejor formato que el chat para preguntas tipo '¿qué normas afectan X?'"
+   ]
+  },
+  {
+   "name": "Legora",
+   "url": "https://legora.com",
+   "status": "active — 2026",
+   "scope": "OS agéntico para trabajo legal; incluye MONITORES regulatorios continuos",
+   "country": "Suecia (global: GDPR, ISO 27001, ISO 42001, SOC 2, HIPAA)",
+   "evidence": "Fetch directo (2026-08-19): 'The agentic operating system for legal work'; productos: Agent ('plans, executes, reviews and delivers'), Tabular Review, Word Add-In, Legal Research agéntico, Portal y — clave para nosotros — Monitors: 'Continuously scanning global regulation and surfacing what matters'. No documenta públicamente su mecanismo de citas.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "features": [
+    "Monitors: vigilancia regulatoria continua como producto de primera clase",
+    "Tabular Review: extracción estructurada masiva sobre N documentos"
+   ],
+   "lessons_for_us": [
+    "'Monitors' valida el monitoreo normativo continuo como categoría de producto en 2026 — regwatch-co es un Monitor especializado en Colombia con capa de Q&A",
+    "El patrón Tabular Review aplica a nuestro batch: extraer campos estructurados (estado, ponente, comisión, fechas) de N gacetas/textos con el mismo prompt"
+   ]
+  },
+  {
+   "name": "Legis Colombia — Xperta",
+   "url": "https://xperta.legis.co",
+   "status": "active — versión V5.0.5.3, copyright 2026",
+   "scope": "El incumbente colombiano: plataforma de consulta jurídica/contable con capa editorial y búsqueda con IA",
+   "country": "Colombia",
+   "evidence": "Playwright snapshot de xperta.legis.co/home (2026-08-19): tres modos de búsqueda — 'Publicaciones Legis' (editorial), 'Búsqueda Inteligente' con badge IA ('Encuentra información mediante búsquedas en lenguaje natural, por ideas, contexto o significado, incluso sin conocer los términos exactos') y 'Sentencias Fuentes Oficiales BETA' ('Accede a sentencias de fuentes oficiales tal como fueron publicadas por las entidades competentes, sin análisis ni contenido editorial de Legis'); 'Consulta la Colección de Legislación Colombiana de forma gratuita... normativa y soporte legislativo desde 1991 con análisis de vigencia'; +2.000.000 de documentos; líneas jurisprudenciales vía analitica.legis.com.co; precios: bolsa 60 créditos COP 53.500, Xperta One COP 381.250/mes (anual), obras desde COP 434.900/año. NO tiene Q&A generativo con citas: la IA es solo búsqueda semántica.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "license": "Comercial por suscripción/créditos; colección de legislación en free tier con registro",
+   "what_works": [
+    "El 'análisis de vigencia' editorial es su moat histórico — exactamente lo que queremos computar con grafo de afectaciones y fuente primaria",
+    "Separar la fuente oficial CRUDA ('tal como fue publicada, sin análisis editorial') del contenido analizado: el incumbente colombiano ya adoptó nuestra distinción de procedencia, en BETA en 2026",
+    "Microtransacciones por créditos: modelo de acceso puntual sin suscripción"
+   ],
+   "what_fails": [
+    "Sin respuesta generativa con citas ancladas: hay espacio para el Q&A trazable",
+    "Vigencia como trabajo editorial manual: costoso y opaco (no muestra la cadena probatoria)"
+   ],
+   "lessons_for_us": [
+    "Nuestro ángulo contra Legis: vigencia CALCULADA y AUDITABLE (cada 'vigente' enlaza a las afectaciones primarias que lo sostienen) vs vigencia editorial de caja negra",
+    "Que legislación desde 1991 sea free tier en Legis presiona: el valor cobrable está en vigencia+Q&A+monitoreo, no en el texto crudo"
+   ],
+   "data_model_notes": "Su taxonomía por áreas (procesal, civil, constitucional, laboral, financiero...) y las 'líneas jurisprudenciales' separadas sugieren: entidad norma + entidad sentencia + capa de análisis como registros distintos con procedencia distinta."
+  },
+  {
+   "name": "Tirant lo Blanch — SOFIA 3.0",
+   "url": "https://sofia.tirant.com/es/",
+   "status": "active — el sitio responde con título 'SOFIA 3.0' (2026-08-19); detalle inaccesible",
+   "scope": "Asistente generativo de Tirant sobre su base de datos jurídica (España/LatAm)",
+   "country": "España / LatAm (México y presencia en Colombia, de conocimiento de entrenamiento)",
+   "evidence": "Liveness verificado vía Playwright (título de pestaña 'SOFIA 3.0' en sofia.tirant.com); www.tirant.com y sofia.tirant.com devuelven 403 a WebFetch, así que las capacidades, jurisdicciones y mecanismo de citas NO se pudieron verificar hoy — lo que sé de su funcionamiento es memoria de entrenamiento.",
+   "verified_by_fetch": true,
+   "confidence": "low",
+   "lessons_for_us": [
+    "Existe (v3.0) y compite en español, pero sin verificación de features no debe usarse como referencia de diseño; si se necesita, verificar manualmente en navegador"
+   ]
+  },
+  {
+   "name": "Aranzadi LA LEY — Allegra / Allegra Flow",
+   "url": "https://www.aranzadilaley.es",
+   "status": "active — 2026",
+   "scope": "IA jurídica del gigante editorial español (fusión Aranzadi + La Ley); sucesora de facto de GenIA-L",
+   "country": "España",
+   "evidence": "Fetch directo (2026-08-19): Allegra = 'la solución de Inteligencia Artificial jurídica aplicada al Derecho que ofrece, en un único espacio de trabajo, un asistente especializado para investigar, analizar y redactar', combinando 'el mejor fondo jurídico de Aranzadi LA LEY con tus propios documentos'; Allegra Flow conecta 'fuentes jurídicas, documentación propia, contexto del asunto, asistencia basada en IA y capacidades de redacción'; 6.500 autores, 325.000 usuarios; énfasis en 'infraestructura tecnológica local'. El nombre 'GenIA-L' ya no aparece en la home.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "what_works": [
+    "Patrón 'workspace': fondo editorial + documentos del usuario + contexto del asunto en un mismo espacio de retrieval"
+   ],
+   "lessons_for_us": [
+    "El mercado en español ya está en la fase 'workspace con fondo editorial', no en la fase 'chatbot': nuestro Q&A debe poder mezclar corpus normativo + documentos del usuario (p.ej. su borrador de política) manteniendo la jerarquía probatoria de cada fuente"
+   ]
+  },
+  {
+   "name": "Lexdoka",
+   "url": "https://lexdoka.com",
+   "status": "active — 2026 (posicionamiento actual: IA multiagente para auditoría de cuentas, no búsqueda normativa)",
+   "scope": "España; multiagente para planificación de auditoría financiera (NIA, PGC, ICAC, BOE)",
+   "country": "España",
+   "evidence": "Fetch directo (2026-08-19): 'La primera IA multiagente para auditoría de cuentas del mundo'; '8 agentes expertos trabajando en equipo cohesionado'; claim 'Cero alucinaciones' sustentado en arquitectura híbrida: modelo contable matemático DETERMINISTA + IA documental + clasificación experta de riesgos; '90% menos tiempo en planificación'.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "what_works": [
+    "La única forma defendible de decir 'cero alucinaciones': sacar del LLM todo lo computable y resolverlo con reglas deterministas"
+   ],
+   "what_fails": [
+    "El claim 'cero alucinaciones' sigue siendo marketing sin auditoría externa publicada"
+   ],
+   "lessons_for_us": [
+    "Patrón directamente aplicable: VIGENCIA y CADENA DE AFECTACIONES son computables por reglas sobre el grafo (determinista); el LLM solo redacta y sintetiza sobre resultados ya resueltos — nunca 'decide' vigencia"
+   ]
+  },
+  {
+   "name": "Anthropic Contextual Retrieval (técnica)",
+   "url": "https://www.anthropic.com/news/contextual-retrieval",
+   "status": "active — técnica publicada sept 2024, vigente como referencia estándar",
+   "scope": "Reducción de fallos de retrieval prependeando contexto generado a cada chunk antes de embeber/indexar",
+   "evidence": "Fetch directo (2026-08-19): contextual embeddings solos reducen el fallo de retrieval top-20 en 35% (5.7%→3.7%); + BM25 híbrido: 49% (5.7%→2.9%); + reranking: 67% (5.7%→1.9%); contexto de 50-100 tokens por chunk generado con Haiku; costo one-time $1.02 por millón de tokens de documento con prompt caching (chunks de 800 tokens, docs de 8k).",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "lessons_for_us": [
+    "Nuestro chunk de artículo debe llevar header contextual: tipo y número de norma, título, artículo, materia, estado de vigencia y fecha — generable por plantilla (gratis, determinista) porque nuestros documentos SON estructurados; reservar el contexto LLM para textos no estructurados (ponencias, prensa)",
+    "Hybrid BM25+vectores+rerank no es opcional: es el piso del estado del arte (67% menos fallos)"
+   ]
+  },
+  {
+   "name": "Anthropic Citations API (técnica)",
+   "url": "https://platform.claude.com/docs/en/build-with-claude/citations",
+   "status": "active — GA, sin beta header, soportada por todos los modelos activos (Claude API, AWS, Bedrock, Google Cloud, Foundry)",
+   "scope": "Citas nativas por construcción: la API devuelve punteros garantizados a los documentos provistos",
+   "evidence": "Fetch directo a platform.claude.com/docs (2026-08-19): se habilita con citations:{enabled:true} por bloque document; la respuesta se divide en bloques text con array citations; tipos: char_location (start/end_char_index, 0-indexed) para texto plano, page_location (1-indexed) para PDF, content_block_location para contenido custom; 'citations are guaranteed to contain valid pointers to the provided documents'; cited_text NO cuenta como output tokens (ni como input al reenviar); 'significantly more likely to cite the most relevant quotes' que el prompting; INCOMPATIBLE con structured outputs (400); también funciona sobre bloques search_result.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "lessons_for_us": [
+    "Es el mecanismo exacto para nuestro Q&A: pasar los chunks recuperados como documents/search_results con citations enabled y renderizar cada char_location como quote anclada al artículo — el puntero es válido POR CONSTRUCCIÓN, ya no dependemos de que el modelo transcriba bien la cita",
+    "Como es incompatible con structured outputs, la respuesta estructurada (JSON de normas afectadas) y la respuesta citada (prosa con quotes) son DOS llamadas distintas del pipeline"
+   ]
+  },
+  {
+   "name": "LegalBench (Guha, Nyarko, Ho, Ré et al.)",
+   "url": "https://arxiv.org/abs/2308.11462",
+   "status": "active — benchmark de referencia (NeurIPS 2023), sigue siendo el estándar en inglés",
+   "scope": "162 tareas de razonamiento legal construidas a mano por juristas, en 6 tipos de razonamiento",
+   "evidence": "Fetch al abstract (2026-08-19): 'A Collaboratively Built Benchmark for Measuring Legal Reasoning in Large Language Models'; 162 tareas, proceso interdisciplinario con profesionales del derecho.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "lessons_for_us": [
+    "Su método (tareas pequeñas diseñadas por expertos del dominio, no scraping) es el molde para nuestro gold set colombiano: 30-50 preguntas de vigencia/trámite/afectación con respuesta anclada a fuente primaria, escritas a mano"
+   ]
+  },
+  {
+   "name": "LEXTREME + MultiEURLEX (benchmarks multilingües)",
+   "url": "https://arxiv.org/abs/2301.13126",
+   "status": "active — LEXTREME (EMNLP Findings 2023, 11 datasets, 24 idiomas); MultiEURLEX (arxiv.org/abs/2109.00904, 65k leyes UE en 23 idiomas oficiales, incluido español, etiquetadas con EUROVOC)",
+   "scope": "Evaluación legal multilingüe y transferencia cross-lingüe zero-shot",
+   "evidence": "Fetch a ambos abstracts (2026-08-19): LEXTREME '11 datasets covering 24 languages', mejor modelo 61.3 — amplio margen de mejora en legal multilingüe; MultiEURLEX: clasificación multi-etiqueta con taxonomía EUROVOC, traducciones oficiales UE.",
+   "verified_by_fetch": true,
+   "confidence": "high",
+   "lessons_for_us": [
+    "Existe benchmark en español legal-UE pero NADA equivalente para derecho colombiano: nuestro gold set sería contribución original",
+    "EUROVOC como taxonomía multi-etiqueta es precedente para etiquetar normas colombianas por materia (el eje 'IA en salud' de la pregunta objetivo exige clasificación temática multi-etiqueta)"
+   ]
+  }
+ ],
+ "patterns": [
+  "PROCEDENCIA COMO PRODUCTO: los cuatro líderes convergen en el mismo contrato — Vincent: 'enlaces directos a fuentes primarias' en cada respuesta; Lexis: Shepard's inline para validar el estado de cada autoridad; CoCounsel: 'fiduciary-grade' + contenido autorizado; y el incumbente colombiano (Legis Xperta) acaba de lanzar en BETA la separación 'fuente oficial cruda, sin análisis editorial' vs capa editorial. El contrato de evidencia de regwatch-v1 no es una rareza: es exactamente hacia donde se movió la industria tras el estudio de Stanford.",
+  "MODELO DE DATOS — el citator es el corazón: lo que Shepard's/KeyCite son para jurisprudencia, nuestro grafo de afectaciones (deroga/modifica/subroga/declara inexequible/condiciona) lo es para normatividad. Vigencia = consulta determinista sobre ese grafo, con cada arista anclada a URL primaria + fecha de captura. El LLM nunca escribe en el grafo ni 'opina' vigencia (patrón Lexdoka: lo computable se resuelve por reglas; el LLM solo redacta sobre resultados resueltos).",
+  "MODELO DE DATOS — cita como tripleta verificable: una cita válida requiere 3 checks (existe / dice lo atribuido / aplica) — tipología Magesh. Esquema: cita = (chunk_id, char_range, texto_citado, doc_id, fecha_captura, nivel_evidencia). La Citations API de Anthropic da el puntero válido por construcción (char_location sobre los documents provistos) y cited_text no factura output tokens; el post-validador solo tiene que resolver chunk_id contra Postgres.",
+  "RETRIEVAL — piso del estado del arte 2026: chunking ESTRUCTURAL por artículo/inciso (nunca por tokens) + header contextual por plantilla (norma, artículo, materia, vigencia, fecha) + híbrido BM25/léxico + vectores + rerank. Cifras Anthropic: híbrido contextual = -49% fallos de retrieval, +rerank = -67%. Para preguntas compuestas ('IA en salud'), descomponer en sub-consultas por norma antes de sintetizar: la literatura mide caída de 14 puntos en consultas complejas sin descomposición.",
+  "UX — nivel de evidencia visible, confianza del modelo invisible: cero correlación medida entre seguridad expresada y precisión ('paradoja de confianza', síntesis feb 2026). Cada afirmación lleva badge primaria/institucional/prensa + fecha de captura + quote expandible; formato memorando citado por secciones (Vincent) > chat; timeline de afectaciones y estado de trámite como vistas de primera clase (Legora Monitors valida el monitoreo continuo como categoría).",
+  "ANTI-FRAGILIDAD — anti-sycophancy y abstención calibrada: reformular la pregunta del usuario a forma neutral antes del retrieval (ante premisa falsa, los LLM fabrican autoridades que la apoyan); si el retrieval no sostiene una respuesta, declarar 'no encontrado en el corpus (cobertura de la fuente X: hasta fecha Y)' — nunca rellenar. El verificador de citas debe distinguir 'no resuelve en el corpus' de 'no existe' y reportar cobertura junto al veredicto (arXiv 2606.00898: la métrica de grounding mide la cobertura del grafo verificador, no al modelo).",
+  "ARQUITECTURA DE PIPELINE — dos llamadas, no una: Citations API es incompatible con structured outputs (400), así que extracción estructurada (JSON de normas/afectaciones detectadas) y redacción citada (prosa con quotes ancladas) son pasos separados; el juez/segundo modelo se reserva para output de alto riesgo (afirmaciones de vigencia), no para todo.",
+  "HONESTIDAD DE MARKETING — nadie serio dice ya 'hallucination-free': LexisNexis lo decía en 2023, Stanford midió 17%, y su página de 2026 ya no usa el término; la retórica migró a 'grounded/fiduciary-grade/transparencia'. La única versión defendible del claim es la de Lexdoka: determinismo para lo computable. Regla: publicar métricas propias medidas (gold set + cobertura por fuente), nunca adjetivos."
+ ],
+ "gaps": [
+  "Startups colombianas de legaltech: NO verificadas — se agotó el presupuesto de WebSearch de la sesión (200/200, compartido con agentes hermanos) y GDELT devolvió 429 en dos intentos. PretorIA (triage de tutelas de la Corte Constitucional) la conozco de entrenamiento pero no la verifiqué hoy; queda pendiente un barrido dirigido (Ámbito Jurídico, Colombia Fintech/legaltech, LinkedIn).",
+  "Tirant SOFIA 3.0: solo liveness verificado (título de página); tirant.com y sofia.tirant.com devuelven 403 a WebFetch — features, cobertura Colombia y mecanismo de citas sin verificar.",
+  "Vals VLAIR: cifras tomadas de resúmenes de búsqueda (lawnext, artificiallawyer), no del PDF del reporte; el partnership Harvey–LexisNexis (memoria de entrenamiento, 2025) no aparece en las páginas fetcheadas de Harvey y quedó sin confirmar.",
+  "Del estudio Magesh no confirmé hoy la cifra exacta de Ask Practical Law AI ni la tasa de respuestas incompletas (recuerdo >60% de incompletas/abstenciones, pero no lo cito sin verificar).",
+  "No evalué proveedores concretos de rerank (Cohere Rerank, Voyage, bge-reranker) ni embeddings legales en español con precios a agosto 2026 — necesario para la decisión de stack sobre Supabase/pgvector.",
+  "No existe benchmark público de QA jurídico colombiano (vigencia/trámite): habrá que construir el gold set propio antes de poder medir nada."
+ ],
+ "key_insights": [
+  "RAG reduce alucinaciones ~2-3× pero no las elimina: 17-33% medido en Lexis/Westlaw (Stanford, preregistrado) vs 43-58% en LLMs generales. Las únicas garantías duras son arquitectónicas: (a) citas válidas por construcción (Citations API: punteros garantizados a los documentos provistos, char_location por chunk, cited_text sin costo de output), (b) verificación determinista de cada cita contra el corpus, y (c) vigencia calculada por reglas sobre el grafo de afectaciones — el LLM redacta, nunca decide vigencia.",
+  "El error dominante no es la norma inventada sino la cita real mal usada (misgrounding) y la sycophancy ante premisas falsas del usuario — por eso el pipeline necesita: pregunta reformulada a forma neutral, descomposición de preguntas compuestas, y doble eje de evaluación (correctness + groundedness) en el gold set.",
+  "El mercado ya validó nuestro nicho por los bordes: Vincent AI vende 'Colombia con enlaces a fuente primaria' (verificado, es-CO), Legora vende 'Monitors' de regulación continua, y Legis Xperta separa 'fuentes oficiales crudas' del análisis editorial y regala la legislación desde 1991 — el espacio defendible de regwatch-co es la intersección que nadie cubre: trámite legislativo en tiempo real + votaciones/bancadas + CONPES + vigencia AUDITABLE (cada 'vigente' enlaza las afectaciones primarias que lo sostienen) + señal temprana de prensa con jerarquía probatoria explícita.",
+  "La paradoja de confianza (cero correlación entre tono seguro y precisión) convierte el 'nivel de evidencia visible por afirmación' en la decisión de UX más importante del producto: badge primaria/institucional/prensa + fecha de captura + quote expandible, en formato memorando por secciones, con timeline de afectaciones.",
+  "Medir confiabilidad exige medir primero la cobertura del propio corpus (arXiv 2606.00898): un verificador de citas sobre un corpus incompleto produce veredictos falsos en ambas direcciones — 'cobertura por fuente' debe ser un dato de primera clase del esquema y de la UI."
+ ],
+ "recommendation": "Adoptar este conjunto de REGLAS DE DISEÑO para el Q&A de regwatch-co v2: (R1) VIGENCIA NUNCA SALE DEL LLM — es una consulta determinista al grafo de afectaciones (deroga/modifica/subroga/inexequible/condiciona), cada arista con URL primaria + fecha de captura; si el grafo no tiene la cadena completa, la respuesta dice 'vigencia no confirmada con fuente primaria', jamás rellena. (R2) CITAS POR CONSTRUCCIÓN — pasar los chunks recuperados a la Citations API de Anthropic (citations enabled, char_location; sin beta header, todos los modelos activos, cited_text no factura output) y post-validar que cada cita resuelva a un chunk_id existente en Postgres; frase sin cita válida = frase que se elimina o se marca [sin sustento en corpus]; el validador distingue 'no está en el corpus (cobertura X)' de 'no existe'. (R3) DOS PASOS, NO UNO — extracción estructurada (JSON de normas relevantes, structured outputs) y redacción citada (Citations) son llamadas separadas porque la API las hace incompatibles (400); juez de segundo modelo SOLO sobre afirmaciones de vigencia y respuestas de alto riesgo. (R4) RETRIEVAL PISO 2026 — chunking estructural por artículo (nunca por tokens), header contextual por plantilla (tipo/número de norma, artículo, materia, estado, fecha — determinista porque el corpus es estructurado), híbrido léxico+vectorial con rerank (-67% de fallos según cifras Anthropic verificadas), y descomposición de preguntas compuestas ('IA en salud' → sub-consultas por materia/norma) antes de sintetizar. (R5) ANTI-SYCOPHANCY — reformular toda pregunta a forma neutral antes del retrieval; nunca validar la premisa del usuario sin evidencia. (R6) UX DE EVIDENCIA — cada afirmación con badge de nivel probatorio (primaria/institucional/prensa) + fecha de captura + quote expandible con enlace; formato memorando por secciones estilo Vincent; timeline de afectaciones y estado de trámite como vistas de primera clase; NUNCA exponer 'confianza' del modelo. (R7) MEDIR ANTES DE PROMETER — gold set colombiano estilo LegalBench/Magesh (30-50 preguntas manuales de vigencia/trámite/afectación, con negaciones y premisas falsas, preregistrado en el repo), evaluando correctness y groundedness por separado, más cobertura por fuente como métrica publicada; y prohibido el claim 'sin alucinaciones' — la historia LexisNexis (claim 2023 → 17% medido → retractación silenciosa 2026) es la advertencia. El comparable a estudiar de cerca es vLex Vincent (único con Colombia + citas primarias en producción); el espacio defendible es trámite+votaciones+CONPES+vigencia auditable, que ni Vincent ni Legis cubren con Q&A trazable."
+}

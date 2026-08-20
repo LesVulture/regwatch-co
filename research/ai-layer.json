@@ -1,0 +1,148 @@
+{
+ "recommendations": [
+  {
+   "component": "LLM — pipeline de ingesta (clasificar + resumir + extraer metadatos de ~200 docs/día)",
+   "recommended": "Claude Haiku 4.5 (claude-haiku-4-5) vía Batch API + structured outputs (output_config.format, GA)",
+   "version_or_state_2026_08": "Haiku 4.5 activo a 2026-08: $1/$5 por MTok (batch: $0.50/$2.50). Structured outputs es GA sin beta header y soporta Haiku 4.5. Verificado el 2026-08-19 en platform.claude.com/docs/en/about-claude/pricing y .../build-with-claude/structured-outputs",
+   "why": "El trabajo es clasificación+extracción de alto volumen y baja ambigüedad: Haiku 4.5 con structured outputs garantiza JSON válido por constrained decoding (sin retries), y el Batch API da 50% de descuento — el pipeline no es sensible a latencia. Prompt caching (lectura a 0.1x) apila con batch para el system prompt + esquema estable. Escalar a Sonnet 5 batch solo los documentos que Haiku marque como complejos (routing por tipo/longitud).",
+   "verified": true,
+   "docs_source": "https://platform.claude.com/docs/en/about-claude/pricing + https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+   "cost": "Haiku 4.5: $1 in / $5 out por MTok; Batch API $0.50/$2.50; cache read 0.1x, cache write 5m 1.25x / 1h 2x (verificado hoy). ~$48/mes con batch para 6.000 docs/mes (supuestos abajo)",
+   "alternatives_considered": [
+    "Sonnet 5 batch ($1/$5 MTok batch): ~2.6x el coste efectivo por su tokenizer nuevo (+~30% tokens) — reservarlo para docs complejos",
+    "Opus 5 ($5/$25): innecesario para clasificación/extracción",
+    "Gemini/GPT: fuera del alcance pedido; el stack ya es Anthropic"
+   ],
+   "caveats": "Haiku 4.5 tiene contexto 200K (dato de referencia cacheada 2026-06-24, no re-verificado hoy en la página de modelos) → máx 100 páginas de PDF nativo por request. Structured outputs no admite esquemas recursivos ni constraints numéricos (minimum/maximum) ni minLength/maxLength — validar rangos en el código. El límite del esquema cambia el grammar cache (TTL 24h)."
+  },
+  {
+   "component": "LLM — Q&A en lenguaje natural con citas ancladas (~300 preguntas/mes)",
+   "recommended": "Claude Sonnet 5 (claude-sonnet-5) + la función Citations de la API (citations: {enabled: true} en bloques document / search_result)",
+   "version_or_state_2026_08": "Citations existe y es GA a 2026-08: la soportan TODOS los modelos activos, en Claude API, Bedrock, Vertex y Foundry. Devuelve char_location (texto plano), page_location (PDF, 1-indexed) y content_block_location (custom content). Sonnet 5 cuesta $2/$10 por MTok — el precio 'intro' se volvió permanente: la subida a $3/$15 del 1-sep-2026 se canceló oficialmente. Verificado 2026-08-19 en platform.claude.com",
+   "why": "Citations mapea 1:1 con el contrato de evidencia de regwatch: cada afirmación llega con cited_text + índice de documento + ubicación exacta (página del PDF o char offset), parseado y validado por la API — puntero garantizado al documento provisto, no una cita alucinada. Además cited_text NO cuenta como output tokens (ni como input al re-enviarlo), así que citar es más barato que pedir quotes por prompt. Para RAG: pasar los chunks recuperados como bloques search_result/document con citations habilitado.",
+   "verified": true,
+   "docs_source": "https://platform.claude.com/docs/en/build-with-claude/citations + https://platform.claude.com/docs/en/about-claude/pricing",
+   "cost": "Sonnet 5: $2 in / $10 out por MTok (verificado hoy). ~$10-13/mes para 300 preguntas (supuestos abajo). Citations añade un ligero overhead de input (chunking del sistema) pero ahorra output",
+   "alternatives_considered": [
+    "Haiku 4.5 para preguntas simples (routing por complejidad): bajaría a ~$5/mes pero pierde calidad de síntesis jurídica",
+    "Opus 5 para preguntas de análisis profundo (modo 'informe'): $5/$25, usar solo bajo demanda explícita"
+   ],
+   "caveats": "INCOMPATIBILIDAD CLAVE verificada: citations + structured outputs = error 400. El endpoint de Q&A responde texto con bloques de citación, NUNCA JSON estructurado — mantener dos rutas de API separadas (extracción con structured outputs SIN citations; Q&A con citations SIN output_config.format). Sonnet 5 usa el tokenizer nuevo (~30% más tokens por el mismo texto que Sonnet 4.6/Haiku 4.5) — ya incluido en la estimación."
+  },
+  {
+   "component": "PDF nativo (extracción de metadatos de proyectos de ley desde PDF)",
+   "recommended": "Vía dual: pdftotext/parser local para PDFs digitales + PDF nativo de Claude (visión) SOLO para escaneados/gacetas con tablas — con Files API para no re-subir",
+   "version_or_state_2026_08": "Límites verificados 2026-08-19: 32 MB por request, 600 páginas (100 si el contexto del request es <1M tokens, p.ej. Haiku), PDF estándar sin password. Cada página se procesa como texto (1.500-3.000 tokens/pág según densidad) + imagen (tarifa de visión). Sin fee adicional por PDF",
+   "why": "Los PDFs del Congreso/Imprenta son mezcla de digitales y escaneados. Pagar visión (~2-3k tokens/pág) por un PDF digital es desperdicio; pero para gacetas escaneadas y tablas de votación, la visión de Claude extrae lo que pdftotext no puede. Con citations habilitado sobre PDF se obtiene page_location — la cita queda anclada a la página exacta de la gaceta.",
+   "verified": true,
+   "docs_source": "https://platform.claude.com/docs/en/build-with-claude/pdf-support",
+   "cost": "Sin cargo extra: tokens estándar. Sensibilidad: si 30% de los 200 docs/día requieren visión a ~25k tokens/doc, son +45M tokens in/mes → +$22.50/mes en Haiku batch",
+   "alternatives_considered": [
+    "OCR dedicado (Tesseract/Document AI) + texto plano: más barato por página pero pierde estructura de tablas y añade una pieza de infra",
+    "Todo por visión: simple pero ~3x el coste de input del pipeline"
+   ],
+   "caveats": "PDFs densos pueden llenar el contexto antes del límite de páginas. Con Haiku (contexto <1M) el tope es 100 págs/request → trocear gacetas largas. Usar count_tokens para presupuestar PDFs grandes antes de enviarlos."
+  },
+  {
+   "component": "Embeddings multilingües (español jurídico) — 100k chunks iniciales + 5k/día",
+   "recommended": "voyage-4 (1024 dims default, Matryoshka 256/512/2048, contexto 32k tokens, cuantización int8/binary) — $0.06/MTok con 200M tokens gratis",
+   "version_or_state_2026_08": "Familia voyage-4 es la generación actual a 2026-08 (voyage-4-large $0.12, voyage-4 $0.06, voyage-4-lite $0.02, voyage-context-4 $0.12; todas con 200M tokens gratis). voyage-law-2 SIGUE disponible ($0.12/MTok, 50M gratis, contexto 16k, 1024 dims fijas) pero es de generación anterior. voyage-3.5/3-large quedaron como 'older models' sin free tier. Verificado 2026-08-19 en docs.voyageai.com/docs/pricing y /docs/embeddings",
+   "why": "voyage-4 declara optimización 'general-purpose and multilingual', contexto 32k (un artículo largo de ley cabe entero), Matryoshka permite bajar a 512 dims en pgvector/Supabase si el storage aprieta, y el free tier de 200M tokens cubre TODO el bootstrap del corpus (~50M tokens) y ~2 meses de operación gratis. voyage-law-2 tienta por el nombre, pero su optimización legal es principalmente inglesa y es tecnología de 2024 — no lo elegiría para español sin benchmark propio (ver gaps).",
+   "verified": true,
+   "docs_source": "https://docs.voyageai.com/docs/pricing + https://docs.voyageai.com/docs/embeddings",
+   "cost": "voyage-4: inicial 100k chunks (~50M tokens) = $3 one-time; recurrente 150k chunks/mes (~75M tokens) = $4.50/mes — $0 mientras dure el free tier de 200M",
+   "alternatives_considered": [
+    "voyage-4-lite ($0.02/M): mitad de coste, calidad algo menor — buen plan B",
+    "OpenAI text-embedding-3-large: $0.13/MTok, 3072 dims, contexto 8k — verificado hoy en developers.openai.com; sin novedades post-3",
+    "gemini-embedding-001 $0.15/M (batch $0.075) y el nuevo gemini-embedding-2 multimodal $0.20/M — verificado en ai.google.dev; fuerte en multilingüe pero dims 3072 pesan en pgvector",
+    "Cohere embed-v4.0 (128k ctx, dims 256-1536, multilingüe incl. español, multimodal PDF): modelo verificado en docs.cohere.com pero SIN precio PAYG público hoy (ver gaps)",
+    "Jina: ya va por jina-embeddings-v5 (small/nano/omni, 32k ctx, multilingüe) pero sin precio por token publicado (top-up)",
+    "bge-m3 vía Ollama: gratis, 8k ctx, 100+ idiomas, denso+sparse — verificado en ollama.com; viable si aceptan operar un host con GPU/CPU dedicado"
+   ],
+   "caveats": "No pude verificar benchmarks MTEB/MIRACL en español en esta sesión (leaderboard es app JS y el presupuesto de WebSearch se agotó) — la elección se apoya en claims del vendor. Mitigación barata: benchmark propio con ~200 pares pregunta→artículo antes de embeber los 100k chunks (medio día de trabajo, evita re-embeber). Fijar el modelo y versionarlo en la fila (embedding_model, embedded_at): cambiar de modelo = re-embeber todo."
+  },
+  {
+   "component": "Reranker",
+   "recommended": "Voyage rerank-2.5 — $0.05/MTok con 200M tokens gratis",
+   "version_or_state_2026_08": "rerank-2.5 y rerank-2.5-lite ($0.02/M) vigentes a 2026-08 con 200M tokens gratis cada uno. Cohere ya ofrece Rerank 4 Pro y Rerank 4 Fast (contexto 32k, multilingües; verificado en docs.cohere.com) pero su página pública de pricing solo muestra Model Vault (instancias dedicadas: Rerank 4 Pro $5/hora ó $3,250/mes) — sin tarifa pay-as-you-go publicada. jina-reranker-v3.5 existe vía API. Verificado 2026-08-19 (Voyage: docs.voyageai.com/docs/pricing; Cohere: cohere.com/pricing vía Playwright)",
+   "why": "A 300 preguntas/mes el reranking es casi gratis con cualquier proveedor token-based, y el patrón contextual-retrieval de Anthropic muestra que el reranking aporta la última mejora grande (failure rate 2.9%→1.9%). Voyage: mismo vendor que embeddings (una API key, un billing), precio por token transparente, y el free tier lo hace $0 durante años a esta escala. Facturación por token (no por 'search unit' de 100 docs) es más predecible para chunks jurídicos largos.",
+   "verified": true,
+   "docs_source": "https://docs.voyageai.com/docs/pricing (Voyage) + https://docs.cohere.com/docs/models y https://cohere.com/pricing (Cohere, vía Playwright)",
+   "cost": "300 preguntas/mes × ~40 candidatos × ~500 tokens ≈ 6M tokens/mes × $0.05 = $0.30/mes (=$0 con free tier)",
+   "alternatives_considered": [
+    "Cohere Rerank 4 Pro/Fast: probablemente el mejor multilingüe del mercado, pero precio PAYG no verificable hoy en su página pública — no anclar el presupuesto a él",
+    "bge-reranker-v2-m3 (open source, local): $0 API, requiere hosting; no verificado en esta sesión",
+    "jina-reranker-v3.5: existe, pricing top-up sin tarifa clara publicada"
+   ],
+   "caveats": "El reranker solo entra en la ruta de Q&A (no en ingesta). Si el híbrido léxico+vectorial con RRF ya da buen precision@10 en el benchmark propio, el reranker puede posponerse — es el componente más fácil de añadir después."
+  },
+  {
+   "component": "Evaluación (RAG + prompts)",
+   "recommended": "promptfoo (open source, gratis, corre local) como base única; RAGAS opcional para métricas RAG específicas; Braintrust free tier solo si quieren UI hosted",
+   "version_or_state_2026_08": "promptfoo activo (24.4k stars, CLI open source 'no strings attached', soporta Anthropic; verificado 2026-08-19 en promptfoo.dev). RAGAS activo (docs actualizados dic-2025, métricas LLM-driven; verificado en docs.ragas.io). Braintrust: free tier $0 con 10k scores/mes + 1GB datos, Pro $249/mes (verificado en braintrust.dev/pricing). LangSmith: Developer gratis 5k traces/mes 1 seat, Plus $39/seat/mes 10k traces (verificado en langchain.com/pricing)",
+   "why": "Para un proyecto pequeño de una persona, promptfoo es el ajuste exacto: config YAML versionable en git (coherente con la cultura de este repo), asserts deterministas (¿la respuesta cita una URL del corpus? ¿el JSON extrajo el número de ley correcto?) + LLM-rubric para calidad de respuesta, corre en CI sin servicio externo. El contrato de evidencia de regwatch se traduce directo a asserts: 'toda respuesta contiene ≥1 cita' es un test binario, no una métrica difusa. Braintrust Pro ($249/mes) y LangSmith Plus ($39/seat) sobredimensionan esto.",
+   "verified": true,
+   "docs_source": "https://www.promptfoo.dev/docs/intro/ + https://docs.ragas.io/en/stable/ + https://www.braintrust.dev/pricing + https://www.langchain.com/pricing",
+   "cost": "promptfoo/RAGAS: $0 licencia + coste del LLM juez (~$3-8/mes corriendo la suite semanalmente con Haiku/Sonnet)",
+   "alternatives_considered": [
+    "Braintrust Starter (free): buena UI, 14 días de retención — útil si se quiere observabilidad de producción sin pagar",
+    "LangSmith: mejor si el stack fuera LangChain, que no es el caso",
+    "Solo RAGAS: métricas RAG buenas pero peor DX para regression testing de prompts"
+   ],
+   "caveats": "Las métricas LLM-judge (faithfulness, relevancy) usan un LLM que también se equivoca — para regwatch, priorizar asserts deterministas sobre el contrato de evidencia (cita presente, URL resoluble, fecha de captura) y dejar el juez LLM para calidad de redacción."
+  },
+  {
+   "component": "SDK / capa de agentes",
+   "recommended": "Anthropic SDK directo (@anthropic-ai/sdk, TypeScript) para pipeline e ingesta y para el endpoint de Q&A con citas; Vercel AI SDK (v7) opcional SOLO para el streaming de UI en la PWA",
+   "version_or_state_2026_08": "Vercel AI SDK va por v7 a 2026-08 (verificado en ai-sdk.dev: agentes, tool calling, MCP, HarnessAgent), con provider Anthropic. El SDK oficial de Anthropic expone de primera clase lo que este proyecto necesita: Batch API, citations, structured outputs (client.messages.parse), Files API, prompt caching, tool runner con strict:true",
+   "why": "Las tres features que cargan el peso del proyecto (Batch API para ingesta, Citations para el contrato de evidencia, structured outputs para extracción) son primitivas específicas de la API de Anthropic — usarlas a través de una capa de abstracción multi-proveedor añade riesgo de que la abstracción no exponga el bloque de citación o el output_config exacto. El pipeline no necesita 'agente': es un workflow determinista (fetch→clasificar→extraer→embeber) donde el código orquesta. Para la PWA, AI SDK v7 aporta useChat/streaming pulido — pero verificar primero que sus tipos expongan los bloques citations de Anthropic (no lo pude confirmar; ver gaps).",
+   "verified": true,
+   "docs_source": "https://ai-sdk.dev/docs/introduction + skill claude-api (referencia SDK Anthropic, cacheada 2026-06-24)",
+   "cost": "N/A (librerías gratuitas)",
+   "alternatives_considered": [
+    "Todo con Vercel AI SDK v7: menos fricción de UI, pero riesgo en citations/batch",
+    "Claude Agent SDK: sobredimensionado — esto no es un agente de filesystem",
+    "LangChain: capa extra sin beneficio aquí"
+   ],
+   "caveats": "Si se usa AI SDK para el chat, mantener igualmente el SDK de Anthropic para ingesta/batch — no forzar una sola librería. streaming del endpoint Q&A: los deltas de citación llegan como citations_delta en el stream del SDK de Anthropic."
+  },
+  {
+   "component": "Patrones RAG: contextual retrieval + chunking por artículo + clasificación híbrida",
+   "recommended": "(a) Chunking ESTRUCTURAL por artículo de norma (nunca por N tokens), con encabezado de contexto: '[Ley 2294 de 2023, art. 45 — Título X]' + texto; (b) contextual retrieval de Anthropic para chunks ambiguos (generar 50-100 tokens de contexto con Haiku batch + caching); (c) búsqueda híbrida: Postgres FTS con config 'spanish' + pgvector + Reciprocal Rank Fusion, reranker encima; (d) clasificación temática híbrida: reglas léxicas explicables (vocabulario controlado de temas) que deciden + Haiku con structured outputs que SUGIERE etiquetas con campo 'justificacion' y 'confianza' — el humano o la regla confirma",
+   "version_or_state_2026_08": "Contextual retrieval verificado vigente 2026-08-19 en anthropic.com/news/contextual-retrieval: -35% failure rate solo embeddings contextuales, -49% con BM25 híbrido, -67% añadiendo reranking; coste reportado ~$1.02/M tokens de documento (a precios 2024 de Claude 3 Haiku) — con Haiku 4.5 batch+caching hoy estimo ~$2/M",
+   "why": "Un artículo de ley citado sin su norma madre es exactamente el failure mode que contextual retrieval ataca ('el artículo 5' ¿de qué ley?). El chunking por artículo respeta la unidad jurídica citable — y coincide con la lección ya aprendida en este repo (chunking estructural, nunca por tokens, porque parte la unidad de sentido). La clasificación híbrida replica el patrón léxico-explicable + LLM-que-sugiere que el contrato de evidencia exige: la etiqueta siempre tiene una justificación auditable, nunca es un dictamen opaco del modelo.",
+   "verified": true,
+   "docs_source": "https://www.anthropic.com/news/contextual-retrieval",
+   "cost": "Contextual retrieval one-time sobre 50M tokens de corpus: ~$100 con Haiku 4.5 batch+caching (opcional; empezar con encabezados estructurales gratis y medir si hace falta)",
+   "alternatives_considered": [
+    "voyage-context-4 (embeddings contextualizados nativos, $0.12/M): promete resolver lo mismo sin paso LLM — specs no verificadas en esta sesión",
+    "bge-m3 denso+sparse en una sola pasada: alternativa self-hosted al híbrido FTS+vector"
+   ],
+   "caveats": "El encabezado estructural ([Ley X, art. Y]) es gratis y captura el 80% del beneficio para texto jurídico bien estructurado — probar eso ANTES de pagar contextual retrieval completo. RRF requiere tuning del k; empezar con k=60 estándar."
+  }
+ ],
+ "cost_estimate": "SUPUESTOS EXPLÍCITOS: doc promedio 8k tokens de texto + 2k de prompt/esquema (cacheable) = 10k input y 1.2k output por doc; 200 docs/día × 30 = 6.000 docs/mes → 60M tokens in / 7.2M out (en tokenizer de Haiku; para Sonnet 5 aplico +30% por su tokenizer nuevo, nota verificada en la página de pricing). Q&A: 300 preguntas/mes × ~12k in (system 2k + ~12 chunks×800) + 0.8k out. Embeddings: chunk promedio 500 tokens → inicial 100k chunks = 50M tokens; recurrente 5k/día = 150k chunks/mes = 75M tokens. Precios verificados 2026-08-19 en las páginas oficiales. ► PIPELINE 200 docs/día: Haiku 4.5 estándar $96/mes, con Batch API (50%) $48/mes; Sonnet 5 estándar ~$250/mes (78M in×$2 + 9.4M out×$10), con batch ~$125/mes. ► Q&A 300 preguntas/mes con Sonnet 5: ~$12.50/mes (4.7M in×$2 + 0.3M out×$10), menos con caching del system prompt. ► EMBEDDINGS voyage-4 ($0.06/M): one-time inicial $3, recurrente $4.50/mes — $0 real los primeros ~2 meses por los 200M tokens gratis (alternativas: voyage-4-lite $1/$1.50; OpenAI 3-large $6.50/$9.75; gemini-embedding-001 batch $3.75/$5.63). ► RERANK Voyage rerank-2.5: ~$0.30/mes (=$0 con free tier). ► EVAL: $0 licencias + ~$5/mes de LLM juez. ► TOTAL RECOMENDADO (Haiku batch pipeline + Sonnet 5 Q&A + voyage-4 + rerank + eval): ~$66-75/mes en régimen, con ~$5-15 one-time de bootstrap (o +~$100 one-time si se añade contextual retrieval completo con Haiku batch). Variante todo-Sonnet-5-batch en pipeline: ~$140-145/mes. Sensibilidad: si 30% de docs requieren PDF nativo por visión (~25k tokens/doc), +$22.50/mes en Haiku batch. No incluye Supabase ni hosting (otra especialidad).",
+ "gaps": [
+  "Benchmarks MTEB/MIRACL en español NO verificados en esta sesión: el leaderboard de MTEB es una app JS y el presupuesto de WebSearch de la sesión se agotó a mitad de investigación. La elección voyage-4 se apoya en el claim multilingüe del vendor, no en cifras independientes → mitigar con benchmark propio (~200 pares pregunta→artículo) ANTES de embeber los 100k chunks",
+  "Precio pay-as-you-go de Cohere embed-v4.0 y Rerank 4 Pro/Fast NO publicado hoy en cohere.com/pricing (verificado con Playwright: la página solo muestra Model Vault, instancias dedicadas $2,500-6,500/mes) — cualquier cifra PAYG de Cohere que se recuerde de 2025 está sin confirmar (verified_by_fetch=false)",
+  "Jina (ya en jina-embeddings-v5) no publica tarifa por millón de tokens — modelo top-up; coste no estimable con precisión",
+  "Contexto de Haiku 4.5 (200K) tomado de la referencia del skill claude-api cacheada 2026-06-24 y corroborado indirectamente por el límite de 100 págs de PDF para contextos <1M; no re-verificado hoy contra la página de modelos",
+  "Soporte de los bloques citations de Anthropic dentro de Vercel AI SDK v7 no verificado — confirmar antes de elegir AI SDK para el chat de la PWA",
+  "voyage-context-4 aparece en pricing ($0.12/M) pero sus specs no estaban en la página de embeddings consultada — evaluar como alternativa a contextual retrieval manual",
+  "Turnaround del Batch API (mayoría <1h, máx 24h) es de docs/memoria de entrenamiento, no re-verificado hoy — para un pipeline diario el margen sobra igualmente",
+  "Throughput real de bge-m3 self-hosted para 5k chunks/día no medido (el precedente de este repo: ~2.074 chunks en ~52s en local con Ollama)",
+  "Cifras del post de contextual retrieval ($1.02/M tokens) son a precios 2024 con Claude 3 Haiku; mi ajuste a ~$2/M con Haiku 4.5 batch es estimación propia, no cifra oficial"
+ ],
+ "key_insights": [
+  "El precio 'introductorio' de Sonnet 5 ($2/$10 por MTok) se volvió PERMANENTE — la subida a $3/$15 del 1-sep-2026 fue cancelada oficialmente (nota verificada en la página de pricing). Sonnet 5 es hoy más barato que Sonnet 4.6 en precio por token, aunque su tokenizer nuevo produce ~30% más tokens por el mismo texto (nota oficial), lo que recorta parte de la ventaja en corpus en español",
+  "La función Citations es GA en TODOS los modelos activos y es un match estructural con el contrato de evidencia de regwatch: cited_text + page_location (página exacta del PDF de la gaceta) garantizados por la API, y cited_text no factura como output tokens. PERO citations y structured outputs son incompatibles (400 verificado) → la arquitectura necesita DOS rutas: extracción (structured outputs, sin citas) y Q&A (citas, sin JSON) — no intentar unificarlas",
+  "Batch API (50%) + prompt caching (lecturas a 0.1x) apilan: el pipeline diario de 200 docs con Haiku 4.5 cuesta ~$48/mes, y TODO el proyecto (pipeline + Q&A + embeddings + rerank + eval) cabe en ~$70/mes — el coste de IA no es el cuello de botella de regwatch v2; la ingesta de fuentes oficiales sí",
+  "Voyage saltó a la familia voyage-4 (32k contexto, Matryoshka 256-2048, cuantización int8/binary, 200M tokens GRATIS por modelo): el free tier cubre el bootstrap completo del corpus (~50M tokens) y ~2 meses de operación. voyage-law-2 sigue vivo pero es de 2024, contexto 16k y sesgo a legal inglés — el nombre engaña para un corpus en español",
+  "Cohere retiró de su página pública los precios pay-as-you-go de Embed/Rerank (solo muestra instancias dedicadas Model Vault) — señal de push a enterprise; no anclar el presupuesto de un proyecto pequeño a un vendor cuyo precio de lista ya no es público",
+  "Contextual retrieval sigue publicado y vigente (failure rate -35%/-49%/-67% según capa) — pero para texto jurídico bien estructurado, el encabezado estructural gratis '[Ley X de YYYY, art. N]' en cada chunk captura la mayor parte del beneficio; pagar la generación LLM de contexto solo si el benchmark propio lo justifica",
+  "El chunking correcto para normas es por ARTÍCULO (la unidad jurídica citable), nunca por N tokens — coincide con la lección ya documentada en career-ops: el chunking estructural preserva la unidad de sentido que el corte por tokens destruye",
+  "PDF nativo verificado: 32MB/600 págs (100 con contexto <1M), ~1.500-3.000 tokens de texto + tokens de imagen por página, sin fee extra — usar visión solo para escaneados; un parser local para PDFs digitales divide el coste de input ~3x",
+  "Vercel AI SDK ya va por v7 (agentes, MCP, HarnessAgent) — pero las tres primitivas que cargan este proyecto (Batch, Citations, structured outputs) son específicas de Anthropic y se usan mejor con el SDK oficial directo; el AI SDK queda como opción solo para el streaming de UI de la PWA"
+ ],
+ "recommendation": "Capa de IA recomendada para regwatch-co v2 (verificada a 2026-08-19 sobre páginas oficiales): (1) INGESTA: Haiku 4.5 vía Batch API con structured outputs GA para clasificar/resumir/extraer los ~200 docs/día (~$48/mes), con routing de docs complejos a Sonnet 5 batch; parser local para PDFs digitales y PDF nativo (visión) solo para gacetas escaneadas. (2) Q&A: Sonnet 5 ($2/$10, precio ya permanente) + Citations API — char_location/page_location anclan cada afirmación al documento fuente, implementando el contrato de evidencia a nivel de API (~$12/mes para 300 preguntas); dos endpoints separados porque citations y structured outputs son incompatibles. (3) RETRIEVAL: embeddings voyage-4 (1024 dims, 32k ctx, $0.06/M, bootstrap gratis con los 200M tokens del free tier) sobre pgvector en Supabase + FTS 'spanish' de Postgres con RRF, chunking por artículo con encabezado estructural, y Voyage rerank-2.5 encima (~$0). (4) EVALUACIÓN: promptfoo (OSS, local, asserts deterministas sobre el contrato de evidencia) + juez LLM barato. (5) SDK: Anthropic TypeScript directo para pipeline y Q&A; Vercel AI SDK v7 opcional solo para streaming de UI. Total estimado: ~$66-75/mes en régimen + ~$5-15 one-time. Condición previa no negociable heredada del contrato de evidencia: benchmark propio de retrieval en español (~200 pares pregunta→artículo) antes de embeber el corpus, porque los benchmarks MTEB/MIRACL en español no pudieron verificarse en esta sesión y la elección de embedding es la única decisión cara de revertir (re-embeber todo)."
+}
