@@ -2,62 +2,187 @@
 
 Este documento es la parte importante del proyecto. El código solo lo hace cumplir.
 
-Un monitor normativo tiene un modo de fallo particular: no se rompe, **se equivoca en silencio**. Sirve una fecha que nadie verificó, presenta una nota de prensa como si fuera un acto administrativo, o dice «vigente» sobre una norma que una sentencia tumbó. El resultado se ve igual de ordenado que el correcto. Por eso las reglas de abajo se validan en `lib/record.mjs` y las hace fallar `bin/verify.mjs` — no viven en la buena voluntad de quien captura.
+Un monitor normativo tiene un modo de fallo particular: no se rompe, **se equivoca
+en silencio**. Sirve una fecha que nadie verificó, presenta una nota de prensa
+como si fuera un acto administrativo, o dice «vigente» sobre una norma que una
+sentencia tumbó. El resultado se ve igual de ordenado que el correcto.
+
+Por eso las reglas de abajo **no viven en la buena voluntad de quien captura**:
+están en constraints de Postgres, en tipos de TypeScript y en tests que fallan.
+Cada sección dice dónde.
+
+> **Versión 2** (2026-08-20). La v1 de este documento describía un código que ya
+> no existe (`lib/record.mjs`, `bin/verify.mjs`, `data/seed.jsonl`, la TUI). Los
+> principios se conservan; las referencias de cumplimiento apuntan ahora al
+> código real.
 
 ---
 
 ## 1. Nada entra sin fuente checkeable
 
-Todo registro lleva `source_url` con una URL `http(s)` que un tercero pueda abrir, y `retrieved_at` con la fecha de captura. No se acepta «visto en un boletín», «según el portal» ni una ruta a un archivo local.
+Todo registro lleva `url_fuente` con una URL que un tercero pueda abrir, y
+`captured_at` con la fecha de captura. No se acepta «visto en un boletín»,
+«según el portal» ni una ruta a un archivo local.
 
-La fecha de captura importa tanto como la URL: los portales oficiales colombianos se reestructuran, y un enlace que hoy resuelve puede no resolver en seis meses. `retrieved_at` dice cuándo era cierto lo que el registro afirma.
+La fecha de captura importa tanto como la URL: los portales oficiales
+colombianos se reestructuran, y un enlace que hoy resuelve puede no resolver en
+seis meses. `captured_at` dice cuándo era cierto lo que el registro afirma.
+
+**Cómo se hace cumplir:** el dominio `url_fuente` de Postgres rechaza cualquier
+cosa que no sea `http(s)`; `captured_at` es `not null` en las cinco tablas de
+hechos. `collectors/src/evidence.ts` lo replica en los tipos.
 
 ## 2. Jerarquía probatoria, y no se puede subir
 
 | Tier | Qué es | Qué autoriza |
 |---|---|---|
-| `primaria` | El acto mismo: el texto en el Diario Oficial, el PDF del CONPES en el DNP, la gaceta del Congreso, la sentencia en la relatoría de la Corte | Afirmar contenido y vigencia |
-| `institucional` | La entidad hablando de su propio trabajo: sala de prensa, comunicados, presentaciones | Afirmar agenda e intención. **No** vigencia |
+| `primaria` | El acto mismo: el texto en el Diario Oficial, el PDF del CONPES, la gaceta del Congreso, la sentencia en la relatoría | Afirmar contenido y vigencia |
+| `institucional` | La entidad hablando de su propio trabajo; y **las notas de vigencia de un compilador privado** | Afirmar agenda e intención. **No** vigencia |
 | `secundaria` | Prensa, análisis, agregadores | Señalar que algo existe, para ir a buscar la primaria |
 
-**Un registro nunca puede declarar un tier mejor que el de su fuente.** El validador lo impide. Y sí puede declarar uno peor: una nota de prensa alojada en `senado.gov.co` sigue siendo contenido institucional aunque el dominio sea el del Congreso — está así en los datos semilla, a propósito, como ejemplo.
+**`vigente` exige `primaria`.** Un comunicado no declara vigencia, y una nota
+editorial tampoco — por muy bien informada que esté.
 
-De aquí sale la regla más útil del proyecto: **`status: "vigente"` exige `tier: "primaria"`.** Un comunicado no declara vigencia. Es la clase de error que un monitor automatizado comete a diario y que a un abogado le cuesta la reunión.
+**Cómo se hace cumplir:** `afectacion_vigencia_exige_primaria` en
+`db/schemas/02_vigencia.sql`. Una fila con `derivation = 'declarado_en_norma'` y
+`tier` distinto de `primaria` no entra en la base. Comprobado con sondas
+adversariales contra la instancia real (`docs/gate2-verificacion.md`).
 
-## 3. La incertidumbre se declara, no se rellena
+## 3. La vigencia nunca sale del modelo (R1)
 
-`status: "desconocida"` y `date: null` son respuestas legítimas y **preferibles a una conjetura**. La TUI las marca en rojo (`○`) en la primera columna de cada fila, antes del título: se ve cuánto se puede apoyar uno en un registro antes de leer lo que dice.
+Es la regla que define el proyecto. `vigente` **no es un booleano**: es una
+función del tiempo sobre un grafo de afectaciones tipadas.
 
-`data/seed.jsonl` incluye un registro deliberadamente incompleto (el CONPES 3975 de 2019) con su nota explicando qué falta y cómo se resuelve. No es un descuido pendiente de arreglar: es el comportamiento que el proyecto quiere demostrar. Un expediente que solo contiene lo que se pudo verificar del todo es un expediente que oculta sus huecos.
+Una fecha de efecto solo puede venir de tres sitios, y el enum
+`derivation_fecha` los enumera:
 
-## 4. La clasificación es léxica porque tiene que ser explicable
+- `declarada_en_texto` — la cláusula da la fecha explícita.
+- `derivada_deterministicamente` — regla computable + Diario Oficial. Aritmética.
+- `no_determinable` — la cláusula no fija fecha o la condiciona.
 
-Los temas de `config/topics.json` se asignan buscando términos, no por similitud semántica. Es una decisión, no una limitación técnica.
+**`no_determinable` no es un fallo: es la respuesta correcta.** Es lo que
+devuelve `consultar_vigencia()` cuando consta la afectación pero su fecha exige
+interpretar la norma, y decirlo es preferible a estimarla.
 
-En un expediente de política pública hay que poder responder *«¿por qué este proyecto de ley quedó marcado como IA?»* con un término concreto que aparece en el texto. `lib/topics.mjs` devuelve los términos que dispararon cada tema y la TUI los muestra bajo el registro (`← inteligencia artificial, algoritmo`). Una distancia coseno no se puede defender ante una contraparte.
+**Cómo se hace cumplir:** tres constraints en `afectacion`
+(`fecha_con_procedencia`, `regla_escrita`, `vigencia_exige_primaria`) más
+`reglaEsDeterminista()` en `collectors/src/senado/articulado.ts`, que solo
+devuelve `true` cuando la regla ata la vigencia a la publicación.
 
-El costo es real y se declara: **esto no captura sinónimos ni paráfrasis.** Un proyecto que hable de «sistemas algorítmicos de decisión» sin usar ninguno de los términos listados se pierde. La mitigación es mantener la lista, y que un fallo de clasificación sea diagnosticable en un `grep` en vez de un misterio.
+## 4. Una nota de un tercero es un LEAD, no una afectación
 
-## 5. Citar exige haber capturado el texto
+Lo que Avance Jurídico dice sobre una norma **no es lo que la norma dice de sí
+misma**. Para escribir una afectación hay que ir a la norma AFECTANTE y leer su
+cláusula; la nota solo dice a qué norma ir.
 
-`capture: "verbatim"` significa que se guardó el texto tal cual. `capture: "resumen"` significa que hay una lectura de por medio. **Solo un registro `verbatim` puede llevar `quote`**, y el validador lo comprueba.
+**Cómo se hace cumplir:** el tipo `Lead` de `collectors/src/senado/basedoc.ts`
+no tiene ningún campo donde quepa la prosa del editor, y un test lo comprueba
+serializando el objeto y mirando el conjunto de claves.
 
-La razón es que un resumen es una interpretación, y las interpretaciones se citan a quien las hizo, no a la norma.
+## 5. La incertidumbre se declara, no se rellena
 
-## 6. Append-only
+Un estado desconocido va a `desconocido` y a una cola de revisión humana; **no
+se adivina por parecido**. Un número de proyecto que la fuente nombra y el
+parser no supo leer se guarda como residuo, no se descarta.
 
-`data/*.jsonl` no se sobrescribe. Cuando una norma cambia de estado, se añade una versión nueva; la anterior queda. El historial de cómo se vio una norma en el tiempo *es* el dato: permite responder «¿qué sabíamos en marzo?», que es exactamente la pregunta que aparece cuando una decisión sale mal.
+**Cómo se hace cumplir:** `proyecto_revision_cubre_ambos_ejes` obliga a que
+`requiere_revision` sea exactamente `estado = 'desconocido' or residuo != {}`.
+Es un `=`, no un `or`: marcar de más también miente.
+
+## 6. Citar exige que la cita resuelva (R2)
+
+Toda frase de una respuesta generada tiene que apuntar a un `chunk_id` que
+existe **y que entró en el contexto**. La frase sin cita válida **se elimina** —
+no se marca, no se degrada a «según nuestra información».
+
+Una cita a un chunk inexistente se reporta como señal de alucinación: es el
+fallo más caro, porque parece verificable. Y por debajo del 80 % de frases
+supervivientes no se publica la respuesta entera: una respuesta con agujeros no
+es «un poco peor», y los agujeros no se ven.
+
+**Cómo se hace cumplir:** `collectors/src/rag/citas.ts`, con tests.
 
 ## 7. Recolección respetuosa
 
-Los portales oficiales colombianos son infraestructura pública con presupuesto limitado. Cualquier recolector que se añada respeta `robots.txt`, se identifica con un User-Agent honesto que incluye la URL del repositorio, y limita su tasa. Preferir el PDF oficial a raspar el HTML del portal cuando ambos existen.
+Los portales oficiales colombianos son infraestructura pública con presupuesto
+limitado. Todo recolector respeta `robots.txt`, se identifica con un User-Agent
+honesto que incluye la URL del repositorio, y espacia sus peticiones.
 
-Las fuentes marcadas `"collector": "manual"` en `config/sources.json` se capturan a mano hoy, y el registro lo dice. Es preferible a un recolector frágil que falle en silencio cuando el portal cambie de plantilla.
+**La Silla Vacía excluye a ClaudeBot y anthropic-ai en su `robots.txt`. Se
+acata.** No se rodea, no se cambia el User-Agent, no se busca un proxy. Está
+declarado en el mapa `EXCLUIDAS` de `collectors/src/sources.ts`, donde figurar
+*es* la decisión.
+
+Donde los términos de uso exigen autorización previa y por escrito, **no se
+recolecta hasta tenerla**: es el caso de la Cámara de Representantes, la Función
+Pública y el DNP. Los derechos de petición están redactados en
+`legal/peticiones/`.
+
+**Cómo se hace cumplir:** `USER_AGENT` y `CORTESIA_MS` en
+`collectors/src/http.ts`; el colector de Cámara lleva una guarda que se niega a
+ejecutarse mientras la petición no esté respondida.
+
+## 8. Qué sale del sistema
+
+Publicar es distinto de almacenar, y la legalidad de un dato depende del
+**contexto** en que sale, no solo del campo.
+
+| Sale | No sale |
+|---|---|
+| Texto normativo oficial, con su Diario Oficial y sin alterar | Prosa editorial de terceros, **en ningún volumen** |
+| Hechos y metadatos, con `url_fuente` y `captured_at` | Cuerpo completo de prensa (solo título, medio, fecha, URL y extracto ≤300 caracteres con atribución) |
+| Correo institucional de un congresista **en su ficha** | El campo `correo` **en bloque**: ni API, ni dumps, ni MCP |
+
+**Cómo se hace cumplir:** `collectors/src/egreso/politica.ts`, por **lista
+blanca**. Un campo sin procedencia declarada no sale. Con lista negra, un campo
+nuevo saldría por defecto y nadie se enteraría hasta que ya hubiera salido.
+
+### 8.1 El texto normativo no es «dominio público sin más»
+
+El artículo 41 de la Ley 23 de 1982 es una **limitación condicionada**, no una
+renuncia. Reproducir leyes y sentencias exige conservar el texto sin alterar y
+acompañarlo de su referencia oficial. Por eso el veredicto de egreso para
+`normativo_oficial` sale **con condiciones**, no a secas.
+
+### 8.2 Orientación política: por qué se trata, razonado
+
+**Esta sección existe porque el código la exige.** El veredicto de egreso para
+`orientacion_politica` incluye la condición «la justificación tiene que estar
+escrita en GOVERNANCE.md», y sin ella la regla sería una afirmación sin respaldo.
+
+El artículo 5 de la Ley 1581 de 2012 lista **la orientación política** entre los
+datos sensibles, y el artículo 6 prohíbe su tratamiento salvo excepciones.
+
+La excepción que aplica aquí: **la militancia declarada de un congresista en
+ejercicio es un hecho público e inseparable de su función**. No es una
+característica privada que el sistema deduzca ni infiera; es información que la
+propia persona declara al inscribirse por un partido, que el Estado publica, y
+sin la cual no se puede entender su actuación como legislador — que es
+exactamente el objeto legítimo de un monitor legislativo.
+
+Los límites que se aceptan con ello, y que no son negociables:
+
+1. **Solo de congresistas en ejercicio**, por su condición de servidores
+   públicos. No de ciudadanos, no de candidatos no electos, no de funcionarios
+   sin función legislativa.
+2. **Nunca como criterio de segmentación ni de perfilado.** El dato describe a
+   quien vota una ley; no se usa para clasificar personas ni para construir
+   audiencias.
+3. **Se toma de la fuente oficial**, no se infiere de votaciones ni de
+   declaraciones. Un partido deducido sería un dato sensible **fabricado**, que
+   es peor que no tenerlo.
+
+Si alguna vez el proyecto quisiera tratar orientación política fuera de estos
+límites, esta sección deja de dar cobertura y hay que rehacer el análisis.
 
 ---
 
 ## Lo que este proyecto NO es
 
-- **No es asesoría jurídica.** Es un índice con procedencia; la lectura jurídica la hace un abogado sobre el texto oficial.
-- **No es exhaustivo.** Cubre las fuentes de `config/sources.json` y nada más. La ausencia de un registro no significa que la norma no exista.
-- **No reemplaza el texto oficial.** Todo registro apunta a su fuente precisamente para que se lea allá.
+- **No es asesoría jurídica.** Es un índice con procedencia; la lectura jurídica
+  la hace un abogado sobre el texto oficial.
+- **No es exhaustivo.** La ausencia de un registro no significa que la norma no
+  exista, y `consultar_vigencia()` devolviendo cero filas **no** significa
+  «vigente para siempre».
+- **No reemplaza el texto oficial.** Todo registro apunta a su fuente
+  precisamente para que se lea allá.
