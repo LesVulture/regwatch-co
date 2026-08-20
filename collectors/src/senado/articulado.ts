@@ -26,7 +26,19 @@ import { aTextoPlano } from "./basedoc.ts";
 /** Un artículo del texto oficial, con su número y su texto. */
 export interface Articulo {
   readonly numero: number;
-  /** El encabezado tal como aparece: `ARTÍCULO 3o.`, `ARTÍCULO 39.` */
+  /**
+   * Sufijo de letra de los artículos AÑADIDOS por una reforma: `36A`, `36B`.
+   * Cadena vacía en el caso normal.
+   *
+   * No es un adorno: sin él, `ARTÍCULO 36A` y `ARTÍCULO 36` colapsan al mismo
+   * número, y son **artículos distintos**. En el chunking eso produce dos
+   * chunks con el mismo id y una cita ambigua — que es lo peor que le puede
+   * pasar a R2, porque la cita PARECE resolver.
+   */
+  readonly sufijo: string;
+  /** `36` o `36A`. Es lo que identifica al artículo de verdad. */
+  readonly designacion: string;
+  /** El encabezado tal como aparece: `ARTÍCULO 3o.`, `ARTÍCULO 36A.` */
   readonly encabezado: string;
   readonly texto: string;
 }
@@ -48,17 +60,29 @@ export interface Articulo {
  *    artículos donde tiene 39**, y los sobrantes son texto de OTRA ley colado
  *    como si fuera de esta. Un artículo fantasma no lanza ningún error: se
  *    queda ahí, con el número de otro, esperando a que alguien lo cite.
+ *
+ * 3. **Los artículos añadidos llevan sufijo de letra: `36A`, `36B`.** Es la
+ *    convención con la que una reforma inserta articulado nuevo sin renumerar
+ *    el resto. Capturar solo los dígitos hace que `ARTÍCULO 36A` colapse con
+ *    `ARTÍCULO 36` — medido en la Ley 1616 de 2013, donde el 36A lo añadió la
+ *    reforma de 2025. Dos artículos distintos con el mismo identificador
+ *    producen una cita ambigua, y una cita ambigua es peor que una que falta:
+ *    parece resolver.
  */
 export function partirArticulos(html: string): Articulo[] {
   const texto = aTextoPlano(html);
-  const marcas = [...texto.matchAll(/ART[IÍ]CULO\s*(\d+)\s*[oº°]?\s*\.?/g)];
+  const marcas = [...texto.matchAll(/ART[IÍ]CULO\s*(\d+)([A-Z]?)\s*[oº°]?\s*\.?/g)];
 
   const salida: Articulo[] = [];
   for (const [i, m] of marcas.entries()) {
     const desde = m.index ?? 0;
     const hasta = marcas[i + 1]?.index ?? texto.length;
+    const numero = Number(m[1]);
+    const sufijo = m[2] ?? "";
     salida.push({
-      numero: Number(m[1]),
+      numero,
+      sufijo,
+      designacion: `${numero}${sufijo}`,
       encabezado: m[0].trim(),
       texto: texto.slice(desde, hasta).trim(),
     });
