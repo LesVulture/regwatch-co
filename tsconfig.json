@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
+    "lib": [
+      "ES2023"
+    ],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "strict": true,
@@ -15,6 +17,14 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["collectors/src/**/*.ts", "db/**/*.ts", "web/src/**/*.ts"],
-  "exclude": ["node_modules", "**/dist", "**/.next"]
+  "include": [
+    "collectors/src/**/*.ts",
+    "db/**/*.ts",
+    "web/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/dist",
+    "**/.next"
+  ]
 }

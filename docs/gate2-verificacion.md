@@ -39,6 +39,15 @@ No era una cautela teórica y ahora tampoco es una cita de segunda mano:
 | Buscar «adopcion tecnologias» encuentra el texto con tildes | ✓ |
 | **Control negativo:** buscar «pesca», que no está | 0 filas ✓ |
 
+**Ojo con el nombre cualificado, que cambió a mitad del gate.** Esta tabla se
+midió cuando `unaccent` vivía en `public`. La migración `04` la movió a
+`extensions` para cerrar el WARN del linter, y el wrapper se reescribió en la
+misma migración para apuntar a `extensions.unaccent` — moverla sin tocar el
+wrapper lo habría dejado apuntando al vacío. **Las seis filas se volvieron a
+correr después del movimiento y todas siguen dando lo mismo.** La función sigue
+llamándose `public.immutable_unaccent`: se queda en `public` a propósito, porque
+la usan las columnas generadas y las consultas de búsqueda.
+
 ## 3. R1 no es una promesa en prosa: es un `CHECK` que rechaza
 
 Ocho sondas contra el esquema desplegado. Siete debían ser rechazadas y una
@@ -60,6 +69,12 @@ todo también «pasa» siete sondas de siete, y sería inútil.
 
 ## 4. RLS: corrección de orden respecto al plan
 
+> **Y no se queda en este documento.** `db/schema.test.ts` compara lo que
+> declaran los ficheros de `db/schemas/` contra `db/deployed-snapshot.json`, que
+> es el inventario real de la instancia. Se comprobó que el test FALLA de verdad
+> mutando tres cosas a propósito: devolver el wrapper a `public.unaccent`, quitar
+> una `CHECK` de R1 y abrir lectura pública en `captura`. Las tres se cazaron.
+
 El plan agendaba «Auth + RLS» en la **Fase 5**. Es un error de orden, y el
 linter de Supabase lo marcó como **ERROR** en las cuatro tablas: en cuanto una
 tabla existe en `public`, PostgREST la expone. Se corrigió en la Fase 0.
@@ -74,7 +89,8 @@ Verificado asumiendo el rol `anon`:
 | BORRA `norma` | denegado ✓ (0 filas) |
 | LEE `captura` (telemetría de ingesta) | no ve nada ✓ |
 
-**Estado final del linter de seguridad:** 0 ERROR, 0 WARN, 1 INFO
+**Estado final del linter de seguridad, consultado DESPUÉS de la migración `04`:**
+0 ERROR, 0 WARN, 1 INFO
 (`rls_enabled_no_policy` sobre `captura`) — y ese INFO **es la decisión**, no un
 descuido: `captura` guarda `blob_uri` y la traza de gates, que no es contenido
 para el ciudadano.
