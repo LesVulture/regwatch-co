@@ -13,6 +13,14 @@ allowBuilds:
   # con script legítimo, no una sorpresa en tiempo de instalación.
   esbuild: true
 
+  # Serwist (el service worker de la PWA) arrastra @swc/core, que compila un
+  # binario nativo al instalar. Misma clase de caso que esbuild: un compilador
+  # conocido, no un script sorpresa. Se aprueba EXPLÍCITAMENTE porque
+  # `strictDepBuilds` paró la instalación hasta que alguien lo decidiera — que es
+  # justo lo que se le pide a esta configuración, y por eso queda escrito aquí
+  # en vez de resuelto con `pnpm approve-builds` sin dejar rastro.
+  '@swc/core': true
+
 # Falla la instalación si aparece un script de build no decidido, en vez de
 # ignorarlo en silencio. Una dependencia nueva con script es una decisión, no
 # un detalle: que rompa el CI es lo que se busca.
