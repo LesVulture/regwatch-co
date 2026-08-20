@@ -23,3 +23,8 @@ artefactos/
 # artefactos de sesión
 *.log
 .DS_Store
+
+# Generado por Next 16 en cada arranque (reglas para agentes). Útil en local,
+# ruido en un repo público que ya cura su propio CLAUDE.md y GOVERNANCE.md.
+web/AGENTS.md
+web/CLAUDE.md
