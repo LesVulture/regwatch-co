@@ -1,0 +1,54 @@
+name: gold
+
+# ## Por qué este workflow existe aparte de `verify`
+#
+# El gold set comprueba sus propias cifras contra el artefacto del colector, y
+# eso es lo que impide que envejezca en silencio convirtiendo aciertos en
+# fallos. Pero el artefacto está gitignored —es derivado y pesa megas—, así que
+# en un clon limpio `describe.skipIf(!hayArtefacto)` **salta esos 8 chequeos sin
+# decir nada**. Medido el 2026-08-20 clonando desde GitHub: «322 passed | 8
+# skipped», y el CI en verde.
+#
+# Dicho de otra forma: la puerta de calidad del proyecto se estaba equivocando
+# en silencio, que es literalmente el fallo que el proyecto existe para evitar.
+#
+# La corrección NO es meter el colector en `verify`: eso pegaría a la
+# Secretaría del Senado en cada push, y el respeto al ritmo de la fuente es un
+# compromiso escrito en los derechos de petición. Va aparte y semanal.
+
+on:
+  schedule:
+    # Lunes 07:23 UTC = 02:23 en Bogotá. Fuera de horario de oficina en Colombia.
+    - cron: "23 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Genera el artefacto contra la fuente viva. Si la fuente se rompió, el
+      # gate 0 lo dice aquí y no cuando alguien confíe en una cifra vieja.
+      - name: Recolectar
+        run: pnpm collect:senado
+
+      # Ahora los 8 chequeos SÍ corren. Si el gold set caducó, esto falla.
+      - name: Gold set contra el artefacto real
+        run: |
+          salida=$(pnpm exec vitest run --dir gold 2>&1)
+          echo "$salida"
+          if echo "$salida" | grep -q "skipped"; then
+            echo "::error::El gold set siguió saltando chequeos aun con artefacto."
+            exit 1
+          fi

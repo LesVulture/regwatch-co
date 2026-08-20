@@ -61,3 +61,14 @@ jobs:
       # habitual de que un build roto llegue a producción.
       - name: Build de la web
         run: pnpm --filter @regwatch/web build
+
+      # El gold set verifica sus cifras contra `artefactos/senado-pdly.json`,
+      # que es derivado y no se versiona. En un clon limpio no existe, así que
+      # `describe.skipIf` salta 8 chequeos **sin decir nada** y el CI queda en
+      # verde igual. Medido el 2026-08-20 clonando desde GitHub: «322 passed |
+      # 8 skipped». Que salte está bien; que no se note, no.
+      - name: Avisar de lo que este CI NO comprueba
+        run: |
+          echo "::notice::El gold set salta aquí 8 chequeos: dependen de un artefacto"
+          echo "::notice::derivado que no se versiona. Los corre el workflow 'gold',"
+          echo "::notice::cada lunes y contra la fuente viva."
