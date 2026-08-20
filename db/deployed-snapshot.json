@@ -10,11 +10,14 @@
       "03_rls_lectura_publica_escritura_cerrada",
       "04_extensiones_fuera_de_public",
       "05_proyecto_ley",
-      "06_crosswalk_residuo"
+      "06_crosswalk_residuo",
+      "07_providencia",
+      "08_busqueda_lexica",
+      "09_consultar_vigencia"
     ],
     "nota": "Inventario del estado DESPLEGADO. El test lo compara contra lo que declaran los ficheros de db/schemas/, que es lo que convierte «los ficheros describen la base» en algo comprobado y no en una promesa. Si alguien toca la base a mano o edita un fichero sin desplegar, el test lo dice."
   },
-  "tablas": ["afectacion", "captura", "norma", "norma_version", "proyecto_ley"],
+  "tablas": ["afectacion", "captura", "norma", "norma_version", "providencia", "proyecto_ley"],
   "enums": {
     "derivation_arista": ["declarado_en_norma", "parsed_from_text"],
     "derivation_fecha": ["declarada_en_texto", "derivada_deterministicamente", "no_determinable"],
@@ -54,7 +57,15 @@
       "desconocido"
     ],
     "estado_crosswalk": ["declarado", "no_declarado", "ilegible", "acumulado"],
-    "camara": ["senado", "camara"]
+    "camara": ["senado", "camara"],
+    "tipo_providencia": [
+      "Auto",
+      "Tutela",
+      "Constitucionalidad",
+      "Sentencia de unificación",
+      "desconocido"
+    ],
+    "origen_resultado": ["proyecto_ley", "providencia", "norma"]
   },
   "dominios": ["url_fuente"],
   "constraints_check": [
@@ -67,6 +78,10 @@
     "captura_hash_sha256",
     "captura_url_http",
     "norma_anio_razonable",
+    "providencia_desconocido_va_a_revision",
+    "providencia_fechas_coherentes",
+    "providencia_rutahtml_no_vacia",
+    "providencia_sentencia_no_vacia",
     "proyecto_crosswalk_declarado_tiene_numero",
     "proyecto_estado_original_no_vacio",
     "proyecto_revision_cubre_ambos_ejes",
@@ -79,6 +94,11 @@
     "captura_url_hash_uniq",
     "norma_identidad",
     "norma_version_lookup",
+    "providencia_fecha",
+    "providencia_revision",
+    "providencia_sentencia",
+    "providencia_tema_tsv",
+    "providencia_tipo",
     "proyecto_crosswalk",
     "proyecto_crosswalk_residuo",
     "proyecto_estado",
@@ -87,9 +107,9 @@
     "proyecto_revision",
     "proyecto_titulo_tsv"
   ],
-  "policies": ["afectacion", "norma", "norma_version", "proyecto_ley"],
+  "policies": ["afectacion", "norma", "norma_version", "providencia", "proyecto_ley"],
   "tablas_con_rls_sin_policy": ["captura"],
-  "funciones": ["immutable_unaccent"],
+  "funciones": ["busqueda_lexica", "consultar_vigencia", "immutable_unaccent"],
   "extensiones_declaradas": {
     "pgcrypto": "extensions",
     "unaccent": "extensions",

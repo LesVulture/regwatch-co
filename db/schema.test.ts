@@ -18,7 +18,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import snapshot from "./deployed-snapshot.json" with { type: "json" };
 
-const SQL = ["01_procedencia", "02_vigencia", "03_rls", "04_proyecto_ley"]
+const SQL = [
+  "01_procedencia",
+  "02_vigencia",
+  "03_rls",
+  "04_proyecto_ley",
+  "05_providencia",
+  "06_busqueda",
+]
   .map((f) => readFileSync(new URL(`./schemas/${f}.sql`, import.meta.url), "utf-8"))
   .join("\n");
 
@@ -32,7 +39,7 @@ function declarados(re: RegExp): string[] {
 describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
   it("el snapshot trae su procedencia", () => {
     expect(snapshot._procedencia.postgres).toBe("17.6");
-    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(7);
+    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(10);
   });
 
   it("las 4 tablas", () => {
@@ -90,6 +97,14 @@ describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
     expect(SOLO_SQL).toMatch(/extensions\.unaccent/);
     expect(SOLO_SQL).not.toMatch(/select public\.unaccent\(/);
     expect(SOLO_SQL).toMatch(/set search_path = ''/);
+  });
+
+  /** Las funciones del snapshot tienen que estar declaradas en el SQL del repo. */
+  it("las funciones desplegadas están todas en los ficheros", () => {
+    const declaradas = declarados(/create or replace function (?:public\.)?(\w+)/g);
+    for (const f of snapshot.funciones) {
+      expect(declaradas, `falta la función ${f}`).toContain(f);
+    }
   });
 
   it("las extensiones se crean en `extensions`, ninguna en public", () => {
