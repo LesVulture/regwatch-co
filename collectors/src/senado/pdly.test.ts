@@ -156,3 +156,43 @@ describe("ventana multi-legislatura", () => {
     expect(p.form).toEqual({ legislatura: "2024-2025" });
   });
 });
+
+describe("el tope silencioso de 100 filas", () => {
+  /**
+   * MEDIDO EL 2026-08-20, y es la trampa más fea de esta fuente:
+   * `search_pdly.php` IGNORA `legislatura` si el parámetro no viaja como
+   * form-data. Con GET en query string o con cuerpo JSON responde 200 con 100
+   * filas **sin filtrar**, y `total_results` dice 100 también.
+   *
+   * O sea que el envelope es coherente consigo mismo mientras devuelve datos
+   * truncados Y de otra legislatura: la comprobación `total_results` vs filas
+   * recibidas no lo caza, porque ambos valen 100. Por eso hace falta esta
+   * guarda aparte.
+   */
+  it("100 filas con total_results=100 se declara como sospechoso", () => {
+    const fila = fixture.data[0];
+    const cien = JSON.stringify({
+      success: true,
+      data: Array.from({ length: 100 }, (_, i) => ({ ...fila, id: 90000 + i })),
+      total_results: 100,
+    });
+    const a = parsePdly(cien).anomalias.find((x) => x.clase === "posible-tope-silencioso");
+    expect(a).toBeDefined();
+    expect(a?.detalle).toContain("IGNORA el filtro");
+  });
+
+  it("no es un falso positivo: 99 o 101 filas no disparan la guarda", () => {
+    const fila = fixture.data[0];
+    for (const n of [99, 101]) {
+      const j = JSON.stringify({
+        success: true,
+        data: Array.from({ length: n }, (_, i) => ({ ...fila, id: 90000 + i })),
+        total_results: n,
+      });
+      expect(
+        parsePdly(j).anomalias.some((x) => x.clase === "posible-tope-silencioso"),
+        `${n} filas no debería disparar`,
+      ).toBe(false);
+    }
+  });
+});

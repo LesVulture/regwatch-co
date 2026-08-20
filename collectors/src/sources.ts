@@ -61,7 +61,12 @@ export const SOURCES: Record<string, SourceExpectation> = {
     cadenciaHoras: 24,
     evidencia:
       "refute2-congreso.json: POST search_pdly.php con legislatura=2026-2027 → 200, " +
-      "application/json, 131.849 bytes, 191 filas. Sin filtro topa en 100 filas.",
+      "application/json, 131.849 bytes, 191 filas. Sin filtro topa en 100 filas. " +
+      "MEDIDO 2026-08-20 y es más grave de lo que decía esa nota: el filtro solo " +
+      "se aplica si el parámetro viaja como FORM-DATA. Con GET en query string o " +
+      "con cuerpo JSON responde 200 con 100 filas SIN FILTRAR y total_results=100, " +
+      "así que el envelope es coherente consigo mismo mientras miente. La guarda " +
+      "`posible-tope-silencioso` de pdly.ts existe por esto.",
   },
 
   "camara-ajax": {

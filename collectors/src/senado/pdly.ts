@@ -76,6 +76,7 @@ export interface Anomalia {
     | "estado-desconocido"
     | "numero-ilegible"
     | "crosswalk-incompleto"
+    | "posible-tope-silencioso"
     | "id-duplicado";
   readonly detalle: string;
 }
@@ -133,6 +134,29 @@ export function parsePdly(texto: string): ResultadoPdly {
     anomalias.push({
       clase: "total-no-cuadra",
       detalle: `total_results=${totalDeclarado} pero llegaron ${filas.length} filas — respuesta truncada`,
+    });
+  }
+
+  // EL TOPE SILENCIOSO, Y ES PEOR DE LO QUE PARECE.
+  //
+  // Medido el 2026-08-20: `search_pdly.php` **ignora `legislatura` en silencio**
+  // si el parámetro no viaja como form-data. Con GET en query string, o con
+  // cuerpo JSON, responde 200 con **100 filas sin filtrar** — y `total_results`
+  // dice 100 también. O sea: el envelope es coherente consigo mismo mientras
+  // devuelve datos truncados Y de otra legislatura. La comprobación de arriba
+  // (`total_results` vs filas recibidas) NO lo caza, porque los dos valen 100.
+  //
+  // Un colector que use pg_net, `fetch` con `JSON.stringify`, o cualquier cosa
+  // que no sea multipart, se traga 100 filas equivocadas creyendo que acertó.
+  // 100 exactas es la firma; se declara y que lo mire un humano.
+  if (filas.length === 100 && totalDeclarado === 100) {
+    anomalias.push({
+      clase: "posible-tope-silencioso",
+      detalle:
+        "exactamente 100 filas y total_results=100: es la firma del tope que la " +
+        "fuente aplica cuando IGNORA el filtro de legislatura (medido: pasa con GET " +
+        "en query string y con cuerpo JSON; solo form-data filtra de verdad). " +
+        "Verificar que la petición viajó como multipart antes de fiarse de estos datos.",
     });
   }
 
