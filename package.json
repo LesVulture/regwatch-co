@@ -25,6 +25,7 @@
     "collect:articulado": "node --env-file-if-exists=.env collectors/src/rag/run-articulado.ts",
     "db:load-chunks": "node --env-file-if-exists=.env db/load-chunks.ts",
     "db:load-chunks:dry": "node --env-file-if-exists=.env db/load-chunks.ts --dry-run",
+    "db:drift": "node --env-file-if-exists=.env db/verificar-funciones.ts",
     "db:load-providencias": "node --env-file-if-exists=.env db/load-providencias.ts",
     "db:load-providencias:dry": "node --env-file-if-exists=.env db/load-providencias.ts --dry-run",
     "embed:chunks": "node --env-file-if-exists=.env db/embed-chunks.ts",

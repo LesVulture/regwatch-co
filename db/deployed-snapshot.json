@@ -17,10 +17,12 @@
       "10_suscripcion",
       "crear_tabla_chunk_rag",
       "crear_hybrid_search_rrf",
-      "crear_contexto_qa"
+      "crear_contexto_qa",
+      "busqueda_lexica_websearch"
     ],
     "nota": "Inventario del estado DESPLEGADO. El test lo compara contra lo que declaran los ficheros de db/schemas/, que es lo que convierte «los ficheros describen la base» en algo comprobado y no en una promesa. Si alguien toca la base a mano o edita un fichero sin desplegar, el test lo dice.",
-    "nota_constraints": "constraints_check es el inventario COMPLETO de la instancia, incluidas las dos que Postgres nombra solo (captura_gate_outcome_check, suscripcion_cadencia_check) por venir de un check inline. El test las salta porque no hay `constraint <nombre> check` que encontrar en el SQL, no porque falten."
+    "nota_constraints": "constraints_check es el inventario COMPLETO de la instancia, incluidas las dos que Postgres nombra solo (captura_gate_outcome_check, suscripcion_cadencia_check) por venir de un check inline. El test las salta porque no hay `constraint <nombre> check` que encontrar en el SQL, no porque falten.",
+    "nota_busqueda_lexica": "La migración 15 sustituye `plainto_tsquery` por `websearch_to_tsquery` en `busqueda_lexica`. No cambia la firma ni el inventario de este fichero: cambia CÓMO se construye la tsquery, para que `web/src/lib/consultas.ts` pueda reintentar con los términos en OR cuando el AND no devuelve nada. Al aplicarla se descubrió que `db/schemas/06_busqueda.sql` NO era ejecutable —le faltaban los alias de columna del `union all`— y se restauró desde `pg_get_functiondef` de la instancia. Es exactamente la divergencia que este snapshot existe para cazar, y la cazó por el sitio que este test no mira: los CUERPOS. Ese hueco ya no se cubre con prosa: `pnpm db:drift` (db/verificar-funciones.ts) ejecuta CADA función del repo contra el catálogo real dentro de una transacción que se revierte, con check_function_bodies=on, y además señala las funciones desplegadas que ningún fichero reconstruye. Barrido el 2026-08-20: las 6 pasan, así que el fallo de 06_busqueda.sql era el único de su clase. No entra en `pnpm verify` porque necesita credenciales; se corre a mano tras tocar un .sql."
   },
   "tablas": [
     "afectacion",

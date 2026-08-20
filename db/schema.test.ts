@@ -42,7 +42,7 @@ function declarados(re: RegExp): string[] {
 describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
   it("el snapshot trae su procedencia", () => {
     expect(snapshot._procedencia.postgres).toBe("17.6");
-    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(14);
+    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(15);
   });
 
   it("las 8 tablas", () => {
