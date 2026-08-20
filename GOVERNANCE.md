@@ -79,6 +79,24 @@ cláusula; la nota solo dice a qué norma ir.
 no tiene ningún campo donde quepa la prosa del editor, y un test lo comprueba
 serializando el objeto y mirando el conjunto de claves.
 
+**Y por la puerta de atrás también, que es por donde entró.** El 2026-08-20 esta
+regla se estaba incumpliendo sin que ningún test se enterara: `partirArticulos`
+aplanaba el HTML entero, así que los rótulos del editor y el pie de copyright de
+Avance Jurídico acababan DENTRO del texto de los artículos —**21 de 37 chunks de
+la Ley 1616 de 2013**, con 1.190 caracteres del aviso de derechos dentro del
+artículo 36A—. La tabla `chunk` es de lectura pública, así que eso se habría
+republicado. El tipo `Lead` estaba impecable y la regla se violaba igual, en otro
+módulo.
+
+Segundo punto de aplicación, entonces: `soloArticulado()` en
+`collectors/src/senado/articulado.ts` corta por las fronteras que el propio
+documento marca (`<!--Fin documento-->`, `<div id="logo_aj">`, las anclas y
+tablas `caja_*`), y `run-articulado.ts` recuenta los marcadores editoriales en
+cada corrida para avisar si la fuente cambia de marcado y el saneador deja de
+morder. `db/load-chunks.ts` **rechaza** cargar un artefacto con contaminación.
+Los tests cubren las dos mitades: que el aparato no entre, y que el articulado
+no se pierda.
+
 ## 5. La incertidumbre se declara, no se rellena
 
 Un estado desconocido va a `desconocido` y a una cola de revisión humana; **no
