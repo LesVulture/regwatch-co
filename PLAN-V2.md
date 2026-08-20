@@ -273,8 +273,20 @@ Reemplaza los 6 de v1. Derivada de las materias de las 7 comisiones constitucion
 #### Lo que la auditoría rompió, y hay que construir distinto
 
 **1. ⚠️ EL CROSSWALK SENADO↔CÁMARA NO ESTÁ RESUELTO. Es la corrección más cara del plan.**
-Un borrador anterior afirmaba que «lo resuelven las fuentes mismas: cada registro publica el número de la otra cámara». **Refutado sobre los 6.446 registros del corpus completo:** ninguna de las tres fuentes lo publica «en cada registro» —lo hace una minoría en las tres—, el **18,9 % de las claves es ambiguo** y el **13,4 % no tiene reciprocidad**. Hay ≥10 variantes de formato en `nro_camara` y otras 10 en `nro_senado` (separadores con espacio, sin sufijo, minúsculas, listas `ACUM`), y 8 registros donde `nro_senado` lleva sufijo `C` — error de dato en origen.
+Un borrador anterior afirmaba que «lo resuelven las fuentes mismas: cada registro publica el número de la otra cámara». **Refutado sobre los 6.446 registros del corpus completo**, y después **re-medido de primera mano contra la API el 2026-08-19** durante la implementación:
+
+| Legislatura | Filas | Con `numero_camara` | Formatos distintos |
+|---|---|---|---|
+| **2024-2025 (cerrada)** | 471 | **224 = 47,6 %** | **7** |
+| 2026-2027 (en curso) | 194 | 3 = 1,5 % | 1 |
+
+La cifra que vale es la de la legislatura **cerrada**: **más de la mitad de los proyectos no declara su contraparte ni al terminar el trámite.** El 1,5 % de la legislatura en curso mide otra cosa —los proyectos aún no han cruzado de cámara— y citarlo como si fuera lo mismo exageraría el hallazgo.
+
+**Y un problema de modelado que ningún informe había mencionado: la acumulación.** Un proyecto absorbe a otros y el campo trae varios números en una sola cadena, con **tres grafías de la misma palabra** (`Acum`, `ACUM`, `Acumulado`) y separadores inconsistentes. El caso extremo real acumula **cinco** proyectos en uno: `093/24 Acum 12/24 - 118/24 - 155/24 - 201/24 - 233/24`. **El crosswalk no es 1:1, es 1:N** — un `JOIN` sobre este campo no funciona ni con los datos que sí están.
+
 **Consecuencia:** el crosswalk es un **problema de resolución de entidades con revisión humana**, no un `JOIN`. Es un work item propio de la Fase 1, del tamaño de la normalización de estados, y el plan lo presupuestaba en cero.
+
+**Decisión de diseño ya implementada** (`collectors/src/senado/crosswalk.ts`): **no se resuelven identidades por parecido**. Si la fuente calla, el estado es `no_declarado` y ahí termina el trabajo automático. Emparejar por título o autor fabricaría relaciones falsas, y publicar «el Senado y la Cámara se contradicen» cuando no es cierto hace más daño que no cruzar nada.
 
 **2. Ingerir solo la legislatura activa rompe el crosswalk.** Los proyectos cruzan de cámara arrastrando números de **otra** legislatura: en la legislatura 2024-2025 del Senado, **111 de 219** `numero_camara` no existen en el listado de Cámara de esa misma legislatura. El job diario necesita ventana multi-legislatura, no la activa sola. (El árbitro propuesto, Congreso Visible, tampoco sirve: cubre una fracción.)
 
