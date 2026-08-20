@@ -464,7 +464,34 @@ Reservando **250 MB** para vectores+índice salen **~176k chunks** (`250 MB ÷ 1
 
 ⚠️ **Y una tercera restricción que el plan no contaba en ningún sitio: el egress.** El Free incluye **5 GB/mes** y la palabra no aparecía en el documento. El producto de §9 lo consume por cuatro vías simultáneas: la PWA pública, la API JSON «aburrida» que se ofrece como superficie diferencial, el MCP server sobre la misma base, y los dumps semanales que §4 y §10 exigen como heartbeat. **Mitigación estructural:** servir los dumps desde el repo *commons* de GitHub, no desde Supabase — el egress de git no cuenta contra el Free. Dimensionar las otras tres antes de la Fase 5.
 
-⚠️ **El Storage de 1 GB tampoco alcanza, y eso desambigua una regla dura.** «El texto completo va a Storage **o** a git» se queda en una sola rama: los ~4.200 PDFs de CONPES superan 1 GB con holgura por sí solos, y las gacetas escaneadas rozan o pasan el **límite de 50 MB por fichero**. En Free la rama viable es **git** (el repo *commons* de la Capa 1 que §4 ya define); el bucket de Storage se reserva para evidencia puntual.
+⚠️ **El archivo de crudo, MEDIDO: 63,78 GB. Mata las dos ramas que el plan contemplaba.**
+El gate 3 de la Fase 0 bajó muestras reales de los tres corpus (2026-08-19, resultado completo en `docs/gate3-medicion-crudo.json`):
+
+| Corpus | Documentos | Peso mediano | Total estimado |
+|---|---|---|---|
+| Gacetas del Congreso | 31.332 | 764 KB | **52,93 GB** |
+| CONPES | ~3.300 | 909 KB | 4,12 GB |
+| Corte Constitucional (HTML, no PDF) | 49.574 | 110 KB | 6,73 GB |
+| **Total** | | | **63,78 GB**, +7 GB/año |
+
+Y es un **suelo**, no el archivo completo: falta el Diario Oficial, las 23.373 filas normativas del SODA, el Consejo de Estado y la Corte Suprema.
+
+| Destino | Límite | Contra 63,78 GB | |
+|---|---|---|---|
+| Supabase Storage Free | 1 GB | **64×** el cupo | ✗ muerta |
+| git / GitHub | <5 GB recomendado | **13×** el techo | ✗ muerta para el crudo |
+| **Cloudflare R2** | 10 GB-mes gratis, luego $0,015/GB-mes, **egreso gratis** | **$0,81/mes** | ✓ |
+
+**Decisión: híbrido.** Crudo a **R2** direccionado por `content_hash`; **metadatos e índice de citas a git** (84.206 docs × ~1 KB ≈ **81 MB**: trivial, diffable, clonable); Supabase Free se queda con Postgres/pgvector y su bucket de 1 GB para evidencia puntual.
+
+**El tradeoff, dicho de frente:** introduce una dependencia de pago (~$10/año) y un segundo sistema que respaldar, en un proyecto que hasta ahora cabía en tiers gratuitos. La alternativa —quedarse en git— obliga a **no persistir los bytes crudos**, que es justo lo que §7 declara innegociable. **Se paga el dólar o se rompe el contrato de evidencia.** La propiedad que decide no es el precio sino el **egreso gratis**: un *commons* público se descarga, y S3 y Supabase cobran la salida.
+
+**Corrección a este mismo plan:** un borrador atribuía la muerte de Storage a que «las gacetas escaneadas rozan el límite de 50 MB por fichero». Lo que la mata es el **agregado**, que hace irrelevante el tope por fichero (el mayor medido fue 14,9 MB). Y el medidor fue honesto sobre lo que no probó: **no sorteó ninguna gaceta escaneada**, así que el peso de esa población sigue abierto.
+
+⚠️ **Dos hallazgos colaterales que corrigen otras partidas:**
+- **19 de 19 gacetas sorteadas, hasta 2001, tienen capa de texto nativa.** `congreso.json` afirmaba que «las gacetas antiguas son PDFs escaneados y necesitan OCR»; en 19 sorteos no salió ninguna. **El presupuesto de OCR de la Fase 1 estaba sobredimensionado** — con la reserva del 13,3 % de filas que la receta no alcanza y que sesgan hacia lo antiguo.
+- **CONPES 4000 sí es un escaneo** (26 caracteres por página, y el más pesado de la muestra). Es evidencia directa de que el router digital-vs-escaneado de §7 funciona con el criterio de caracteres por página, y de que los escaneos existen también en el rango moderno.
+- El universo CONPES es **~3.300, no ~4.200**: esa cifra venía de una sonda de límite superior (4220 → 404), no de un conteo.
 
 **Palanca que queda sin evaluar y podría cambiarlo todo:** voyage-4 acepta `output_dtype: binary`, y pgvector indexa `bit` con Hamming. A 256 dims, `bit(256)` ocupa **40 B frente a 520 B** — 13×. El patrón es binario para la pasada ANN gruesa y **rerank exacto sobre el top-N**, y el plan **ya tiene el reranker presupuestado y gratis**. Si sobrevive a la medición del gold set, el cuello de botella pasa a ser el texto en exclusiva y los 45 temas dejan de estar descartados de entrada. Va al bake-off de la Fase 2, **no a la arquitectura por decreto**: la cuantización binaria pierde recall, y en español jurídico eso no está medido.
 
@@ -529,8 +556,8 @@ Borrar v1 conservando **`GOVERNANCE.md`, `LICENSE`, `PLAN-V2.md` y `research/`**
 **Cuatro gates antes de escribir un colector**, todos de minutos:
 1. ⚠️ **¿Hay slot Free de verdad?** El límite de 2 proyectos es **por cuenta, no por organización** (§Decisiones). Comprobarlo, no asumirlo.
 2. `show server_version` · `select * from pg_extension` · disponibilidad de `unaccent`, `pgmq`, `pg_net`, `pg_cron` — presencia en catálogo **no** es lo mismo que `CREATE EXTENSION` exitoso.
-3. ⚠️ **Dónde vive el crudo, decidido con cifras sobre la mesa.** §7 declara innegociable persistir «raw bytes antes de cualquier parseo» y §5.1 hace de `gaceta` una entidad propia — juntos crean **un archivo documental de tamaño desconocido y sin destino asignado**, y ninguna fase lo presupuesta. Medir el peso mediano sobre una muestra de 20 gacetas (no sobre una), multiplicar por el universo, hacer lo mismo con CONPES, y **elegir destino antes del primer colector**: 1 GB de Storage en Free no da, así que la rama viable es git o un bucket externo.
-4. **Radicar los derechos de petición de §15.1** (Cámara, Función Pública, DNP). El plazo legal corre en paralelo al desarrollo: cuanto antes se radiquen, antes dejan de bloquear la Fase 5.
+3. ✅ **Dónde vive el crudo — HECHO.** Medido: **63,78 GB**, lo que mata Storage (64× el cupo) y git (13× el techo). Destino: **Cloudflare R2** para el crudo, git para metadatos. Detalle en §8.4 y `docs/gate3-medicion-crudo.json`. Queda **crear la cuenta de R2**, que es una gestión de Daniel.
+4. 📝 **Radicar los derechos de petición de §15.1** (Cámara, Función Pública, DNP). **Los tres escritos están redactados y listos en `legal/peticiones/`**, con el canal de radicación verificado y la cláusula que motiva cada uno citada literalmente. Falta completar los datos personales y radicarlos: es gestión de Daniel, no automatizable. El plazo legal (15 días hábiles) corre en paralelo al desarrollo.
 
 ### Fase 1 — Trámite legislativo (semanas 2-4) · *el núcleo*
 La auditoría de §6.1 ya se hizo (era la tarea 0 del borrador anterior) y **encareció esta fase**. Alcance corregido:
@@ -573,7 +600,7 @@ El plan daba cifras de coste en tres sitios y **no las sumaba en ninguno**, con 
 | IA — Q&A con citas (Sonnet 5 + Citations) | ~$12 | ~$12-40 según uso |
 | Embeddings + rerank (voyage) | **$0** (200M gratis, dos bolsas separadas) | ~$0-5 |
 | Base de datos | **$0** (Free) | **$25** (Pro) |
-| Almacenamiento del crudo (gacetas + CONPES + escaneados) | **por medir** — gate 3 de la Fase 0 | idem, probablemente el mayor salto |
+| Almacenamiento del crudo — **63,78 GB medidos**, +7 GB/año | **$0,81** (Cloudflare R2) | ~$0,90 y subiendo |
 | Egress | dentro de 5 GB | **por dimensionar** (PWA + API + MCP + dumps) |
 | Hosting web | ⚠️ **$0 solo si no hay donaciones** — Hobby prohíbe uso comercial | **Pro de Vercel** si hay cualquier sostenimiento |
 | OCR del backfill | ~$100 *one-time* | idem |
