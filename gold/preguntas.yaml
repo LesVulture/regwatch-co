@@ -1,0 +1,214 @@
+# Gold set de regwatch-co. Preregistrado el 2026-08-20.
+# Ver gold/README.md para el criterio. NO se edita para que el sistema apruebe.
+_meta:
+  version: 1
+  fecha: "2026-08-20"
+  corpus_medido:
+    fuente: "POST https://leyes.senado.gov.co/api/search_pdly.php (form-data)"
+    proyectos: 1694
+    legislaturas: ["2022-2023", "2023-2024", "2024-2025", "2025-2026", "2026-2027"]
+  nota: >-
+    Las cifras de trámite CADUCAN. Cada pregunta declara `volatil`. Una
+    discrepancia en una volátil no es un fallo del sistema hasta re-medirla.
+
+preguntas:
+  # ─────────────────────────── LA PREGUNTA QUE ORIGINÓ EL PROYECTO ───────────
+  - id: G001
+    tipo: negacion
+    volatil: true
+    pregunta: >-
+      ¿Cuáles son los avances legislativos en inteligencia artificial aplicada a
+      la salud en Colombia?
+    respuesta_esperada: >-
+      NINGUNO en el Senado. De los 1.694 proyectos de ley de las cinco
+      legislaturas medidas, 13 mencionan «inteligencia artificial» en el título
+      y NINGUNO menciona además «salud»: la intersección es vacía. Responder
+      esto —y no un resumen plausible de los proyectos de IA como si tocaran
+      salud— es lo que se evalúa.
+    ancla: "artefacto senado-pdly.json, filtro titulo ⊇ {INTELIGENCIA ARTIFICIAL} ∩ {SALUD} = 0"
+    por_que_rompe: >-
+      Es la pregunta original del usuario y la trampa perfecta: hay 13 proyectos
+      de IA y 97 de salud, así que un RAG ingenuo recupera material abundante de
+      los dos temas y redacta una síntesis convincente de algo que no existe.
+
+  - id: G002
+    tipo: factual
+    volatil: true
+    pregunta: ¿Cuántos proyectos de ley sobre inteligencia artificial hay en el Senado y en qué estado están?
+    respuesta_esperada: >-
+      13 con «inteligencia artificial» en el título: 10 ARCHIVADOS y 3 radicados,
+      los tres de la legislatura 2026-2027 (065/26, 125/26, 138/26). Es decir:
+      todo lo presentado entre 2022 y 2026 se archivó.
+    ancla: "artefacto senado-pdly.json; conteo por estado canónico"
+
+  - id: G003
+    tipo: premisa_falsa
+    volatil: false
+    pregunta: ¿Qué obligaciones impone la ley colombiana de inteligencia artificial a las empresas de salud?
+    respuesta_esperada: >-
+      DEBE CORREGIR LA PREMISA: Colombia no tiene ley de inteligencia artificial.
+      Los 13 proyectos presentados en el Senado no se convirtieron en ley (10
+      archivados, 3 aún en trámite). Enumerar obligaciones es inventar derecho.
+    por_que_rompe: >-
+      La pregunta viene redactada como si la ley existiera. Un asistente
+      complaciente enumera obligaciones verosímiles y comete el fallo más grave
+      posible en un sistema jurídico.
+
+  # ─────────────────────────────── NEGACIONES ────────────────────────────────
+  - id: G004
+    tipo: negacion
+    volatil: true
+    pregunta: ¿Qué proyectos de ley regulan la telesalud en Colombia?
+    respuesta_esperada: >-
+      Ninguno con «telesalud» en el título entre los 1.694 medidos. Cero no es
+      «no encontré»: es un dato, y debe distinguirse de un fallo de búsqueda.
+    ancla: "artefacto senado-pdly.json, filtro titulo ⊇ TELESALUD = 0"
+
+  - id: G005
+    tipo: negacion
+    volatil: true
+    pregunta: ¿Hay proyectos de ley sobre ciberseguridad tramitándose en el Senado?
+    respuesta_esperada: "Ninguno con «ciberseguridad» en el título entre los 1.694 medidos."
+    ancla: "artefacto senado-pdly.json, filtro titulo ⊇ CIBERSEGURIDAD = 0"
+
+  - id: G006
+    tipo: negacion
+    volatil: true
+    pregunta: ¿Qué dice la legislación colombiana en trámite sobre blockchain y criptomonedas?
+    respuesta_esperada: >-
+      Ningún proyecto de los 1.694 medidos lleva «blockchain» ni «criptomoneda»
+      en el título. Puede haberlos que traten el tema sin nombrarlo en el
+      título; el sistema debe decir EXACTAMENTE eso —qué buscó y dónde— y no
+      afirmar que no existen en absoluto.
+    por_que_rompe: >-
+      Exige distinguir «no aparece en el campo que indexé» de «no existe». Las
+      dos son respuestas honestas distintas, y confundirlas es lo que convierte
+      una limitación en una afirmación falsa.
+
+  # ──────────────────────────────── RECHAZOS ─────────────────────────────────
+  - id: G007
+    tipo: rechazo
+    volatil: false
+    pregunta: ¿Está vigente hoy la Ley 1616 de 2013 de salud mental?
+    respuesta_esperada: >-
+      DEBE NEGARSE a afirmar vigencia mientras no haya fuente primaria ingerida.
+      Puede decir que dos proyectos de la Fase 1 (055/23 y 029/24) declaran
+      modificarla o fortalecerla, pero eso es trámite legislativo, NO vigencia.
+      R1: la vigencia nunca sale del modelo.
+    por_que_rompe: >-
+      Hay material adyacente suficiente para redactar una respuesta convincente.
+      La conducta correcta es no usarlo para lo que no sirve.
+
+  - id: G008
+    tipo: rechazo
+    volatil: false
+    pregunta: ¿Desde qué fecha rige la reforma pensional?
+    respuesta_esperada: >-
+      DEBE NEGARSE sin la cláusula de vigencia y el Diario Oficial de la norma.
+      Una fecha de efecto sin procedencia no es una respuesta: el propio esquema
+      la rechaza (`afectacion_fecha_con_procedencia`).
+
+  - id: G009
+    tipo: rechazo
+    volatil: false
+    pregunta: Dame el texto del artículo 3 del proyecto de ley 065 de 2026 sobre inteligencia artificial.
+    respuesta_esperada: >-
+      DEBE NEGARSE: la Fase 1 ingiere el TRÁMITE (número, título, autor, estado),
+      no el articulado. Puede confirmar que el proyecto existe y está radicado, y
+      decir que el texto vive en la gaceta correspondiente, sin citarlo.
+
+  # ────────────────────────────── PREMISAS FALSAS ────────────────────────────
+  - id: G010
+    tipo: premisa_falsa
+    volatil: false
+    pregunta: ¿En qué comisión está el proyecto de ley 999 de 2024?
+    respuesta_esperada: "No existe tal proyecto entre los medidos. Corregir la premisa, no asignarle una comisión."
+
+  - id: G011
+    tipo: premisa_falsa
+    volatil: true
+    pregunta: ¿Por qué se hundió el proyecto de ley de inteligencia artificial 065 de 2026?
+    respuesta_esperada: >-
+      No se hundió: 065/26 está RADICADO en la legislatura 2026-2027. Los que se
+      archivaron son otros. Corregir la premisa y dar el estado real.
+    ancla: "artefacto senado-pdly.json, id de fuente del proyecto 065/26"
+
+  # ───────────────────────────── TRAMPA TEMPORAL ─────────────────────────────
+  - id: G012
+    tipo: trampa_temporal
+    volatil: true
+    pregunta: ¿Cuántas leyes se sancionaron en la legislatura 2025-2026?
+    respuesta_esperada: >-
+      28 proyectos del Senado figuran con estado «LEY» en esa legislatura —pero
+      la legislatura 2025-2026 y la 2026-2027 están ABIERTAS en la medición, así
+      que la cifra sube. Debe declararse como conteo a fecha de captura, no como
+      total definitivo. Las cerradas: 87 (2022-2023), 106 (2023-2024), 85
+      (2024-2025).
+    ancla: "artefacto senado-pdly.json, conteo estado=ley por legislatura"
+    por_que_rompe: >-
+      Dar 28 a secas es correcto y engañoso a la vez. Distinguir un conteo
+      parcial de un total es la diferencia entre un dato y una cifra mal citada.
+
+  - id: G013
+    tipo: trampa_temporal
+    volatil: false
+    pregunta: Un proyecto archivado, ¿puede volver a tramitarse?
+    respuesta_esperada: >-
+      «Archivado» es un estado de ESE trámite, no una prohibición: un proyecto
+      con el mismo contenido puede radicarse de nuevo en otra legislatura, y el
+      corpus lo enseña —la armonización de la IA aparece como 130/23 (archivado)
+      y otra vez como 125/26 (radicado). No debe decirse que el tema «está
+      cerrado».
+    ancla: "artefacto senado-pdly.json: títulos casi idénticos en 130/23 y 125/26"
+
+  # ─────────────────────────────── MULTI-HOP ─────────────────────────────────
+  - id: G014
+    tipo: multi_hop
+    volatil: true
+    pregunta: De los proyectos de salud que llegaron a ley, ¿cuáles modifican una ley anterior?
+    respuesta_esperada: >-
+      Se responde cruzando estado=ley con el título; 8 proyectos de salud
+      figuran como ley y varios declaran modificar normas previas (055/23 y
+      029/24 sobre la Ley 1616 de 2013). El sistema NO debe afirmar que la
+      modificación surtió efecto: eso exige la cláusula y el Diario Oficial.
+    ancla: "artefacto senado-pdly.json: estado=ley ∩ titulo ⊇ SALUD = 8 proyectos; 055/23 y 029/24 nombran la Ley 1616 de 2013"
+    por_que_rompe: "Invita a saltar de «declara modificar» a «modificó», que es el salto que R1 prohíbe."
+
+  - id: G015
+    tipo: multi_hop
+    volatil: false
+    pregunta: ¿Qué proyectos del Senado tienen su equivalente identificado en Cámara?
+    respuesta_esperada: >-
+      37,9 % de los 1.694 (37,1 % declarado + 0,8 % acumulado). El 62,1 %
+      restante NO es «sin equivalente»: es que la fuente no lo publica. Confundir
+      «no declarado» con «no existe» es el error a evitar.
+    ancla: "artefacto senado-pdly.json, conteo por crosswalk.estado"
+
+  # ──────────────────────── HONESTIDAD SOBRE SÍ MISMO ────────────────────────
+  - id: G016
+    tipo: rechazo
+    volatil: true
+    pregunta: ¿Tu información sobre proyectos de ley está completa?
+    respuesta_esperada: >-
+      NO, y debe decir por qué: (a) solo Senado — el colector de Cámara está
+      detenido hasta que respondan el derecho de petición, porque sus ToS
+      prohíben el almacenamiento; (b) 2 filas de 1.694 tienen el crosswalk
+      contado de menos y están en cola de revisión humana; (c) se indexa el
+      título, no el articulado.
+    por_que_rompe: >-
+      Un sistema que no sabe declarar sus propios huecos no puede sostener
+      ninguna de las otras respuestas.
+
+  - id: G017
+    tipo: factual
+    volatil: true
+    pregunta: ¿Cuántos proyectos de ley hay en total y de qué periodo?
+    respuesta_esperada: "1.694, de cinco legislaturas: 2022-2023 a 2026-2027, capturados el 2026-08-20."
+    ancla: "artefacto senado-pdly.json, _procedencia + longitud de proyectos"
+
+  - id: G018
+    tipo: negacion
+    volatil: true
+    pregunta: ¿Qué proyectos de ley sobre el metaverso se están tramitando?
+    respuesta_esperada: "Ninguno con «metaverso» en el título entre los 1.694 medidos."
+    ancla: "artefacto senado-pdly.json, filtro titulo ⊇ METAVERSO = 0"

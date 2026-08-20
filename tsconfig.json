@@ -15,6 +15,6 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["collectors/src/**/*.ts", "db/**/*.ts", "web/src/**/*.ts"],
+  "include": ["collectors/src/**/*.ts", "db/**/*.ts", "web/src/**/*.ts", "gold/**/*.ts"],
   "exclude": ["node_modules", "**/dist", "**/.next"]
 }
