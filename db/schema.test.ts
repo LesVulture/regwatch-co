@@ -26,6 +26,7 @@ const SQL = [
   "05_providencia",
   "06_busqueda",
   "07_suscripcion",
+  "08_rag",
 ]
   .map((f) => readFileSync(new URL(`./schemas/${f}.sql`, import.meta.url), "utf-8"))
   .join("\n");
@@ -40,14 +41,14 @@ function declarados(re: RegExp): string[] {
 describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
   it("el snapshot trae su procedencia", () => {
     expect(snapshot._procedencia.postgres).toBe("17.6");
-    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(11);
+    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(13);
   });
 
-  it("las 4 tablas", () => {
+  it("las 8 tablas", () => {
     expect(declarados(/create table (\w+)/g)).toEqual([...snapshot.tablas].sort());
   });
 
-  it("los 4 enums, con sus valores en orden", () => {
+  it("los 9 enums, con sus valores en orden", () => {
     for (const [nombre, valores] of Object.entries(snapshot.enums)) {
       const bloque = SOLO_SQL.match(
         new RegExp(`create type ${nombre} as enum\\s*\\(([^)]*)\\)`, "s"),
@@ -64,17 +65,26 @@ describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
   });
 
   /** Las CHECK son R1. Que falte una es que una regla dejó de aplicarse. */
-  it("las 10 constraints CHECK con nombre — R1 vive aquí", () => {
+  /**
+   * Las que Postgres nombra SOLO, por venir de un `check` inline sin nombre.
+   * No hay `constraint <nombre> check` que encontrar en el SQL, así que se
+   * saltan. Antes esta lista tenía una sola entrada y el snapshot NO la
+   * listaba: la rama era código muerto y su comentario decía lo contrario.
+   */
+  const AUTONOMBRADAS = ["captura_gate_outcome_check", "suscripcion_cadencia_check"];
+
+  it("las 25 constraints CHECK — R1 vive aquí", () => {
     const nombradas = declarados(/constraint (\w+)\s+check/g);
     for (const c of snapshot.constraints_check) {
-      // `captura_gate_outcome_check` la nombra Postgres sola (check inline), por
-      // eso el snapshot la lista y aquí solo se exigen las declaradas a mano.
-      if (c === "captura_gate_outcome_check") continue;
+      if (AUTONOMBRADAS.includes(c)) continue;
       expect(nombradas, `falta la constraint ${c}`).toContain(c);
     }
+    // Y las auto-nombradas están de verdad en el snapshot: si alguien las
+    // quitara, el `continue` volvería a ser código muerto sin que se notara.
+    for (const a of AUTONOMBRADAS) expect(snapshot.constraints_check).toContain(a);
   });
 
-  it("los 6 índices con nombre", () => {
+  it("los 24 índices con nombre", () => {
     const idx = declarados(/create (?:unique )?index (\w+)/g);
     expect(idx).toEqual([...snapshot.indices].sort());
   });
@@ -128,5 +138,102 @@ describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
         new RegExp(`create extension if not exists "${ext}"\\s+with schema ${esquema}`),
       );
     }
+  });
+});
+
+/**
+ * `hybrid_search`: las cuatro propiedades que lo hacen correcto.
+ *
+ * Estas son aserciones sobre el TEXTO del SQL, y por sí solas probarían poco.
+ * Su valor es otro: las cuatro propiedades se verificaron EJECUTANDO la función
+ * contra la instancia real el 2026-08-20, y esto impide que alguien deshaga
+ * cualquiera de ellas con una edición que parece inocente. Las cifras que
+ * aparecen abajo son las medidas, no ilustrativas.
+ */
+describe("hybrid_search — RRF sobre dos rankings", () => {
+  const RRF = SOLO_SQL.slice(SOLO_SQL.indexOf("create or replace function hybrid_search"));
+
+  /**
+   * PROPIEDAD 1 — la que corre en producción HOY. Con `consulta_embedding`
+   * NULL el resultado tiene que ser exactamente el de `busqueda_lexica`.
+   * Medido sobre 6 consultas: `ley` 5 filas, `mental` 2, `salud` 2,
+   * `sistema` 1, y dos sin resultados que no dan error. Mismo orden en todas.
+   */
+  it("el embedding es opcional: sin él degrada a la búsqueda léxica", () => {
+    expect(RRF).toMatch(/consulta_embedding\s+extensions\.vector\(256\)\s+default null/);
+    // El CTE semántico se apaga entero cuando no hay vector.
+    expect(RRF).toMatch(/where consulta_embedding is not null/);
+  });
+
+  /**
+   * PROPIEDAD 2 — FULL OUTER JOIN, no INNER. Medido: con un ranking vectorial
+   * que solo compartía una entidad con el léxico, la ley 1616 de 2013 salió
+   * con `posicion_lexica = null` y score 0.019608 = 1/(50+1). Con INNER habría
+   * desaparecido, y la búsqueda híbrida no añadiría nada sobre la léxica.
+   */
+  it("lo que aparece en un solo ranking sigue puntuando", () => {
+    expect(RRF).toMatch(/full outer join/);
+    expect(RRF).not.toMatch(/\n\s*inner join sem\b/);
+    // El término ausente aporta 0, no NULL: sin el coalesce el score entero
+    // sería NULL y la fila caería al final en vez de puntuar.
+    expect((RRF.match(/coalesce\(peso_/g) ?? []).length).toBe(2);
+  });
+
+  /**
+   * PROPIEDAD 3 — desempate determinista. Sin él la paginación es inestable.
+   */
+  it("ordena por score y desempata siempre igual", () => {
+    expect(RRF).toMatch(/order by k\.score desc, k\.origen, k\.id/);
+  });
+
+  /**
+   * PROPIEDAD 4 — un chunk no es un resultado. Medido con dos pasajes de la
+   * MISMA ley (distancias -1.0 y -0.9) por encima de un proyecto (-0.6): la
+   * ley salió UNA vez y el proyecto en `posicion_semantica = 2`, no 3. Si la
+   * posición se reutilizara del ranking de chunks el score sería 0.038476 en
+   * vez de 0.038839. Ese decimal es toda la prueba.
+   */
+  it("deduplica por entidad y RENUMERA después, no antes", () => {
+    expect(RRF).toMatch(/group by s\.origen, s\.id/);
+    expect(RRF).toMatch(/row_number\(\) over \(order by min\(s\.dist\)/);
+  });
+
+  /** La identidad es el PAR: hay tres tablas fusionadas en un solo ranking. */
+  it("junta por (origen, id), nunca por id solo", () => {
+    expect(RRF).toMatch(/on s\.origen = l\.origen and s\.id = l\.id/);
+  });
+
+  /**
+   * Toda fila arrastra procedencia, incluida la que solo encontró el vector.
+   * Por eso hay rehidratación: una fila del ranking semántico no trae título
+   * ni URL, y una fila sin procedencia comprobable no se publica.
+   */
+  it("rehidrata la procedencia de las filas que solo vio el vector", () => {
+    expect(RRF).toMatch(/join datos d on d\.origen = k\.origen and d\.id = k\.id/);
+    for (const col of ["url_fuente", "captured_at", "tier"]) {
+      expect(RRF, `hybrid_search no devuelve ${col}`).toMatch(new RegExp(`d\\.${col}`));
+    }
+  });
+});
+
+/**
+ * El contrato entre el esquema y `embeddings.ts`. Las 256 dimensiones están
+ * escritas en dos sitios y nada las ataba: si `DIMS` cambiara a 512, los
+ * INSERT fallarían en tiempo de ejecución y no antes.
+ */
+describe("chunk — el contrato de dimensiones con embeddings.ts", () => {
+  it("vector(256) coincide con DIMS", async () => {
+    const { DIMS } = await import("../collectors/src/rag/embeddings.ts");
+    expect(SOLO_SQL).toMatch(new RegExp(`embedding\\s+extensions\\.vector\\(${DIMS}\\)`));
+  });
+
+  /** La PK es el id natural de chunking.ts: R2 compara contra ella. */
+  it("la PK del chunk es TEXT, no un uuid generado", () => {
+    expect(SOLO_SQL).toMatch(/create table chunk \(\s*\n\s*id\s+text primary key/);
+    // OJO con el regex: `[^)]*id\s+uuid` casaba con `norma_id        uuid`,
+    // porque `norma_id` TERMINA en `id`. La aserción fallaba dijera lo que
+    // dijera el esquema. Se ancla a la PRIMERA columna, que es lo que se quiere
+    // comprobar.
+    expect(SOLO_SQL).not.toMatch(/create table chunk \(\s*\n\s*id\s+uuid/);
   });
 });

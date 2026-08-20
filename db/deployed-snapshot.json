@@ -14,13 +14,17 @@
       "07_providencia",
       "08_busqueda_lexica",
       "09_consultar_vigencia",
-      "10_suscripcion"
+      "10_suscripcion",
+      "crear_tabla_chunk_rag",
+      "crear_hybrid_search_rrf"
     ],
-    "nota": "Inventario del estado DESPLEGADO. El test lo compara contra lo que declaran los ficheros de db/schemas/, que es lo que convierte «los ficheros describen la base» en algo comprobado y no en una promesa. Si alguien toca la base a mano o edita un fichero sin desplegar, el test lo dice."
+    "nota": "Inventario del estado DESPLEGADO. El test lo compara contra lo que declaran los ficheros de db/schemas/, que es lo que convierte «los ficheros describen la base» en algo comprobado y no en una promesa. Si alguien toca la base a mano o edita un fichero sin desplegar, el test lo dice.",
+    "nota_constraints": "constraints_check es el inventario COMPLETO de la instancia, incluidas las dos que Postgres nombra solo (captura_gate_outcome_check, suscripcion_cadencia_check) por venir de un check inline. El test las salta porque no hay `constraint <nombre> check` que encontrar en el SQL, no porque falten."
   },
   "tablas": [
     "afectacion",
     "captura",
+    "chunk",
     "norma",
     "norma_version",
     "providencia",
@@ -84,8 +88,13 @@
     "afectacion_soporte_no_vacio",
     "afectacion_vigencia_exige_primaria",
     "captura_bloqueo_motivado",
+    "captura_gate_outcome_check",
     "captura_hash_sha256",
     "captura_url_http",
+    "chunk_embedding_con_modelo",
+    "chunk_exactamente_una_fuente",
+    "chunk_fuente_coherente",
+    "chunk_texto_no_vacio",
     "norma_anio_razonable",
     "providencia_desconocido_va_a_revision",
     "providencia_fechas_coherentes",
@@ -94,6 +103,7 @@
     "proyecto_crosswalk_declarado_tiene_numero",
     "proyecto_estado_original_no_vacio",
     "proyecto_revision_cubre_ambos_ejes",
+    "suscripcion_cadencia_check",
     "suscripcion_temas_no_vacia",
     "suscripcion_temas_sin_blancos",
     "version_intervalo_valido"
@@ -103,6 +113,11 @@
     "afectacion_afectante",
     "captura_source_fecha",
     "captura_url_hash_uniq",
+    "chunk_embedding_hnsw",
+    "chunk_fuente",
+    "chunk_norma",
+    "chunk_providencia",
+    "chunk_proyecto",
     "norma_identidad",
     "norma_version_lookup",
     "providencia_fecha",
@@ -119,9 +134,15 @@
     "proyecto_titulo_tsv",
     "suscripcion_pendientes"
   ],
-  "policies": ["afectacion", "norma", "norma_version", "providencia", "proyecto_ley"],
+  "policies": ["afectacion", "chunk", "norma", "norma_version", "providencia", "proyecto_ley"],
   "tablas_con_rls_sin_policy": ["captura"],
-  "funciones": ["array_sin_blancos", "busqueda_lexica", "consultar_vigencia", "immutable_unaccent"],
+  "funciones": [
+    "array_sin_blancos",
+    "busqueda_lexica",
+    "consultar_vigencia",
+    "hybrid_search",
+    "immutable_unaccent"
+  ],
   "extensiones_declaradas": {
     "pgcrypto": "extensions",
     "unaccent": "extensions",

@@ -1,5 +1,9 @@
 -- Búsqueda y consulta de vigencia (§8.3 y §5.2).
 --
+-- La mitad LÉXICA vive aquí; la fusión RRF (`hybrid_search`) vive en
+-- `08_rag.sql` y no en este fichero, porque Postgres valida el cuerpo de una
+-- función `language sql` al crearla y `chunk` tiene que existir antes.
+--
 -- `hybrid_search` del plan es RRF sobre dos rankings: léxico (FTS) y semántico
 -- (pgvector). La mitad semántica necesita embeddings, o sea una clave de API;
 -- la léxica no necesita nada. Se construye ahora con la forma que RRF espera

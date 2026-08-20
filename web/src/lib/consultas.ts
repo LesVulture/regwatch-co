@@ -41,6 +41,13 @@ export const PROCEDENCIA_CAMPOS: Readonly<Record<string, Procedencia>> = {
   fecha: "hecho_metadato",
   rank: "hecho_metadato",
   posicion: "hecho_metadato",
+  // Metadatos de ranking de `hybrid_search`. Van en la lista blanca a
+  // propósito: enseñar POR QUÉ una fila salió primera es parte de que el
+  // sistema sea auditable, y `posicion_semantica: null` dice, sin prosa, que
+  // esa fila la encontró el texto y no el vector.
+  score: "hecho_metadato",
+  posicion_lexica: "hecho_metadato",
+  posicion_semantica: "hecho_metadato",
   url_fuente: "hecho_metadato",
   captured_at: "hecho_metadato",
   tier: "hecho_metadato",
@@ -73,18 +80,42 @@ export interface ResultadoBusqueda {
  * `contexto` es obligatorio porque la legalidad de un campo depende de él: el
  * mismo dato puede salir en una ficha y no en un dump.
  */
+export interface OpcionesBusqueda {
+  /**
+   * Vector de la consulta, 256 dims re-normalizadas (`embeddings.ts`).
+   * `null` mientras no haya clave de Voyage — y entonces `hybrid_search`
+   * devuelve exactamente lo que devolvía `busqueda_lexica`.
+   */
+  readonly embedding?: readonly number[] | null;
+  /** Sesgo a léxico: sube para `"ley 2277 de 2022"`. */
+  readonly pesoLexico?: number;
+  /** Sesgo a semántico: sube para `"impuesto a bebidas azucaradas"`. */
+  readonly pesoSemantico?: number;
+}
+
 export async function buscar(
   db: Consultante,
   consulta: string,
   contexto: ContextoEgreso,
   limite = 20,
+  opciones: OpcionesBusqueda = {},
 ): Promise<ResultadoBusqueda> {
   const texto = consulta.trim();
   if (texto === "") {
     return { filas: [], omitidos: [], advertencia: "consulta vacía" };
   }
 
-  const { filas } = await db.rpc("busqueda_lexica", { consulta: texto, limite });
+  // Se llama SIEMPRE a `hybrid_search`, también sin vector. Mantener aquí la
+  // llamada a `busqueda_lexica` «hasta que haya embeddings» dejaría el camino
+  // de producción distinto del camino probado, y el día que llegara la clave
+  // se estrenarían las dos cosas a la vez.
+  const { filas } = await db.rpc("hybrid_search", {
+    consulta: texto,
+    consulta_embedding: opciones.embedding ? `[${opciones.embedding.join(",")}]` : null,
+    limite,
+    ...(opciones.pesoLexico !== undefined ? { peso_lexico: opciones.pesoLexico } : {}),
+    ...(opciones.pesoSemantico !== undefined ? { peso_semantico: opciones.pesoSemantico } : {}),
+  });
   return aplicarEgreso(filas, contexto, texto);
 }
 
