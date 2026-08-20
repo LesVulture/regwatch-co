@@ -27,6 +27,8 @@
     "db:load-chunks:dry": "node --env-file-if-exists=.env db/load-chunks.ts --dry-run",
     "db:load-providencias": "node --env-file-if-exists=.env db/load-providencias.ts",
     "db:load-providencias:dry": "node --env-file-if-exists=.env db/load-providencias.ts --dry-run",
+    "embed:chunks": "node --env-file-if-exists=.env db/embed-chunks.ts",
+    "embed:chunks:dry": "node --env-file-if-exists=.env db/embed-chunks.ts --dry-run",
     "measure:matryoshka": "node --env-file-if-exists=.env collectors/src/rag/medir-matryoshka.ts",
     "mcp:start": "node --env-file-if-exists=.env mcp/src/server.ts",
     "qa": "node --env-file-if-exists=.env collectors/src/rag/run-qa.ts"
