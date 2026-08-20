@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import snapshot from "./deployed-snapshot.json" with { type: "json" };
 
-const SQL = ["01_procedencia", "02_vigencia", "03_rls"]
+const SQL = ["01_procedencia", "02_vigencia", "03_rls", "04_proyecto_ley"]
   .map((f) => readFileSync(new URL(`./schemas/${f}.sql`, import.meta.url), "utf-8"))
   .join("\n");
 
@@ -32,7 +32,7 @@ function declarados(re: RegExp): string[] {
 describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
   it("el snapshot trae su procedencia", () => {
     expect(snapshot._procedencia.postgres).toBe("17.6");
-    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(5);
+    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(7);
   });
 
   it("las 4 tablas", () => {

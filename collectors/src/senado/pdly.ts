@@ -75,6 +75,7 @@ export interface Anomalia {
     | "campos-cambiados"
     | "estado-desconocido"
     | "numero-ilegible"
+    | "crosswalk-incompleto"
     | "id-duplicado";
   readonly detalle: string;
 }
@@ -182,6 +183,16 @@ export function parsePdly(texto: string): ResultadoPdly {
       anomalias.push({
         clase: "numero-ilegible",
         detalle: `id ${fila.id}: ${cruce.motivo}`,
+      });
+    }
+
+    // Dígitos nombrados en el campo que el parser no interpretó. La fila entra
+    // igual —lo interpretado es correcto— pero DECLARADA como incompleta: sin
+    // esto, una acumulación 1:N se cuenta de menos y nadie se entera.
+    if (cruce.residuo.length > 0) {
+      anomalias.push({
+        clase: "crosswalk-incompleto",
+        detalle: `id ${fila.id}: ${JSON.stringify(fila.numero_camara)} nombra números sin año (${cruce.residuo.join(", ")}) que no se cuentan`,
       });
     }
 

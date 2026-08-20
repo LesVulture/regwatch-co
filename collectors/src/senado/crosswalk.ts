@@ -48,6 +48,22 @@ export interface CrosswalkParse {
    * no un `null` cualquiera.
    */
   readonly ilegible: boolean;
+  /**
+   * Grupos de dígitos del crudo que el parser NO consumió.
+   *
+   * Existe por un caso real: `339/23 ACUM 340,341,344/23` nombra CUATRO
+   * proyectos, pero `340` y `341` van sin `/año` y el regex —que exige el
+   * año— solo casaba `339/23` y `344/23`. El resultado era «2 proyectos»
+   * cuando el campo dice cuatro: **una acumulación 1:N contada de menos, en
+   * silencio**, que es justo la clase de fallo que este módulo existe para
+   * evitar.
+   *
+   * NO se resuelve infiriendo que `340` es `340/23`. Compartir el año es una
+   * convención tipográfica, y deducir identidades por convención es lo mismo
+   * que emparejar por parecido: si se acierta, no se sabe; si se falla,
+   * tampoco. Se DECLARA lo que quedó sin interpretar y va a revisión humana.
+   */
+  readonly residuo: readonly string[];
   readonly raw: string;
 }
 
@@ -93,7 +109,7 @@ export function parseNumero(raw: string | null | undefined): CrosswalkParse {
   const texto = (raw ?? "").trim();
 
   if (!texto) {
-    return { principal: null, acumulados: [], ilegible: false, raw: texto };
+    return { principal: null, acumulados: [], ilegible: false, residuo: [], raw: texto };
   }
 
   const matches = [...texto.matchAll(NUM_RE)];
@@ -101,7 +117,19 @@ export function parseNumero(raw: string | null | undefined): CrosswalkParse {
   if (matches.length === 0) {
     // Hay contenido pero no se parece a un número de proyecto. Esto va a
     // cuarentena, no al vacío.
-    return { principal: null, acumulados: [], ilegible: true, raw: texto };
+    return { principal: null, acumulados: [], ilegible: true, residuo: [], raw: texto };
+  }
+
+  // Qué dígitos del crudo quedaron FUERA de todo emparejamiento. Ver `residuo`.
+  const cubierto = new Array<boolean>(texto.length).fill(false);
+  for (const m of matches) {
+    const i = m.index ?? 0;
+    for (let k = i; k < i + m[0].length; k++) cubierto[k] = true;
+  }
+  const residuo: string[] = [];
+  for (const d of texto.matchAll(/\d{1,4}/g)) {
+    const i = d.index ?? 0;
+    if (!cubierto[i]) residuo.push(d[0]);
   }
 
   const nums = matches.map((m) => canonizar(m[1] as string, m[2] as string, m[0]));
@@ -113,10 +141,10 @@ export function parseNumero(raw: string | null | undefined): CrosswalkParse {
   const declaraAcumulacion = ACUM_RE.test(texto);
 
   if (resto.length > 0 && !declaraAcumulacion) {
-    return { principal: primero, acumulados: [], ilegible: true, raw: texto };
+    return { principal: primero, acumulados: [], ilegible: true, residuo, raw: texto };
   }
 
-  return { principal: primero, acumulados: resto, ilegible: false, raw: texto };
+  return { principal: primero, acumulados: resto, ilegible: false, residuo, raw: texto };
 }
 
 /** Resultado de intentar emparejar un proyecto con su contraparte. */
@@ -137,6 +165,12 @@ export interface Crosswalk {
   readonly acumulados: readonly NumeroProyecto[];
   /** Por qué quedó en este estado. Se guarda: es procedencia, no un log. */
   readonly motivo: string;
+  /**
+   * Dígitos del campo de contraparte que quedaron sin interpretar. Si no está
+   * vacío, la clasificación es INCOMPLETA aunque el estado parezca bueno: hay
+   * proyectos nombrados que no se contaron. Va a revisión humana.
+   */
+  readonly residuo: readonly string[];
 }
 
 /**
@@ -165,6 +199,7 @@ export function clasificarCrosswalk(
       contraparte: null,
       acumulados: [],
       motivo: `el campo de contraparte trae texto no interpretable: ${JSON.stringify(otro.raw)}`,
+      residuo: otro.residuo,
     };
   }
 
@@ -175,6 +210,7 @@ export function clasificarCrosswalk(
       contraparte: null,
       acumulados: [],
       motivo: "la fuente no publica el número de la otra cámara (52,4 % de los casos)",
+      residuo: otro.residuo,
     };
   }
 
@@ -184,7 +220,12 @@ export function clasificarCrosswalk(
       propio: propio.principal,
       contraparte: otro.principal,
       acumulados: otro.acumulados,
-      motivo: `acumulación declarada: ${otro.acumulados.length + 1} proyectos en una relación 1:N`,
+      motivo:
+        `acumulación declarada: ${otro.acumulados.length + 1} proyectos en una relación 1:N` +
+        (otro.residuo.length > 0
+          ? ` — INCOMPLETA: ${otro.residuo.length} número(s) sin año en el crudo (${otro.residuo.join(", ")}) que NO se cuentan; el campo nombra más proyectos de los interpretados. Revisión humana.`
+          : ""),
+      residuo: otro.residuo,
     };
   }
 
@@ -193,6 +234,11 @@ export function clasificarCrosswalk(
     propio: propio.principal,
     contraparte: otro.principal,
     acumulados: [],
-    motivo: "la fuente declara la contraparte y es interpretable",
+    motivo:
+      "la fuente declara la contraparte y es interpretable" +
+      (otro.residuo.length > 0
+        ? ` — pero quedaron dígitos sin interpretar (${otro.residuo.join(", ")}). Revisión humana.`
+        : ""),
+    residuo: otro.residuo,
   };
 }

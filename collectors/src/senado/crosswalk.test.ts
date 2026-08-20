@@ -148,3 +148,44 @@ describe("clasificarCrosswalk", () => {
     expect(c.estado).toBe("no_declarado");
   });
 });
+
+describe("residuo: lo que el parser NO consumió se declara", () => {
+  /**
+   * EL FALLO QUE ESTO CAZA, y es real: `339/23 ACUM 340,341,344/23` nombra
+   * CUATRO proyectos. `340` y `341` van sin `/año`, el regex exige el año, y
+   * el resultado era «2 proyectos» — una acumulación 1:N contada de menos, en
+   * silencio. Se descubrió mirando el SQL generado, no leyendo el código.
+   */
+  it("declara los números sin año que no pudo contar", () => {
+    const r = parseNumero("339/23 ACUM 340,341,344/23");
+    expect(r.principal?.canonico).toBe("339/23");
+    expect(r.acumulados.map((a) => a.canonico)).toEqual(["344/23"]);
+    // Y lo que NO se contó queda dicho, en vez de desaparecer.
+    expect(r.residuo).toEqual(["340", "341"]);
+  });
+
+  it("NO infiere el año compartido: 340 no se convierte en 340/23", () => {
+    const r = parseNumero("339/23 ACUM 340,341,344/23");
+    const canonicos = [r.principal, ...r.acumulados].map((n) => n?.canonico);
+    expect(canonicos).not.toContain("340/23");
+    expect(canonicos).not.toContain("341/23");
+  });
+
+  it("el motivo dice que la acumulación está incompleta", () => {
+    const c = clasificarCrosswalk("216/23", "339/23 ACUM 340,341,344/23");
+    expect(c.estado).toBe("acumulado");
+    expect(c.motivo).toContain("INCOMPLETA");
+    expect(c.motivo).toContain("340");
+    expect(c.residuo).toEqual(["340", "341"]);
+  });
+
+  /** Sin falsos positivos: las acumulaciones bien escritas no se marcan. */
+  it("una acumulación con todos los años NO deja residuo", () => {
+    expect(parseNumero("023/22 Acum 057/22, 099/22").residuo).toEqual([]);
+    expect(parseNumero("093/24 Acum 12/24 - 118/24 - 155/24 - 201/24 - 233/24").residuo).toEqual(
+      [],
+    );
+    expect(clasificarCrosswalk("001/24", "407/24").residuo).toEqual([]);
+    expect(clasificarCrosswalk("001/24", "").residuo).toEqual([]);
+  });
+});

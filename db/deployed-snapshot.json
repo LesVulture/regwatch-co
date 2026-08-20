@@ -8,11 +8,13 @@
       "01_procedencia",
       "02_vigencia",
       "03_rls_lectura_publica_escritura_cerrada",
-      "04_extensiones_fuera_de_public"
+      "04_extensiones_fuera_de_public",
+      "05_proyecto_ley",
+      "06_crosswalk_residuo"
     ],
     "nota": "Inventario del estado DESPLEGADO. El test lo compara contra lo que declaran los ficheros de db/schemas/, que es lo que convierte «los ficheros describen la base» en algo comprobado y no en una promesa. Si alguien toca la base a mano o edita un fichero sin desplegar, el test lo dice."
   },
-  "tablas": ["afectacion", "captura", "norma", "norma_version"],
+  "tablas": ["afectacion", "captura", "norma", "norma_version", "proyecto_ley"],
   "enums": {
     "derivation_arista": ["declarado_en_norma", "parsed_from_text"],
     "derivation_fecha": ["declarada_en_texto", "derivada_deterministicamente", "no_determinable"],
@@ -34,7 +36,25 @@
       "anula",
       "decae_pierde_fuerza_ejecutoria",
       "derogada_por_referendo"
-    ]
+    ],
+    "estado_tramite": [
+      "radicado",
+      "en_comision",
+      "en_plenaria",
+      "aprobado_camara_origen",
+      "en_camara_revisora",
+      "conciliacion",
+      "aprobado_congreso",
+      "sancion_presidencial",
+      "ley",
+      "objetado",
+      "control_constitucional",
+      "archivado",
+      "retirado",
+      "desconocido"
+    ],
+    "estado_crosswalk": ["declarado", "no_declarado", "ilegible", "acumulado"],
+    "camara": ["senado", "camara"]
   },
   "dominios": ["url_fuente"],
   "constraints_check": [
@@ -47,6 +67,9 @@
     "captura_hash_sha256",
     "captura_url_http",
     "norma_anio_razonable",
+    "proyecto_crosswalk_declarado_tiene_numero",
+    "proyecto_estado_original_no_vacio",
+    "proyecto_revision_cubre_ambos_ejes",
     "version_intervalo_valido"
   ],
   "indices": [
@@ -55,9 +78,16 @@
     "captura_source_fecha",
     "captura_url_hash_uniq",
     "norma_identidad",
-    "norma_version_lookup"
+    "norma_version_lookup",
+    "proyecto_crosswalk",
+    "proyecto_crosswalk_residuo",
+    "proyecto_estado",
+    "proyecto_legislatura",
+    "proyecto_numero_senado",
+    "proyecto_revision",
+    "proyecto_titulo_tsv"
   ],
-  "policies": ["afectacion", "norma", "norma_version"],
+  "policies": ["afectacion", "norma", "norma_version", "proyecto_ley"],
   "tablas_con_rls_sin_policy": ["captura"],
   "funciones": ["immutable_unaccent"],
   "extensiones_declaradas": {
