@@ -26,9 +26,15 @@ Precedente vivo, y por eso esta regla existe: en la investigación previa, el **
 
 ## Estado del proyecto
 
-**Fase 0 en curso.** El v1 fue un intento fallido: cero recolección, clasificación léxica pura, JSONL sin motor de consulta, sin modelo de vigencia. Se conserva de él únicamente el contrato de evidencia.
+**Operativo de punta a punta, con el corpus cargado** (2026-08-20). El v1 fue un intento fallido: cero recolección, clasificación léxica pura, JSONL sin motor de consulta, sin modelo de vigencia. Se conserva de él únicamente el contrato de evidencia.
 
-Roadmap completo en `PLAN-V2.md` §11. Presupuesto en §11 bis.
+La instancia viva tiene 1.694 proyectos de ley, 21.665 providencias y 286 fragmentos de articulado de 8 normas; se busca, se consulta vigencia y se responde con citas comprobadas. El estado real y sus límites, en el README — que es donde vive el claim del producto y no se infla.
+
+**Y una advertencia contra el optimismo, que es el sesgo de este fichero:** «se responde con citas comprobadas» describe la MECÁNICA, no la cobertura. En la corrida del gold set del 2026-08-20, 1 de 18 preguntas superó el umbral de publicación — con 0 citas fantasma y 0 citas falsas, que es lo que la mecánica sí garantiza. El cuello de botella es el corpus (7 normas con articulado) y el hecho de que una negativa honesta no tiene nada que citar y por tanto se borra. Antes de escribir en ningún sitio que el Q&A «funciona», leer README §«El 1 de 18, explicado».
+
+**Y cuesta cero:** no hay ninguna clave de API de pago. Embeddings con **nomic-embed-text en Ollama local**, Q&A con **`claude -p` y la sesión OAuth del usuario**. Eso SUPERA el presupuesto de `PLAN-V2.md` §8.2, que está anotado como tal en el propio plan. Antes de reintroducir un proveedor de pago, es una decisión del dueño, no un detalle de implementación.
+
+Roadmap completo en `PLAN-V2.md` §11. Presupuesto en §11 bis (superado en su partida de IA).
 
 ---
 
@@ -81,7 +87,8 @@ Detalle en `PLAN-V2.md` §15. Lo que hay que tener presente al escribir un colec
 
 ## Convenciones
 
-- **Monorepo pnpm**: `collectors/`, `db/`, `web/`
+- **Monorepo pnpm**: `collectors/`, `web/`, `mcp/`. **`db/` NO es un paquete del workspace** —no tiene `package.json` y pnpm lo ignoraba en silencio, así que declararlo era una promesa vacía—: sus scripts se corren desde la raíz (`pnpm db:load`) y sus tests los recoge el vitest de la raíz. El motivo está escrito en `pnpm-workspace.yaml`
+- **Ningún proveedor de pago.** Los embeddings salen de Ollama local y el modelo de Q&A de `claude -p`. Si una tarea parece necesitar una clave de API, la respuesta por defecto es que NO, y se pregunta
 - TypeScript. Node fijado en `.nvmrc`
 - Un colector = un pipeline CLI + **fixtures versionados con tests de snapshot**
 - Los colectores usan el `$` que inyecta Crawlee y **no declaran `cheerio` propio** (conflicto de versión latente)
