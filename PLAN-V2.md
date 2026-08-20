@@ -482,7 +482,9 @@ Y es un **suelo**, no el archivo completo: falta el Diario Oficial, las 23.373 f
 | git / GitHub | <5 GB recomendado | **13×** el techo | ✗ muerta para el crudo |
 | **Cloudflare R2** | 10 GB-mes gratis, luego $0,015/GB-mes, **egreso gratis** | **$0,81/mes** | ✓ |
 
-**Decisión: híbrido.** Crudo a **R2** direccionado por `content_hash`; **metadatos e índice de citas a git** (84.206 docs × ~1 KB ≈ **81 MB**: trivial, diffable, clonable); Supabase Free se queda con Postgres/pgvector y su bucket de 1 GB para evidencia puntual.
+**Recomendación: híbrido — y es una recomendación, no una decisión tomada.** Lo que el gate 3 zanjó es la MEDIDA (63,78 GB), que descarta por aritmética Supabase Storage y git. El DESTINO es otra cosa: R2 mete una **dependencia de pago y una cuenta nueva**, y eso lo decide Daniel, en bloque con §13.2. Va a §13 como decisión abierta.
+
+Propuesta: crudo a **R2** direccionado por `content_hash`; **metadatos e índice de citas a git** (84.206 docs × ~1 KB ≈ **81 MB**: trivial, diffable, clonable); Supabase Free se queda con Postgres/pgvector y su bucket de 1 GB para evidencia puntual.
 
 **El tradeoff, dicho de frente:** introduce una dependencia de pago (~$10/año) y un segundo sistema que respaldar, en un proyecto que hasta ahora cabía en tiers gratuitos. La alternativa —quedarse en git— obliga a **no persistir los bytes crudos**, que es justo lo que §7 declara innegociable. **Se paga el dólar o se rompe el contrato de evidencia.** La propiedad que decide no es el precio sino el **egreso gratis**: un *commons* público se descarga, y S3 y Supabase cobran la salida.
 
@@ -556,7 +558,7 @@ Borrar v1 conservando **`GOVERNANCE.md`, `LICENSE`, `PLAN-V2.md` y `research/`**
 **Cuatro gates antes de escribir un colector**, todos de minutos:
 1. ⚠️ **¿Hay slot Free de verdad?** El límite de 2 proyectos es **por cuenta, no por organización** (§Decisiones). Comprobarlo, no asumirlo.
 2. `show server_version` · `select * from pg_extension` · disponibilidad de `unaccent`, `pgmq`, `pg_net`, `pg_cron` — presencia en catálogo **no** es lo mismo que `CREATE EXTENSION` exitoso.
-3. ✅ **Dónde vive el crudo — HECHO.** Medido: **63,78 GB**, lo que mata Storage (64× el cupo) y git (13× el techo). Destino: **Cloudflare R2** para el crudo, git para metadatos. Detalle en §8.4 y `docs/gate3-medicion-crudo.json`. Queda **crear la cuenta de R2**, que es una gestión de Daniel.
+3. ✅ **Cuánto pesa el crudo — MEDIDO.** **63,78 GB**, lo que mata Storage (64× el cupo) y git (13× el techo). Eso es lo resuelto. **El destino NO está decidido:** la propuesta es Cloudflare R2 ($0,81/mes, egreso gratis) para el crudo y git para metadatos, pero añade una dependencia de pago y la decide Daniel (§13.6). Detalle en §8.4 y `docs/gate3-medicion-crudo.json`.
 4. 📝 **Radicar los derechos de petición de §15.1** (Cámara, Función Pública, DNP). **Los tres escritos están redactados y listos en `legal/peticiones/`**, con el canal de radicación verificado y la cláusula que motiva cada uno citada literalmente. Falta completar los datos personales y radicarlos: es gestión de Daniel, no automatizable. El plazo legal (15 días hábiles) corre en paralelo al desarrollo.
 
 ### Fase 1 — Trámite legislativo (semanas 2-4) · *el núcleo*
@@ -600,7 +602,7 @@ El plan daba cifras de coste en tres sitios y **no las sumaba en ninguno**, con 
 | IA — Q&A con citas (Sonnet 5 + Citations) | ~$12 | ~$12-40 según uso |
 | Embeddings + rerank (voyage) | **$0** (200M gratis, dos bolsas separadas) | ~$0-5 |
 | Base de datos | **$0** (Free) | **$25** (Pro) |
-| Almacenamiento del crudo — **63,78 GB medidos**, +7 GB/año | **$0,81** (Cloudflare R2) | ~$0,90 y subiendo |
+| Almacenamiento del crudo — **63,78 GB medidos**, +7 GB/año | **$0,81** (R2, *propuesto* §13.6) | ~$0,90 y subiendo |
 | Egress | dentro de 5 GB | **por dimensionar** (PWA + API + MCP + dumps) |
 | Hosting web | ⚠️ **$0 solo si no hay donaciones** — Hobby prohíbe uso comercial | **Pro de Vercel** si hay cualquier sostenimiento |
 | OCR del backfill | ~$100 *one-time* | idem |
@@ -660,7 +662,8 @@ La palabra «horas» no aparecía ni una vez en el documento, mientras se compro
 3. **Alcance del piloto — y ojo, que esta decisión ya no es solo de producto:** ¿arrancar con **todos** los temas, o con `salud` + `ia-y-transformacion-digital` como piloto vertical hasta validar el Q&A? La aritmética de §8.4 la amarra a la infraestructura: los 45 temas con backfill **no caben** en el plan Free ni con la cifra más optimista de §8.4. Piloto vertical → Free viable. Todos los temas desde el principio → Pro ($25/mes) desde la Fase 4. (Recomendación: piloto vertical; además es lo que hace posible un gold set honesto.)
 4. **~~Correr el crítico de completitud y los refutadores que faltan.~~ HECHO.** Las 13 especialidades están auditadas (§cabecera), el crítico de completitud corrió y el dictamen legal está en §15. Lo que queda de esta decisión es cuánto de lo que encontraron se acepta.
 5. **Hobby de Vercel y la cláusula de uso no comercial:** si regwatch-co acepta donaciones o cualquier forma de sostenimiento, **sale de Hobby**. Decidir antes de la Fase 5 y en bloque con la #2, porque las dos responden a la misma pregunta.
-6. **Qué hacer con La Silla Vacía**, que bloquea agentes de IA en su `robots.txt` y era la fuente #1 de la canasta. La recomendación es acatarlo y sacarla de la ingesta automatizada; la alternativa honesta sería pedirles permiso explícito, que es una gestión humana, no técnica.
+6. **Dónde vive el crudo — decisión NUEVA que abre el gate 3.** Los 63,78 GB medidos descartan Supabase Storage (64× el cupo) y git (13× el techo); lo que queda es almacenamiento externo. La recomendación es **Cloudflare R2** ($0,81/mes, y la propiedad que decide no es el precio sino el **egreso gratis**: cada re-verificación de evidencia lee el crudo). Pero es **una cuenta nueva y una factura recurrente**, así que se decide en bloque con la #2: si el proyecto no se monetiza, ese dólar sale del bolsillo de Daniel. La alternativa es no archivar el crudo — y eso **rompe el contrato de evidencia**, que es lo que distingue a este proyecto de las compilaciones que ya existen. Se paga el dólar o se rompe el contrato; no hay tercera vía honesta.
+7. **Qué hacer con La Silla Vacía**, que bloquea agentes de IA en su `robots.txt` y era la fuente #1 de la canasta. La recomendación es acatarlo y sacarla de la ingesta automatizada; la alternativa honesta sería pedirles permiso explícito, que es una gestión humana, no técnica.
 
 ---
 

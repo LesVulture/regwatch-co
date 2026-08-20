@@ -4,6 +4,25 @@
 > (`[CÉDULA]`, `[CORREO]`, `[DIRECCIÓN DE NOTIFICACIÓN]`, `[TELÉFONO]`) antes de enviar.
 > Ningún dato personal fue inventado.
 
+> ### ⚠️ LEER ANTES DE RADICAR — esto te compromete por escrito ante una entidad pública
+>
+> Este escrito **afirma como hecho**, ante una entidad del Estado y en tu nombre, que
+> regwatch-co «no está monetizado», es «gratuito» y su reutilización es «no comercial».
+> Es el argumento sobre el que se pide la autorización, no una frase de adorno.
+>
+> **La decisión §13.2 del plan (monetización) sigue ABIERTA.** Radicar así la cierra de
+> hecho: si más adelante el proyecto cobra, exhibe publicidad o acepta donaciones, la
+> autorización se habrá concedido sobre una premisa que cambió, y lo honesto sería
+> informarlo a la entidad y volver a radicar. **Decide §13.2 antes de radicar, no después.**
+>
+> El escrito también asume **compromisos técnicos concretos** en tu nombre (ritmo de
+> peticiones, identificación del agente, atribución de la propiedad, cese a requerimiento).
+> Léelos enteros: son exigibles.
+>
+> Redactado por un agente de IA a partir de las cláusulas citadas literalmente y de los
+> canales verificados el 2026-08-19. **Ningún dato personal fue inventado; ninguna cláusula
+> fue parafraseada.** La revisión final es tuya.
+
 **Canal de radicación (verificado 2026-08-19):**
 
 Dependencia: Cámara de Representantes, a la atención de Secretaría General / Dirección Administrativa (la autorización del numeral 3.1 la concede «la Cámara de Representantes», no la unidad de atención ciudadana, que es solo canal de recepción; por eso el escrito incluye la solicitud de traslado por competencia del art. 21 de la Ley 1755 de 2015).

@@ -4,6 +4,25 @@
 > (`[CÉDULA]`, `[CORREO]`, `[DIRECCIÓN DE NOTIFICACIÓN]`, `[TELÉFONO]`) antes de enviar.
 > Ningún dato personal fue inventado.
 
+> ### ⚠️ LEER ANTES DE RADICAR — esto te compromete por escrito ante una entidad pública
+>
+> Este escrito **afirma como hecho**, ante una entidad del Estado y en tu nombre, que
+> regwatch-co «no está monetizado», es «gratuito» y su reutilización es «no comercial».
+> Es el argumento sobre el que se pide la autorización, no una frase de adorno.
+>
+> **La decisión §13.2 del plan (monetización) sigue ABIERTA.** Radicar así la cierra de
+> hecho: si más adelante el proyecto cobra, exhibe publicidad o acepta donaciones, la
+> autorización se habrá concedido sobre una premisa que cambió, y lo honesto sería
+> informarlo a la entidad y volver a radicar. **Decide §13.2 antes de radicar, no después.**
+>
+> El escrito también asume **compromisos técnicos concretos** en tu nombre (ritmo de
+> peticiones, identificación del agente, atribución de la propiedad, cese a requerimiento).
+> Léelos enteros: son exigibles.
+>
+> Redactado por un agente de IA a partir de las cláusulas citadas literalmente y de los
+> canales verificados el 2026-08-19. **Ningún dato personal fue inventado; ninguna cláusula
+> fue parafraseada.** La revisión final es tuya.
+
 **Canal de radicación (verificado 2026-08-19):**
 
 Dirección General del Departamento Administrativo de la Función Pública, por conducto del Grupo de Servicio al Ciudadano. Canal de radicación verificado el 2026-08-19 (HTTP 200): formulario PQRSD «Formule su petición» — https://www.funcionpublica.gov.co/formule-su-peticion (el formulario se sirve en un iframe desde https://www.funcionpublica.gov.co/orfeo361/formularioweb/formulario_new.php, sistema Orfeo, que genera número de radicado). Canal alterno verificado en el pie institucional del portal: atencionalciudadano@funcionpublica.gov.co. Copia sugerida: eva@funcionpublica.gov.co, correo que la propia Política de Privacidad y Condiciones de Uso designa para «cualquier duda, inquietud o comentario sobre el contenido de este portal». Sede principal: Carrera 6 No. 12-62, Bogotá D.C., Código Postal 111711. NO usar notificacionesjudiciales@funcionpublica.gov.co: la página https://www.funcionpublica.gov.co/notificaciones-judiciales advierte que ese buzón es solo para actuaciones judiciales y que un correo enviado a un canal distinto del competente «no podrá ser atendida, ni tramitada».

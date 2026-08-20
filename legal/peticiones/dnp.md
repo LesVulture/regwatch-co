@@ -4,6 +4,25 @@
 > (`[CÉDULA]`, `[CORREO]`, `[DIRECCIÓN DE NOTIFICACIÓN]`, `[TELÉFONO]`) antes de enviar.
 > Ningún dato personal fue inventado.
 
+> ### ⚠️ LEER ANTES DE RADICAR — esto te compromete por escrito ante una entidad pública
+>
+> Este escrito **afirma como hecho**, ante una entidad del Estado y en tu nombre, que
+> regwatch-co «no está monetizado», es «gratuito» y su reutilización es «no comercial».
+> Es el argumento sobre el que se pide la autorización, no una frase de adorno.
+>
+> **La decisión §13.2 del plan (monetización) sigue ABIERTA.** Radicar así la cierra de
+> hecho: si más adelante el proyecto cobra, exhibe publicidad o acepta donaciones, la
+> autorización se habrá concedido sobre una premisa que cambió, y lo honesto sería
+> informarlo a la entidad y volver a radicar. **Decide §13.2 antes de radicar, no después.**
+>
+> El escrito también asume **compromisos técnicos concretos** en tu nombre (ritmo de
+> peticiones, identificación del agente, atribución de la propiedad, cese a requerimiento).
+> Léelos enteros: son exigibles.
+>
+> Redactado por un agente de IA a partir de las cláusulas citadas literalmente y de los
+> canales verificados el 2026-08-19. **Ningún dato personal fue inventado; ninguna cláusula
+> fue parafraseada.** La revisión final es tuya.
+
 **Canal de radicación (verificado 2026-08-19):**
 
 Radicación por el Sistema de PQRSD del DNP: https://pqrsd.dnp.gov.co/index.php (verificado activo el 2026-08-19; seleccionar el tipo «Derecho de Petición de Interés Particular»). Este es el canal que los propios «Términos y condiciones de uso» del DNP designan, en su numeral 5 («Contacto para asuntos relacionados con los términos y condiciones de uso»), junto con el correo servicioalciudadano@dnp.gov.co, al que conviene enviar copia. Radicación física alterna: Calle 26 No. 13-49, Int. 101, Piso 1, Edificio Fonade, Bogotá D.C., C.P. 110311, lunes a viernes de 8:00 a.m. a 4:30 p.m. NOTA: notificacionesjudiciales@dnp.gov.co existe y está verificado, pero es exclusivo para notificaciones judiciales — NO debe usarse para este derecho de petición. No se dirige a una dependencia interna nombrada porque el organigrama del DNP no fue verificable hoy (la página devolvió HTTP 404); por eso el escrito pide el traslado por competencia (petición SEXTA) a la Oficina de Tecnologías y Sistemas de Información y/o la Oficina Asesora Jurídica, cuyos nombres sí están verificados.
