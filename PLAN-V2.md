@@ -620,6 +620,12 @@ Lo que sigue necesitando claves: **solo las llamadas** — `VOYAGE_API_KEY` para
 Chunking por artículo. Embeddings voyage-4 a 256 dims, con el presupuesto de **~176k chunks** de §8.4 como techo provisional (§8.4). `hybrid_search` RRF en español, con el wrapper `IMMUTABLE` de `unaccent` ya creado en la Fase 0 y `hnsw.iterative_scan` encendido. Q&A con **bloques `search_result`** y las siete reglas. Exposición del Q&A solo tras superar el gold set.
 
 ### Fase 5 — Producto público (semanas 15-18)
+🟡 **La aplicación existe y compila.** Next.js **16.3.1** con Turbopack, React 19.2.8, App Router: dos rutas server-rendered (búsqueda y vigencia a fecha arbitraria) sobre `pnpm web:build` verde. Tenía el frontend clasificado como bloqueado por §13.2 y era impreciso: esa decisión afecta a **dónde se despliega y qué se expone**, no a escribir la aplicación.
+  - **Todo pasa por `web/src/lib/consultas.ts`**, que es donde se aplica la política de egreso. Ninguna página habla con la base directamente: si lo hiciera, la política sería opcional.
+  - Las dos advertencias van **en la interfaz**, no en la documentación: «sin resultados» se muestra como «no aparece en lo capturado, no que no exista», y una vigencia sin afectaciones dice explícitamente que eso **no** significa vigente sin cambios. Y la **cláusula que prueba** cada afectación se enseña verbatim y en primer plano, no en un desplegable: es lo que permite comprobar la afirmación sin salir de la página.
+  - Adoptadas de nacimiento las dos convenciones de Next 16: `searchParams`/`params` **asíncronos** y `proxy.ts` en lugar de `middleware.ts`.
+  - `pnpm verify` incluye ahora el build de la web, así que la app no puede romperse sin que el CI lo diga.
+Falta: PWA (`@serwist/turbopack`), auth, alertas por email y el MCP server.
 ✅ **La lista de egreso por procedencia — HECHA, y en código.** §15.3 la exigía «antes de exponer la API» y ya no depende de que alguien se acuerde: `collectors/src/egreso/politica.ts` es una función que hay que llamar, y **lo que no pasa por ella no sale**.
   - Trabaja por **lista blanca**: un campo sin procedencia declarada NO sale. Con lista negra, un campo nuevo saldría por defecto y nadie se enteraría hasta que ya hubiera salido; el fallo por defecto tiene que ser callarse.
   - El caso que explica el diseño: **el correo de un congresista es legal o no según el CONTEXTO**. En la ficha de una persona sí (Ley 1712 + Decreto 1377); en un dump, una respuesta en bloque o el MCP, no. Por eso `contexto` no es un parámetro opcional de esa API.

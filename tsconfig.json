@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -13,8 +13,16 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "allowJs": true
   },
-  "include": ["collectors/src/**/*.ts", "db/**/*.ts", "web/src/**/*.ts", "gold/**/*.ts"],
+  "include": [
+    "collectors/src/**/*.ts",
+    "db/**/*.ts",
+    "gold/**/*.ts",
+    "web/**/*.ts",
+    "web/**/*.tsx"
+  ],
   "exclude": ["node_modules", "**/dist", "**/.next"]
 }
