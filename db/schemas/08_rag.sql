@@ -88,7 +88,10 @@ comment on table chunk is
   'contra este id, y un identificador generado por la base rompería esa cadena.';
 
 comment on column chunk.embedding is
-  'vector(256) = voyage-4 truncado y RE-NORMALIZADO. Las 256 dims son un '
+  'vector(256) = el modelo de embeddings truncado y RE-NORMALIZADO. Hoy es '
+  'nomic-embed-text en Ollama local (antes voyage-4, eliminado con la decisión '
+  'de coste cero del 2026-08-20). La etiqueta exacta del modelo va en la '
+  'columna `modelo` de cada fila, que es donde se comprueba. Las 256 dims son un '
   'contrato con DIMS de embeddings.ts; si divergen, el índice HNSW rechaza la '
   'inserción en vez de degradarse en silencio.';
 

@@ -1,24 +1,28 @@
 /**
- * El adaptador de embeddings, probado sin gastar un token.
+ * El adaptador de embeddings, probado sin red.
  *
  * `fetch` se inyecta. No es una comodidad de test: separar la forma de la
- * petición de la llamada es lo que permite escribir y validar esta capa antes
- * de que el proyecto tenga clave de API.
+ * petición de la llamada es lo que permite validar esta capa sin depender de
+ * que Ollama esté vivo en la máquina que corre el CI.
  */
 
 import { describe, expect, it } from "vitest";
 import {
   cuerpoPeticion,
   DIMS,
+  DIMS_NATIVAS,
   embeberLote,
   estaNormalizado,
   LOTE_MAX,
   lotes,
+  MODELO,
+  MODELO_ETIQUETA,
+  PREFIJOS,
   truncarYNormalizar,
 } from "./embeddings.ts";
 
-/** Vector normalizado de 2048 dims con energía repartida de forma desigual. */
-function vectorFalso(semilla: number, dims = 2048): number[] {
+/** Vector normalizado con energía repartida de forma desigual. */
+function vectorFalso(semilla: number, dims = DIMS_NATIVAS): number[] {
   const v = Array.from({ length: dims }, (_, i) => Math.sin((i + 1) * semilla) / (i + 1));
   const n = Math.sqrt(v.reduce((a, x) => a + x * x, 0));
   return v.map((x) => x / n);
@@ -57,7 +61,7 @@ describe("truncación Matryoshka y la trampa de la norma", () => {
   });
 
   it("un vector nulo no produce NaN", () => {
-    const r = truncarYNormalizar(new Array(2048).fill(0));
+    const r = truncarYNormalizar(new Array(DIMS_NATIVAS).fill(0));
     expect(r.every((x) => x === 0)).toBe(true);
   });
 
@@ -70,36 +74,46 @@ describe("lotes y forma de la petición", () => {
   it("trocea respetando el máximo", () => {
     const xs = Array.from({ length: 300 }, (_, i) => i);
     const ls = lotes(xs);
-    expect(ls).toHaveLength(3);
+    expect(ls).toHaveLength(Math.ceil(300 / LOTE_MAX));
     expect(ls[0]).toHaveLength(LOTE_MAX);
     expect(ls.flat()).toEqual(xs);
   });
 
   /**
-   * `input_type` cambia el embedding. Embeber consultas como `document`
+   * El prefijo de tarea de nomic-embed-text cambia el embedding, igual que
+   * cambiaba el `input_type` de Voyage. Embeber consultas como documento
    * degrada el ranking sin dar ningún error.
    */
-  it("distingue documento de consulta", () => {
-    expect(cuerpoPeticion(["x"], "document").input_type).toBe("document");
-    expect(cuerpoPeticion(["x"], "query").input_type).toBe("query");
-    expect(cuerpoPeticion(["x"], "query").output_dimension).toBe(DIMS);
+  it("distingue documento de consulta con el prefijo del modelo", () => {
+    expect(cuerpoPeticion(["x"], "document").input[0]).toBe(`${PREFIJOS.document}x`);
+    expect(cuerpoPeticion(["x"], "query").input[0]).toBe(`${PREFIJOS.query}x`);
+    expect(PREFIJOS.document).not.toBe(PREFIJOS.query);
+  });
+
+  it("pide el modelo local y prohíbe el truncado silencioso de Ollama", () => {
+    const c = cuerpoPeticion(["x"], "document");
+    expect(c.model).toBe(MODELO);
+    // Con `truncate: true` (el defecto de Ollama) un artículo largo se
+    // embebería a medias y el vector saldría plausible y equivocado.
+    expect(c.truncate).toBe(false);
+  });
+
+  it("la etiqueta que va a la base lleva el modelo Y las dimensiones", () => {
+    expect(MODELO_ETIQUETA).toBe(`${MODELO}@${DIMS}`);
   });
 });
 
 describe("embeberLote — sin red, con fetch inyectado", () => {
-  const ok = (n: number) =>
+  const ok = (n: number, dims = DIMS_NATIVAS) =>
     ({
       ok: true,
       status: 200,
       json: async () => ({
-        data: Array.from({ length: n }, (_, i) => ({
-          index: i,
-          embedding: vectorFalso(i + 1),
-        })),
+        embeddings: Array.from({ length: n }, (_, i) => vectorFalso(i + 1, dims)),
       }),
     }) as unknown as Response;
 
-  const deps = (r: Response) => ({ fetch: async () => r, apiKey: "sin-clave-real" });
+  const deps = (r: Response) => ({ fetch: async () => r });
 
   it("empareja cada chunk con su vector y los devuelve normalizados", async () => {
     const entradas = [
@@ -130,49 +144,59 @@ describe("embeberLote — sin red, con fetch inyectado", () => {
     );
   });
 
-  it("respeta el `index` de la respuesta en vez de asumir el orden", async () => {
-    const desordenada = {
-      ok: true,
-      status: 200,
-      json: async () => ({
-        data: [
-          { index: 1, embedding: vectorFalso(2) },
-          { index: 0, embedding: vectorFalso(1) },
-        ],
-      }),
-    } as unknown as Response;
+  /**
+   * Ollama sirve por NOMBRE, y el nombre no garantiza el modelo: `ollama pull`
+   * de otra etiqueta bajo el mismo alias cambiaría las dimensiones y los
+   * vectores nuevos dejarían de ser comparables con los ya escritos. Nada en la
+   * respuesta lo diría; el conteo de dimensiones sí.
+   */
+  it("rechaza vectores de otras dimensiones: sería otro modelo detrás del mismo nombre", async () => {
+    await expect(
+      embeberLote([{ id: "a", texto: "a" }], "document", deps(ok(1, 1024))),
+    ).rejects.toThrow(/1024 dimensiones/);
+  });
+
+  it("mantiene el orden en que Ollama devuelve los vectores", async () => {
     const r = await embeberLote(
       [
         { id: "primero", texto: "a" },
         { id: "segundo", texto: "b" },
       ],
       "document",
-      deps(desordenada),
+      deps(ok(2)),
     );
-    // El primer elemento de `data` traía index 1 → le toca «segundo».
-    expect(r[0]?.id).toBe("segundo");
-    expect(r[1]?.id).toBe("primero");
+    expect(r.map((x) => x.id)).toEqual(["primero", "segundo"]);
   });
 
   it("un error HTTP se propaga con su cuerpo", async () => {
     const malo = {
       ok: false,
-      status: 429,
-      text: async () => "rate limit",
+      status: 500,
+      text: async () => "model not found",
     } as unknown as Response;
     await expect(embeberLote([{ id: "a", texto: "a" }], "document", deps(malo))).rejects.toThrow(
-      /429.*rate limit/,
+      /500.*model not found/,
     );
   });
 
-  it("un lote vacío no llama a la API", async () => {
+  it("una respuesta sin `embeddings` no se interpreta a la buena de Dios", async () => {
+    const rara = {
+      ok: true,
+      status: 200,
+      json: async () => ({ data: [] }),
+    } as unknown as Response;
+    await expect(embeberLote([{ id: "a", texto: "a" }], "document", deps(rara))).rejects.toThrow(
+      /sin `embeddings`/,
+    );
+  });
+
+  it("un lote vacío no llama a Ollama", async () => {
     let llamadas = 0;
     const r = await embeberLote([], "document", {
       fetch: async () => {
         llamadas++;
         return ok(0);
       },
-      apiKey: "x",
     });
     expect(r).toEqual([]);
     expect(llamadas).toBe(0);
