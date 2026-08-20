@@ -21,7 +21,10 @@
     "db:load:dry": "node db/load.ts --dry-run",
     "collect:corte": "node collectors/src/corte/run-relatoria.ts",
     "web:dev": "pnpm --filter @regwatch/web dev",
-    "web:build": "pnpm --filter @regwatch/web build"
+    "web:build": "pnpm --filter @regwatch/web build",
+    "collect:articulado": "node collectors/src/rag/run-articulado.ts",
+    "db:load-chunks": "node db/load-chunks.ts",
+    "db:load-chunks:dry": "node db/load-chunks.ts --dry-run"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",

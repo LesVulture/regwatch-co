@@ -69,8 +69,72 @@ export interface Articulo {
  *    producen una cita ambigua, y una cita ambigua es peor que una que falta:
  *    parece resolver.
  */
+/**
+ * Deja solo el articulado: quita el aparato editorial de Avance Jurídico.
+ *
+ * ESTO NO ES LIMPIEZA COSMÉTICA, ES LA REGLA LEGAL DEL PROYECTO. El articulado
+ * es dominio público (art. 41 de la Ley 23 de 1982); las notas de vigencia, la
+ * legislación anterior, las notas del editor y «la forma de presentación y
+ * disposición de la compilación» **no lo son**, y Avance Jurídico lo declara
+ * expresamente en el pie de cada documento.
+ *
+ * Sin esto, `partirArticulos` mete esa capa dentro del texto de los artículos,
+ * porque `aTextoPlano` aplana TODAS las etiquetas por igual y el último
+ * artículo se extiende hasta el final del fichero. Medido sobre la Ley 1616 de
+ * 2013 el 2026-08-20: **21 de 37 chunks contaminados (57 %)**, y el chunk del
+ * artículo 36A se tragaba 1.190 caracteres del aviso de copyright — el 40 % de
+ * su propio texto. La tabla `chunk` es de LECTURA PÚBLICA, así que eso se
+ * habría republicado.
+ *
+ * Los cortes son estructurales, no adivinados. Verificado en el HTML servido:
+ * `<!--Fin documento-->` y `<div id="logo_aj">` aparecen UNA vez cada uno, y
+ * hay 53 anclas `caja_vja_encabezado*` emparejadas 1:1 con 53 tablas `caja_*`
+ * (que llegan VACÍAS: las puebla `insRowN()` desde el JS acompañante).
+ */
+export function soloArticulado(html: string): string {
+  // 1. El documento termina donde la fuente dice que termina. Lo que sigue es
+  //    el bloque de copyright. Se quitan las DOS marcas por separado: si la
+  //    fuente dejara de emitir el comentario, el div sigue cayendo.
+  const fin = html.search(/<!--\s*Fin\s+documento\s*-->/i);
+  let s = fin >= 0 ? html.slice(0, fin) : html;
+  s = s.replace(/<div id="logo_aj">[\s\S]*$/i, " ");
+
+  // 2. El aparato editorial: el ancla que lo titula y la tabla que lo contiene.
+  s = s.replace(/<div>\s*<a class="caja_vja_encabezado[^"]*"[\s\S]*?<\/a>\s*<\/div>/gi, " ");
+  s = s.replace(/<table[^>]*class="caja_[^"]*"[\s\S]*?<\/table>/gi, " ");
+
+  // 3. Navegación e imágenes: «Ir al inicio», «Siguiente», flechas. No son
+  //    articulado y ensucian el texto citable.
+  s = s.replace(/<a[^>]*title="Ir al inicio"[\s\S]*?<\/a>/gi, " ");
+  s = s.replace(/<a[^>]*class=["']?antsig["']?[^>]*>[\s\S]*?<\/a>/gi, " ");
+  s = s.replace(/<img[^>]*>/gi, " ");
+
+  return s;
+}
+
+/**
+ * Quita las acotaciones del editor que van INLINE, entre `&lt;` y `&gt;`:
+ * `<Ver Notas del Editor>`, `<Artículo modificado por el artículo 3 de la Ley
+ * 2460 de 2025. El nuevo texto es el siguiente:>`.
+ *
+ * **Es una decisión legal, no estructural, y por eso va nombrada.** Esa prosa
+ * es la voz del compilador, no la del legislador. El dato que transporta —qué
+ * norma afectó a cuál— no se pierde: es trabajo de `basedoc.ts`, que lo extrae
+ * como `Lead` y cuyo tipo no tiene ningún campo donde quepa la prosa del
+ * editor. Aquí se separa articulado de aparato; allí se captura la afectación.
+ *
+ * Se aplica sobre el texto YA aplanado, donde no quedan etiquetas reales: todo
+ * `<...>` que sobreviva vino de un `&lt;...&gt;` del original.
+ */
+export function sinNotasDelEditor(texto: string): string {
+  return texto
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function partirArticulos(html: string): Articulo[] {
-  const texto = aTextoPlano(html);
+  const texto = sinNotasDelEditor(aTextoPlano(soloArticulado(html)));
   const marcas = [...texto.matchAll(/ART[IÍ]CULO\s*(\d+)([A-Z]?)\s*[oº°]?\s*\.?/g)];
 
   const salida: Articulo[] = [];
