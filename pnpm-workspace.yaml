@@ -1,8 +1,10 @@
 packages:
   - collectors
-  - db
   - web
   - mcp
+# `db/` NO va aquí: no tiene package.json y pnpm lo ignoraba en silencio, así
+# que declararlo era una promesa vacía. Sus scripts se corren desde la raíz
+# (`pnpm db:load`) y sus tests los recoge el vitest de la raíz.
 
 # Gestión explícita de scripts de instalación (defensa de cadena de suministro).
 # pnpm los bloquea por defecto; cada entrada de este mapa es una decisión consciente.

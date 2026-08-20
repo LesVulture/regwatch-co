@@ -61,6 +61,7 @@ pnpm collect:corte        # providencias → artefactos/corte-relatoria.json
 pnpm collect:articulado Ley 1616 2013
 pnpm db:load              # carga el artefacto (requiere SUPABASE_DB_URL)
 pnpm db:load-chunks artefactos/articulado-ley_1616_2013.json
+pnpm mcp:start            # servidor MCP por stdio
 ```
 
 Los colectores **no escriben nunca directo a la base**: producen un artefacto validado y un segundo paso lo importa. Es lo que permite mirar una corrida antes de que toque datos.

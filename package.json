@@ -24,7 +24,8 @@
     "web:build": "pnpm --filter @regwatch/web build",
     "collect:articulado": "node collectors/src/rag/run-articulado.ts",
     "db:load-chunks": "node db/load-chunks.ts",
-    "db:load-chunks:dry": "node db/load-chunks.ts --dry-run"
+    "db:load-chunks:dry": "node db/load-chunks.ts --dry-run",
+    "mcp:start": "node mcp/src/server.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
