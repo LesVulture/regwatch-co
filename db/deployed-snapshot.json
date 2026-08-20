@@ -13,11 +13,20 @@
       "06_crosswalk_residuo",
       "07_providencia",
       "08_busqueda_lexica",
-      "09_consultar_vigencia"
+      "09_consultar_vigencia",
+      "10_suscripcion"
     ],
     "nota": "Inventario del estado DESPLEGADO. El test lo compara contra lo que declaran los ficheros de db/schemas/, que es lo que convierte «los ficheros describen la base» en algo comprobado y no en una promesa. Si alguien toca la base a mano o edita un fichero sin desplegar, el test lo dice."
   },
-  "tablas": ["afectacion", "captura", "norma", "norma_version", "providencia", "proyecto_ley"],
+  "tablas": [
+    "afectacion",
+    "captura",
+    "norma",
+    "norma_version",
+    "providencia",
+    "proyecto_ley",
+    "suscripcion"
+  ],
   "enums": {
     "derivation_arista": ["declarado_en_norma", "parsed_from_text"],
     "derivation_fecha": ["declarada_en_texto", "derivada_deterministicamente", "no_determinable"],
@@ -85,6 +94,8 @@
     "proyecto_crosswalk_declarado_tiene_numero",
     "proyecto_estado_original_no_vacio",
     "proyecto_revision_cubre_ambos_ejes",
+    "suscripcion_temas_no_vacia",
+    "suscripcion_temas_sin_blancos",
     "version_intervalo_valido"
   ],
   "indices": [
@@ -105,16 +116,18 @@
     "proyecto_legislatura",
     "proyecto_numero_senado",
     "proyecto_revision",
-    "proyecto_titulo_tsv"
+    "proyecto_titulo_tsv",
+    "suscripcion_pendientes"
   ],
   "policies": ["afectacion", "norma", "norma_version", "providencia", "proyecto_ley"],
   "tablas_con_rls_sin_policy": ["captura"],
-  "funciones": ["busqueda_lexica", "consultar_vigencia", "immutable_unaccent"],
+  "funciones": ["array_sin_blancos", "busqueda_lexica", "consultar_vigencia", "immutable_unaccent"],
   "extensiones_declaradas": {
     "pgcrypto": "extensions",
     "unaccent": "extensions",
     "vector": "extensions",
     "pg_trgm": "extensions",
     "pg_net": "extensions"
-  }
+  },
+  "nota_suscripcion": "RLS por PROPIETARIO (4 políticas), no lectura pública. Por eso `suscripcion` NO está en `policies`, que lista las tablas con lectura pública abierta."
 }

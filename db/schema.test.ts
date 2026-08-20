@@ -25,6 +25,7 @@ const SQL = [
   "04_proyecto_ley",
   "05_providencia",
   "06_busqueda",
+  "07_suscripcion",
 ]
   .map((f) => readFileSync(new URL(`./schemas/${f}.sql`, import.meta.url), "utf-8"))
   .join("\n");
@@ -39,7 +40,7 @@ function declarados(re: RegExp): string[] {
 describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
   it("el snapshot trae su procedencia", () => {
     expect(snapshot._procedencia.postgres).toBe("17.6");
-    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(10);
+    expect(snapshot._procedencia.migraciones_aplicadas).toHaveLength(11);
   });
 
   it("las 4 tablas", () => {
@@ -78,16 +79,30 @@ describe("los ficheros de db/schemas/ declaran la base desplegada", () => {
     expect(idx).toEqual([...snapshot.indices].sort());
   });
 
-  it("RLS activo en las 4 tablas", () => {
+  it("RLS activo en TODAS las tablas, sin excepción", () => {
     const conRls = declarados(/alter table (\w+)\s+enable row level security/g);
     expect(conRls).toEqual([...snapshot.tablas].sort());
   });
 
-  it("políticas de lectura solo en las 3 públicas — captura NO", () => {
-    const conPolicy = declarados(/create policy "[^"]+" on (\w+)/g);
-    expect(conPolicy).toEqual([...snapshot.policies].sort());
-    expect(conPolicy).not.toContain("captura");
+  it("lectura pública solo en las tablas del corpus — captura NO", () => {
+    const publicas = declarados(/create policy "lectura pública" on (\w+)/g);
+    expect(publicas).toEqual([...snapshot.policies].sort());
+    expect(publicas).not.toContain("captura");
     expect(snapshot.tablas_con_rls_sin_policy).toEqual(["captura"]);
+  });
+
+  /**
+   * `suscripcion` invierte el criterio: propiedad, no lectura pública. Y lleva
+   * las CUATRO políticas por separado — una permisiva «para todo» sería fácil
+   * de aflojar sin que se notara en el diff.
+   */
+  it("suscripcion va por propiedad, con las 4 políticas y ninguna pública", () => {
+    const propias = [...SOLO_SQL.matchAll(/create policy "([^"]+)" on suscripcion\s+for (\w+)/g)];
+    expect(propias.map((m) => m[2]).sort()).toEqual(["delete", "insert", "select", "update"]);
+    expect(SOLO_SQL).not.toMatch(/create policy "lectura pública" on suscripcion/);
+    // Y toda política de suscripcion compara contra el dueño.
+    const bloque = SOLO_SQL.slice(SOLO_SQL.indexOf("create table suscripcion"));
+    expect((bloque.match(/auth\.uid\(\) = usuario_id/g) ?? []).length).toBeGreaterThanOrEqual(4);
   });
 
   it("el wrapper existe y apunta a `extensions`, no a `public`", () => {

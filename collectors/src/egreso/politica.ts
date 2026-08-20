@@ -50,7 +50,20 @@ export type Procedencia =
   /** Datos de contacto de servidores públicos. */
   | "contacto_servidor_publico"
   /** Orientación política — dato SENSIBLE del art. 5 de la Ley 1581. */
-  | "orientacion_politica";
+  | "orientacion_politica"
+  /**
+   * Datos de un SUSCRIPTOR: su correo y los temas que sigue.
+   *
+   * Categoría aparte de `contacto_servidor_publico` a propósito. Un congresista
+   * es servidor público y su correo institucional es dato público por su
+   * función; un suscriptor es un ciudadano particular que confió un correo para
+   * recibir alertas, y nada más.
+   *
+   * Y los TEMAS son tan delicados como el correo: «a qué normas le sigo la
+   * pista» puede revelar la actividad profesional de alguien, un litigio en
+   * curso o su posición política.
+   */
+  | "dato_suscriptor";
 
 export interface Veredicto {
   readonly sale: boolean;
@@ -134,6 +147,21 @@ export function puedeSalir(p: Procedencia, contexto: ContextoEgreso): Veredicto 
           "Ley 1712 de 2014 (el Estado debe publicarlos) + Decreto 1377 de 2013 " +
           "(dato público por la calidad de servidor público)",
         condiciones: ["solo el registro pedido por su identificador"],
+      };
+
+    case "dato_suscriptor":
+      // Sin excepción y sin contexto que lo cambie: NO sale por ningún canal.
+      // El correo se usa para ENVIAR el digest y para nada más; los temas, para
+      // construirlo. Ni siquiera en la ficha del propio usuario pasa por aquí:
+      // eso lo sirve RLS, que es otra cosa y otro camino.
+      return {
+        sale: false,
+        motivo:
+          "dato de un suscriptor (correo y temas de interés): no sale por ningún " +
+          "canal de egreso. Se usa para enviar el digest y para nada más",
+        fundamento:
+          "Ley 1581 de 2012, arts. 4 (finalidad) y 5 — los temas que alguien " +
+          "sigue pueden revelar su actividad profesional, un litigio o su posición",
       };
 
     case "orientacion_politica":

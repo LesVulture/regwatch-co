@@ -144,7 +144,30 @@ renuncia. Reproducir leyes y sentencias exige conservar el texto sin alterar y
 acompañarlo de su referencia oficial. Por eso el veredicto de egreso para
 `normativo_oficial` sale **con condiciones**, no a secas.
 
-### 8.2 Orientación política: por qué se trata, razonado
+### 8.2 Datos de suscriptores: no salen, y los temas tampoco
+
+La primera tabla del proyecto con datos personales de verdad es `suscripcion`.
+Hasta ella, el corpus era información pública del Estado.
+
+El correo se da voluntariamente, pero eso no lo convierte en publicable: la Ley
+1581 ata el tratamiento a la **finalidad** (art. 4), y la finalidad aquí es
+enviar un digest. Nada más.
+
+Y **los temas que alguien sigue son tan delicados como el correo**. «A qué
+normas le sigo la pista» puede revelar la actividad profesional de una persona,
+un litigio en curso o su posición política. Por eso `dato_suscriptor` es una
+categoría de egreso propia —distinta de `contacto_servidor_publico`— y **no sale
+por ningún canal, ni siquiera en una ficha individual**: la ficha del propio
+usuario la sirve RLS, que es otro camino.
+
+Consecuencia en el esquema: `suscripcion` **invierte el criterio de RLS** del
+resto del proyecto. No es lectura pública, es propiedad, con las cuatro
+políticas escritas una a una en vez de una permisiva — una política «para todo»
+es fácil de aflojar sin que se note en el diff. `anon` no tiene ninguna.
+Verificado asumiendo los roles: un usuario ve la suya y no la ajena, no puede
+editarla, borrarla ni crear una a nombre de otro; `anon` ve cero.
+
+### 8.3 Orientación política: por qué se trata, razonado
 
 **Esta sección existe porque el código la exige.** El veredicto de egreso para
 `orientacion_politica` incluye la condición «la justificación tiene que estar
