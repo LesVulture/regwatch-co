@@ -135,12 +135,24 @@ describe("verificarProcedencia", () => {
 
 describe("la lista blanca cubre lo que las funciones devuelven", () => {
   /**
-   * Si `busqueda_lexica` o `consultar_vigencia` añaden una columna y nadie la
+   * Si `hybrid_search` o `consultar_vigencia` añaden una columna y nadie la
    * declara aquí, deja de publicarse en silencio. Este test hace visible el
    * contrato entre el SQL y la política.
    */
-  it("declara los campos de busqueda_lexica", () => {
-    for (const c of ["origen", "titulo", "referencia", "url_fuente", "captured_at", "tier"]) {
+  it("declara los campos de hybrid_search", () => {
+    for (const c of [
+      "origen",
+      "titulo",
+      "referencia",
+      "url_fuente",
+      "captured_at",
+      "tier",
+      // Los metadatos de ranking. `posicion_semantica: null` dice, sin prosa,
+      // que a esa fila la encontró el texto y no el vector.
+      "score",
+      "posicion_lexica",
+      "posicion_semantica",
+    ]) {
       expect(PROCEDENCIA_CAMPOS[c], `falta ${c}`).toBeTruthy();
     }
   });
@@ -151,5 +163,70 @@ describe("la lista blanca cubre lo que las funciones devuelven", () => {
     }
     // La cláusula es texto normativo: sale, pero con las condiciones del art. 41.
     expect(PROCEDENCIA_CAMPOS.clausula_prueba).toBe("normativo_oficial");
+  });
+});
+
+/**
+ * QUÉ función llama la capa de producto, no solo qué campos deja pasar.
+ *
+ * El doble de base que usa el resto del fichero ignora el nombre del RPC
+ * (`rpc: async () => ({ filas })`), así que `buscar()` podía seguir llamando a
+ * `busqueda_lexica` y los tests pasaban igual. Eso es el mismo contrato
+ * colgando una capa más arriba: `hybrid_search` existe y nadie comprueba que
+ * el producto pase por ella.
+ */
+describe("buscar() pasa por hybrid_search, también sin vector", () => {
+  function espia() {
+    const llamadas: { nombre: string; args: Record<string, unknown> }[] = [];
+    const db: Consultante = {
+      rpc: async (nombre, args) => {
+        llamadas.push({ nombre, args });
+        return { filas: [] };
+      },
+    };
+    return { db, llamadas };
+  }
+
+  it("llama a hybrid_search y no a busqueda_lexica", async () => {
+    const { db, llamadas } = espia();
+    await buscar(db, "salud mental", "api_bloque");
+    expect(llamadas[0]?.nombre).toBe("hybrid_search");
+  });
+
+  /**
+   * El embedding va NULL explícito, no ausente: es lo que apaga el CTE
+   * semántico y hace que la función degrade exactamente a la búsqueda léxica.
+   */
+  it("manda consulta_embedding en null cuando no hay vector", async () => {
+    const { db, llamadas } = espia();
+    await buscar(db, "salud mental", "api_bloque");
+    expect(llamadas[0]?.args).toHaveProperty("consulta_embedding", null);
+  });
+
+  /** Con vector, se serializa al literal que pgvector espera. */
+  it("serializa el vector como literal de pgvector", async () => {
+    const { db, llamadas } = espia();
+    await buscar(db, "bebidas azucaradas", "api_bloque", 20, {
+      embedding: [0.5, -0.25, 0],
+      pesoSemantico: 2,
+    });
+    expect(llamadas[0]?.args.consulta_embedding).toBe("[0.5,-0.25,0]");
+    expect(llamadas[0]?.args).toHaveProperty("peso_semantico", 2);
+  });
+
+  /** Los pesos que no se piden NO se mandan: manda el default del SQL. */
+  it("no inventa pesos cuando no se piden", async () => {
+    const { db, llamadas } = espia();
+    await buscar(db, "salud", "api_bloque");
+    expect(llamadas[0]?.args).not.toHaveProperty("peso_lexico");
+    expect(llamadas[0]?.args).not.toHaveProperty("peso_semantico");
+  });
+
+  /** Una consulta vacía no llega a la base. */
+  it("no llama a la base con una consulta vacía", async () => {
+    const { db, llamadas } = espia();
+    const r = await buscar(db, "   ", "api_bloque");
+    expect(llamadas).toHaveLength(0);
+    expect(r.advertencia).toBe("consulta vacía");
   });
 });
