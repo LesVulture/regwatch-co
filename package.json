@@ -16,11 +16,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "pnpm lint && pnpm typecheck && pnpm test",
-    "collect:senado": "node collectors/src/senado/run-pdly.ts"
+    "collect:senado": "node collectors/src/senado/run-pdly.ts",
+    "db:load": "node db/load.ts",
+    "db:load:dry": "node db/load.ts --dry-run"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
     "typescript": "7.0.2",
     "vitest": "3.2.4"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
   }
 }
