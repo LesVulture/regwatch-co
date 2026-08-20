@@ -1,5 +1,21 @@
+# dependencias
 node_modules/
-.DS_Store
-*.log
-data/*.local.jsonl
+.pnpm-store/
+
+# builds
+dist/
+.next/
+*.tsbuildinfo
+
+# entorno — nunca versionar credenciales
 .env
+.env.*
+!.env.example
+
+# caché de capturas crudas (se regenera; el archivo canónico vive fuera del repo)
+.cache/
+collectors/.raw/
+
+# artefactos de sesión
+*.log
+.DS_Store

@@ -1,12 +1,57 @@
 name: verify
-on: [push, pull_request]
+
+# El CI es donde vive la mitad de la capa de validación (§14): los gates son
+# código puro, así que se prueban aquí y no cuestan nada en producción.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Permite lanzarlo a mano para comprobar una fuente tras un rediseño.
+  workflow_dispatch:
+
+# Sin permisos de escritura: este workflow solo lee y verifica.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  provenance:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      # Sin `npm install`: el proyecto no tiene dependencias a propósito.
-      - run: node tests/test-provenance.mjs
-      - run: node bin/verify.mjs
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # --frozen-lockfile falla si el lockfile no coincide con los manifests:
+      # una dependencia añadida a mano sin instalar no pasa de aquí.
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint y formato
+        run: pnpm exec biome check .
+
+      - name: Tipos
+        run: pnpm exec tsc --noEmit
+
+      # Los tests de gates reproducen los siete modos de fallo medidos en campo
+      # (feed zombie, éxito falso, parser roto…). Que pasen es la condición para
+      # confiar en que un colector roto se nota.
+      - name: Tests
+        run: pnpm exec vitest run
+
+      # El contrato de evidencia no es negociable: si alguien introduce una
+      # fuente sin declararla en sources.ts, o un registro sin procedencia,
+      # tiene que romper el build y no llegar a producción.
+      - name: Contrato de evidencia
+        run: pnpm exec vitest run --dir collectors/src

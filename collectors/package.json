@@ -1,0 +1,16 @@
+{
+  "name": "@regwatch/collectors",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "crawlee": "3.18.1",
+    "feedsmith": "2.9.6",
+    "playwright": "1.62.1",
+    "unpdf": "1.8.1"
+  }
+}

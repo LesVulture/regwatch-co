@@ -1,0 +1,19 @@
+packages:
+  - collectors
+  - db
+  - web
+
+# Gestión explícita de scripts de instalación (defensa de cadena de suministro).
+# pnpm los bloquea por defecto; cada entrada de este mapa es una decisión consciente.
+# `allowBuilds` es la forma preferida desde pnpm 10.26 y reemplaza a
+# onlyBuiltDependencies/ignoredBuiltDependencies. Desde v11 esta configuración vive
+# en este fichero y ya NO se lee del campo "pnpm" de package.json.
+allowBuilds:
+  # Vitest lo necesita para compilar su bundler. Es una dependencia de desarrollo
+  # con script legítimo, no una sorpresa en tiempo de instalación.
+  esbuild: true
+
+# Falla la instalación si aparece un script de build no decidido, en vez de
+# ignorarlo en silencio. Una dependencia nueva con script es una decisión, no
+# un detalle: que rompa el CI es lo que se busca.
+strictDepBuilds: true
