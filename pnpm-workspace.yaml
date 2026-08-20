@@ -2,6 +2,7 @@ packages:
   - collectors
   - db
   - web
+  - mcp
 
 # Gestión explícita de scripts de instalación (defensa de cadena de suministro).
 # pnpm los bloquea por defecto; cada entrada de este mapa es una decisión consciente.

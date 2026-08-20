@@ -1,0 +1,13 @@
+{
+  "name": "@regwatch/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.1",
+    "zod": "^4.4.3"
+  }
+}
