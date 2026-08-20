@@ -556,8 +556,10 @@ Borrar v1 conservando **`GOVERNANCE.md`, `LICENSE`, `PLAN-V2.md` y `research/`**
 > ⚠️ **Esta regla no se hace cumplir sola.** Al escribirse, `PLAN-V2.md` y `research/` estaban **sin trackear** en git. Un `git clean -fdx` durante el borrado de v1 se los lleva por delante por mucho que este párrafo diga lo contrario. **Primer comando de la Fase 0: `git add PLAN-V2.md research/ && git commit`** — antes de borrar nada. Monorepo pnpm: `collectors/`, `db/`, `web/`. Esquema declarativo con migraciones (incluido el wrapper `IMMUTABLE` de `unaccent`, sin el cual la tabla de §8.3 no se crea). CI con lint + tests + validación de esquema.
 
 **Cuatro gates antes de escribir un colector**, todos de minutos:
-1. ⚠️ **¿Hay slot Free de verdad?** El límite de 2 proyectos es **por cuenta, no por organización** (§Decisiones). Comprobarlo, no asumirlo.
-2. `show server_version` · `select * from pg_extension` · disponibilidad de `unaccent`, `pgmq`, `pg_net`, `pg_cron` — presencia en catálogo **no** es lo mismo que `CREATE EXTENSION` exitoso.
+1. ✅ **¿Hay slot Free de verdad? — SÍ, COMPROBADO.** El límite de 2 proyectos es **por cuenta, no por organización**, que era justo el error de la comprobación anterior (miraba solo la organización). Había 1 slot libre y el proyecto `regwatch-co` está creado en `us-east-1`.
+2. ✅ **Extensiones y esquema — VERIFICADO en vivo.** Postgres **17.6**; las 7 extensiones (`pgcrypto`, `unaccent`, `vector` 0.8.2, `pg_trgm`, `pg_net`, `pg_cron`, `pgmq`) **creadas**, no solo presentes en catálogo. Los dos esquemas están aplicados y **R1 se comprobó con 8 sondas adversariales: las 7 que debían ser rechazadas lo fueron, y el control positivo entró**. El wrapper `IMMUTABLE` quedó probado en las dos direcciones: sin él, `generation expression is not immutable`. Detalle en `docs/gate2-verificacion.md`.
+   - **Hallazgo:** `pg_net` **no admite `ALTER EXTENSION ... SET SCHEMA`**. Hay que crearla ya en `extensions`.
+   - **Corrección de orden al propio plan:** el linter marcó **ERROR** de RLS en las 4 tablas. «Auth + RLS» estaba agendado en la Fase 5 y eso llega tarde — una tabla en `public` la expone PostgREST desde que existe. Se hizo en la Fase 0: lectura pública abierta a propósito, **escritura cerrada**, verificado asumiendo el rol `anon`.
 3. ✅ **Cuánto pesa el crudo — MEDIDO.** **63,78 GB**, lo que mata Storage (64× el cupo) y git (13× el techo). Eso es lo resuelto. **El destino NO está decidido:** la propuesta es Cloudflare R2 ($0,81/mes, egreso gratis) para el crudo y git para metadatos, pero añade una dependencia de pago y la decide Daniel (§13.6). Detalle en §8.4 y `docs/gate3-medicion-crudo.json`.
 4. 📝 **Radicar los derechos de petición de §15.1** (Cámara, Función Pública, DNP). **Los tres escritos están redactados y listos en `legal/peticiones/`**, con el canal de radicación verificado y la cláusula que motiva cada uno citada literalmente. Falta completar los datos personales y radicarlos: es gestión de Daniel, no automatizable. El plazo legal (15 días hábiles) corre en paralelo al desarrollo.
 
@@ -585,7 +587,7 @@ Backfill de la Corte 2015-2026 (~12 peticiones). Doble registro comunicado/sente
 Chunking por artículo. Embeddings voyage-4 a 256 dims, con el presupuesto de **~176k chunks** de §8.4 como techo provisional (§8.4). `hybrid_search` RRF en español, con el wrapper `IMMUTABLE` de `unaccent` ya creado en la Fase 0 y `hnsw.iterative_scan` encendido. Q&A con **bloques `search_result`** y las siete reglas. Exposición del Q&A solo tras superar el gold set.
 
 ### Fase 5 — Producto público (semanas 15-18)
-PWA completa. Auth + RLS. Alertas por email con digest. API JSON pública. MCP server. Dumps semanales a git.
+PWA completa. **Auth** (RLS ya quedó puesto y verificado en la Fase 0, ver `docs/gate2-verificacion.md`). Alertas por email con digest. API JSON pública. MCP server. Dumps semanales a git.
 
 ### Fase 6 — Mapeo electoral (posterior)
 OCR de votaciones nominales (Mistral, ~$2/1.000 págs). Indicador de probabilidad de aprobación: **dos regresiones logísticas encadenadas con factores explicables y tasa base publicada** (patrón GovTrack), solo cuando haya ≥1 legislatura completa de datos. Con la tasa base honesta de 12,5% y el predictor autor-Gobierno (7,6x), no con el 23% inflado.

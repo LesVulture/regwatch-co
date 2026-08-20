@@ -6,10 +6,20 @@
 --
 -- PLAN-V2.md §10.
 
-create extension if not exists "pgcrypto";
+-- Las extensiones NO van en `public`: el linter de Supabase lo marca, y con
+-- razón — mezcla la superficie que PostgREST expone con la que no debería.
+-- Verificado en vivo el 2026-08-20 sobre Postgres 17.6.
+create schema if not exists extensions;
+
+create extension if not exists "pgcrypto" with schema extensions;
 -- unaccent es obligatorio para la búsqueda en español (§8.3). Se crea aquí,
 -- en la Fase 0, y no como descubrimiento de la Fase 4.
-create extension if not exists "unaccent";
+create extension if not exists "unaccent" with schema extensions;
+create extension if not exists "vector"   with schema extensions;
+create extension if not exists "pg_trgm"  with schema extensions;
+-- OJO: pg_net NO admite `ALTER EXTENSION ... SET SCHEMA` (error 0A000, medido).
+-- Hay que crearla ya en su sitio; moverla después obliga a drop + create.
+create extension if not exists "pg_net"   with schema extensions;
 
 -- ---------------------------------------------------------------------------
 -- Wrapper IMMUTABLE sobre unaccent.
@@ -17,7 +27,14 @@ create extension if not exists "unaccent";
 -- Sin esto, una columna generada de tsvector NO SE CREA: unaccent() es STABLE,
 -- no IMMUTABLE, y Postgres rechaza usarla en una expresión generada. Y sin
 -- cualificar el esquema, el dump/restore se rompe cuando search_path cambia.
--- Los dos detalles están medidos; no son cautela teórica.
+--
+-- Ya no es "está medido" de segunda mano: se probó contra la instancia real el
+-- 2026-08-20. Sin el wrapper, `CREATE TABLE` con la columna generada devuelve
+-- literalmente «generation expression is not immutable». Con él, se crea y la
+-- búsqueda encuentra «Sanción» buscando «sancion».
+--
+-- `set search_path = ''` cierra el WARN `function_search_path_mutable`: un
+-- search_path manipulable en una función es un vector de escalada.
 -- ---------------------------------------------------------------------------
 create or replace function public.immutable_unaccent(text)
 returns text
@@ -25,12 +42,13 @@ language sql
 immutable
 parallel safe
 strict
+set search_path = ''
 as $$
-  select public.unaccent('public.unaccent'::regdictionary, $1)
+  select extensions.unaccent('extensions.unaccent'::regdictionary, $1)
 $$;
 
 comment on function public.immutable_unaccent(text) is
-  'Wrapper IMMUTABLE de unaccent, esquema-cualificado. Necesario para columnas '
+  'Wrapper IMMUTABLE de unaccent, cualificado a `extensions`. Necesario para columnas '
   'generadas de tsvector; sin él la tabla de búsqueda no se crea.';
 
 -- ---------------------------------------------------------------------------
