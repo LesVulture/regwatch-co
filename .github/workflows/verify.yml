@@ -55,3 +55,9 @@ jobs:
       # tiene que romper el build y no llegar a producción.
       - name: Contrato de evidencia
         run: pnpm exec vitest run --dir collectors/src
+
+      # La app entró en el repo después de este workflow. Sin este paso, el
+      # frontend puede romperse y el CI seguir en verde — que es la forma
+      # habitual de que un build roto llegue a producción.
+      - name: Build de la web
+        run: pnpm --filter @regwatch/web build

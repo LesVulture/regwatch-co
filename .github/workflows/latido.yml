@@ -1,0 +1,67 @@
+name: latido
+
+# ## Por qué existe este workflow, y no es una tarea de mantenimiento
+#
+# El plan Free de Supabase **pausa un proyecto tras 7 días sin actividad de
+# base de datos**. Un monitor normativo pausado no avisa: la web devuelve
+# errores, las alertas dejan de salir y todo tiene el aspecto de «nadie lo está
+# usando» hasta que alguien pregunta.
+#
+# El criterio de Supabase es actividad de la BASE, no tráfico de API, así que
+# tiene que ser una consulta real. Y tiene que venir de FUERA del proyecto —de
+# ahí GitHub Actions— porque una consulta que el propio Supabase se hiciera a sí
+# mismo no cuenta.
+#
+# Cada 3 días, no cada 7: si una corrida falla, quedan dos intentos antes de que
+# el reloj llegue al final. Apurar el margen convierte un fallo transitorio en
+# una pausa.
+
+on:
+  schedule:
+    # 06:12 UTC = 01:12 en Bogotá. Minuto no redondo a propósito: las horas en
+    # punto son las más congestionadas en los runners compartidos.
+    - cron: "12 6 */3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: latido
+  cancel-in-progress: false
+
+jobs:
+  latido:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      # Una consulta REAL de solo lectura contra una función del proyecto.
+      # `busqueda_lexica` con un término que existe toca las tablas de verdad;
+      # un `select 1` podría no contar como actividad de base.
+      - name: Consulta de latido
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::warning::Sin SUPABASE_URL configurado. El proyecto se pausará"
+            echo "::warning::a los 7 días de inactividad. Configura los secretos"
+            echo "::warning::SUPABASE_URL y SUPABASE_ANON_KEY en el repositorio."
+            exit 0
+          fi
+          codigo=$(curl -s -o /tmp/latido.json -w '%{http_code}' \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/busqueda_lexica" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -d '{"consulta":"salud","limite":1}')
+          echo "HTTP $codigo"
+          # Un 200 con cuerpo vacío es correcto: lo que mantiene vivo el
+          # proyecto es la consulta, no que devuelva filas.
+          if [ "$codigo" != "200" ]; then
+            echo "::error::El latido falló con HTTP $codigo. El proyecto puede pausarse."
+            head -c 400 /tmp/latido.json
+            exit 1
+          fi
