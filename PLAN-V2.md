@@ -608,6 +608,10 @@ Lo que sigue necesitando la clave de Voyage: chunking por artículo, embeddings 
 Chunking por artículo. Embeddings voyage-4 a 256 dims, con el presupuesto de **~176k chunks** de §8.4 como techo provisional (§8.4). `hybrid_search` RRF en español, con el wrapper `IMMUTABLE` de `unaccent` ya creado en la Fase 0 y `hnsw.iterative_scan` encendido. Q&A con **bloques `search_result`** y las siete reglas. Exposición del Q&A solo tras superar el gold set.
 
 ### Fase 5 — Producto público (semanas 15-18)
+✅ **La lista de egreso por procedencia — HECHA, y en código.** §15.3 la exigía «antes de exponer la API» y ya no depende de que alguien se acuerde: `collectors/src/egreso/politica.ts` es una función que hay que llamar, y **lo que no pasa por ella no sale**.
+  - Trabaja por **lista blanca**: un campo sin procedencia declarada NO sale. Con lista negra, un campo nuevo saldría por defecto y nadie se enteraría hasta que ya hubiera salido; el fallo por defecto tiene que ser callarse.
+  - El caso que explica el diseño: **el correo de un congresista es legal o no según el CONTEXTO**. En la ficha de una persona sí (Ley 1712 + Decreto 1377); en un dump, una respuesta en bloque o el MCP, no. Por eso `contexto` no es un parámetro opcional de esa API.
+  - La prosa editorial no sale **en ningún volumen y en ningún contexto**: un umbral sería una invitación a discutir dónde está el umbral. El texto normativo sí sale, pero **condicionado** —el art. 41 de la Ley 23 de 1982 no es dominio público sin más—, y la orientación política sale con la obligación explícita de que la excepción quede razonada en `GOVERNANCE.md`.
 PWA completa. **Auth** (RLS ya quedó puesto y verificado en la Fase 0, ver `docs/gate2-verificacion.md`). Alertas por email con digest. API JSON pública. MCP server. Dumps semanales a git.
 
 ### Fase 6 — Mapeo electoral (posterior)
