@@ -13,7 +13,10 @@ function capture(over: Partial<RawCapture> = {}): RawCapture {
     url: "https://corteconstitucional.gov.co/api/x",
     capturedAt: "2026-08-19T12:00:00.000Z",
     contentHash: "x".repeat(64),
-    contentType: "application/json",
+    // MEDIDO 2026-08-20: la relatoría sirve su JSON con `Content-Type: text/html`.
+    // Este default decía `application/json` y era la especificación EQUIVOCADA:
+    // con ella el gate bloqueaba el 100 % de las respuestas válidas de la fuente.
+    contentType: "text/html; charset=UTF-8",
     httpStatus: 200,
     byteLength: 10_000,
     sourceKey: "corte-relatoria",
@@ -89,10 +92,57 @@ describe("g0 — la aduana", () => {
     expect(v.reglaViolada).toBe("content-type");
   });
 
+  /**
+   * EL HALLAZGO QUE CORRIGIÓ ESTE FICHERO, medido el 2026-08-20 contra la
+   * fuente viva: la relatoría devuelve su JSON con `Content-Type: text/html`.
+   *
+   * `sources.ts` declaraba `application/json`, así que el gate bloqueaba TODAS
+   * las respuestas buenas — y un gate mal especificado no se nota: parece que
+   * la fuente está caída. La captura real que lo destapó pesaba 2.276.955 bytes
+   * y traía 1.141 providencias dentro.
+   */
+  it("la relatoría sirve JSON con content-type de HTML, y aun así pasa", () => {
+    const body = enc(
+      JSON.stringify({
+        data: {
+          hits: {
+            total: { value: 60 },
+            hits: new Array(60).fill({ _source: { prov_id: 1, texto: "x".repeat(100) } }),
+          },
+        },
+      }),
+    );
+    const v = g0Contrato(
+      capture({ contentType: "text/html; charset=UTF-8", byteLength: body.length }),
+      body,
+    );
+    expect(v.outcome).toBe("ok");
+  });
+
+  /**
+   * Y como el content-type ya no discrimina, la barrera pasa a ser el marcador.
+   * El fragmento de error empieza por `<div class="row alert alert-danger">`,
+   * que NO casaba con `<html` ni `<!DOCTYPE`: hasta la corrección solo lo
+   * paraba el suelo de tamaño, y eso deja de valer si el error crece.
+   */
+  it("el fragmento de error de la Corte se atrapa aunque supere el suelo de tamaño", () => {
+    const body = enc(
+      `        <div class="row alert alert-danger" role="alert" id="div_alert_danger">` +
+        `Error</div><!-- ${"x".repeat(9000)} -->`,
+    );
+    expect(body.length).toBeGreaterThan(5_000);
+    const v = g0Contrato(capture({ byteLength: body.length }), body);
+    expect(v.outcome).toBe("bloqueado");
+    expect(v.reglaViolada).toBe("marcador-de-error");
+  });
+
   it("acepta content-type con charset (se compara por prefijo)", () => {
+    // El prefijo declarado para esta fuente es `text/html`; lo que se comprueba
+    // aquí es que el `; charset=…` que añaden los servidores no rompa la
+    // comparación.
     const body = enc(JSON.stringify({ ok: true }).padEnd(6000, " "));
     const v = g0Contrato(
-      capture({ contentType: "application/json; charset=utf-8", byteLength: body.length }),
+      capture({ contentType: "text/html; charset=iso-8859-1", byteLength: body.length }),
       body,
     );
     expect(v.outcome).toBe("ok");

@@ -1,0 +1,151 @@
+{
+  "_procedencia": {
+    "fuente": "GET https://www.corteconstitucional.gov.co/relatoria/buscador_new/?accion=search&fuente=publicacion&fini=2026-01-01&ffin=2026-12-31&maxprov=2000&tipo=json",
+    "captured_at": "2026-08-20",
+    "http": 200,
+    "content_type": "text/html; charset=UTF-8 (la fuente sirve JSON con content-type de HTML)",
+    "bytes_respuesta_completa": 2276955,
+    "providencias_respuesta_completa": 1141,
+    "nota": "Un registro REAL de cada uno de los 4 tipos de providencia. Datos oficiales de la Corte Constitucional (entidad estatal). Se conservan íntegros: cubren las formas distintas de rutahtml."
+  },
+  "data": {
+    "hits": {
+      "total": {
+        "value": 4,
+        "relation": "eq"
+      },
+      "hits": [
+        {
+          "_index": "datacortefullv8",
+          "_type": "_doc",
+          "_id": "61638",
+          "_score": null,
+          "_source": {
+            "prov_magistrados": [
+              "Lina Marcela Escobar Martínez"
+            ],
+            "rutahtml": "Autos/2026/A1126-26.htm",
+            "prov_f_sentencia": "2026-08-13",
+            "prov_id": 61638,
+            "prov_f_public": "2026-08-19",
+            "prov_proceso_terminos": "Conflictos entre Jurisdicciones",
+            "sala_seguimiento": "Sala plena/Revisión",
+            "prov_expediente": "CJU-7903",
+            "prov_tema": "Sin información",
+            "prov_tipo": "Auto",
+            "prov_sentencia": "A. 1126/26",
+            "prov_sintesis": "Conflicto entre el Juzgado 001 Laboral Municipal de Cartagena y el Tribunal Administrativo del Magdalena, ocasionado por un escrito dirigido al Centro de Servicios Judiciales de Santa Marta, por un ciudadano privado de la libertad en el Centro Penitenciario de Mediana Seguridad de esa ciudad, para solicitar la asignación de un juzgado de ejecución de penas y medidas de seguridad para el proceso que se adelanta en su contra por el delito de concierto para delinquir. Al analizar el procedimiento, la Sala Plena considera que la petición elevada no es realmente un habeas corpus como fue referido en escrito y, por ende, debió dársele trámite como tal. Si, en gracia de discusión, la petición se considerara realmente un habeas corpus, esta tampoco satisface los presupuestos previstos en el artículo 4º de la Ley 1095/06 para tener esta naturaleza. Indica la Sala que su pronunciamiento se erige bajo los postulados constitucionales de acceso a la administración de justicia y prevalencia del derecho sustancial (Arts. 228 y 229 C.P.). Encuentra la Sala que ambas autoridades judiciales, particularmente el Juzgado 001 Laboral Municipal de Cartagena, autoridad que recibió en primera medida la solicitud del ciudadano privado de la libertad, debieron observar con precisión la finalidad del requerimiento reclamado, que no era más que la solicitud de la asignación de un juez de ejecución de penas y medidas de seguridad para, posiblemente, tramitar ante este las peticiones relacionadas con su condena. La Sala Plena se abstiene de resolver el aparente conflicto propuesto."
+          },
+          "sort": [
+            1786579200000
+          ]
+        },
+        {
+          "_index": "datacortefullv8",
+          "_type": "_doc",
+          "_id": "61644",
+          "_score": null,
+          "_source": {
+            "prov_magistrados": [
+              "Jorge Enrique Ibáñez Najar"
+            ],
+            "rutahtml": "2026/T-246-26.htm",
+            "prov_f_public": "2026-08-18",
+            "prov_id": 61644,
+            "prov_expediente": "T-10756162",
+            "prov_tema": "Sin información",
+            "prov_sentencia": "T-246/26",
+            "prov_f_sentencia": "2026-08-12",
+            "prov_proceso_terminos": "Acciones de Tutela",
+            "sala_seguimiento": "Sala plena/Revisión",
+            "prov_tipo": "Tutela",
+            "prov_sintesis": "Sin información",
+            "prov_magistrado_otros": [
+              "Vladimir Fernández Andrade(SV)"
+            ]
+          },
+          "sort": [
+            1786492800000
+          ]
+        },
+        {
+          "_index": "datacortefullv8",
+          "_type": "_doc",
+          "_id": "61569",
+          "_score": null,
+          "_source": {
+            "prov_magistrados": [
+              "Vladimir Fernández Andrade"
+            ],
+            "rutahtml": "2026/SU164-26.htm",
+            "prov_id": 61569,
+            "prov_f_public": "2026-08-04",
+            "prov_expediente": "T-11569794",
+            "prov_tema": "Tutela contra decisiones judiciales en proceso penal-Vulneración del debido proceso por deficiencia en la defensa técnica, asistencia jurídica de varios procesados no configuró un defecto procedimental absoluto por conflicto de intereses.",
+            "prov_sentencia": "SU.164/26",
+            "prov_f_sentencia": "2026-07-03",
+            "prov_proceso_terminos": "Acciones de Tutela",
+            "sala_seguimiento": "Sala plena/Revisión",
+            "prov_tipo": "Sentencia de unificación",
+            "prov_sintesis": "En este caso se censuró una decisión judicial adoptada en sede de casación, mediante la cual se confirmó la sentencia que condenó al accionante, en su condición de exalcalde municipal, como coautor del delito de peculado por apropiación, con ocasión de la ejecución de un contrato de obra pública, cuyo objeto era el mejoramiento y adecuación de un puente necesario para el acceso de un resguardo indígena. En el proceso penal fueron condenados el accionante, en calidad de ordenador del gasto, así como el supervisor del contrato y el contratista de la obra, quienes estuvieron asistidos por un mismo defensor de confianza. Tras la sentencia de segunda instancia el actor promovió impugnación especial y solicitó la nulidad de lo actuado porque consideró que la defensa técnica conjunta ejercida, resulta incompatible con sus intereses, pues su estrategia defensiva exigía diferenciar su responsabilidad de la atribuida a los demás condenados. Se verificó el cumplimiento de los presupuestos legales de procedencia de la acción de tutela contra providencias judiciales y se analizó la siguiente temática: 1º. El contenido y garantía del derecho a la defensa técnica en materia penal. 2º. El alcance de las funciones del ordenador del gato dentro de la contratación estatal y, 3º análisis de los defectos procedimental absoluto en asuntos relacionados con la defensa técnica. Se NEGÓ el amparo frente al cargo relacionado con la presunta incompatibilidad de la defensa técnica conjunta y se declaró la IMPROCEDENCIA de la acción de tutela frente a los demás reproches. ",
+            "prov_magistrado_otros": [
+              "Natalia Ángel Cabo(AV)"
+            ]
+          },
+          "sort": [
+            1783036800000
+          ]
+        },
+        {
+          "_index": "datacortefullv8",
+          "_type": "_doc",
+          "_id": "61551",
+          "_score": null,
+          "_source": {
+            "prov_magistrados": [
+              "Miguel Efrain Polo Rosero"
+            ],
+            "rutahtml": "2026/C-165-26.htm",
+            "prov_f_sentencia": "2026-06-03",
+            "prov_id": 61551,
+            "prov_f_public": "2026-08-03",
+            "prov_proceso_terminos": "Demandas Ordinarias",
+            "sala_seguimiento": "Sala plena/Revisión",
+            "prov_expediente": "D-16514",
+            "prov_tema": "Constitucionales disposiciones de la Ley 2434 de 2024 en materia de reducción de barreras para la adquisición de vivienda, por no vulnerar el deber de análisis de impacto fiscal, principios que rigen el trámite legislativo, la unidad de materia ni el derecho al debido proceso. ",
+            "prov_tipo": "Constitucionalidad",
+            "prov_sentencia": "C-165/26",
+            "prov_sintesis": "Demanda de inconstitucionalidad contra los artículos 2, 3, 5, 6, 8, 10, 11 y 12 de la Ley 2434 de 2024, por la cual se reducen las barreras para la adquisición de vivienda, por medio de créditos hipotecarios y leasing habitacional, se promueve la utilización de energías limpias para vivienda y se dictan otras disposiciones -vivienda al alcance de todos-. El demandante formuló cinco cargos. Tres de ellos por vicios de procedimiento en el trámite legislativo y dos por cuestiones sustanciales. Respecto a los primeros cargos alegó de manera general el desconocimiento del deber de análisis de impacto fiscal previstos por los artículos 334 de la Constitución y 7 de la Ley 819 de 2003, el quebrantamiento del principio democrático que se deriva de los artículos 157 y 160 Superiores y 123-5 y 147 de la Ley 5ª de 1992; la vulneración de los principios de consecutividad e identidad flexible derivados de los artículos 157 y 160 de la Carta. En relación con el segundo grupo de cargos se argumentó la vulneración del principio de unidad de materia y del debido proceso previstos en los artículos 158, 169 y 29 Superiores. La Corte se declaró INHIBIDA para decidir de fondo sobre la constitucionalidad de los artículos 2, 3 y 12 de la Ley 2434 de 2024, debido a la ineptitud sustantiva de la demanda. Los artículos 5, 6 y 8 ibidem, en cuanto al cargo referido al desconocimiento del deber de análisis de impacto fiscal fueron declarados EXEQUIBLES. Los artículos 10, 11 y 12 ídem, en relación con el cargo relacionado con el presunto desconocimiento del principio democrático se declararon EXEQUIBLES. El inciso primero y el parágrafo 1 del artículo 10 de la precitada Ley y los apartes demandados y contenidos en las precitadas disposiciones, fueron declaradas EXEQUIBLES en lo relacionado con los cargos por vulneración de los principios de consecutividad, identidad flexible y unidad de materia, así como por la violación del derecho al debido proceso. "
+          },
+          "sort": [
+            1780444800000
+          ]
+        }
+      ]
+    }
+  },
+  "parametros": {
+    "accion": "search",
+    "fuente": "publicacion",
+    "fini": "2026-01-01",
+    "ffin": "2026-12-31",
+    "buscar_por": "",
+    "searchOption": "texto",
+    "maxprov": "2000",
+    "tipo": "json",
+    "query": "get_list_all_providencias",
+    "list_word_and": [],
+    "list_word_or": [],
+    "list_word_not": [],
+    "OrderByField": "prov_f_public",
+    "OrderByType": "desc",
+    "tipo_busqueda": "light",
+    "pagina": 1,
+    "cantidad": 1,
+    "rangomin": 0,
+    "rangomax": "2000",
+    "aggs": [],
+    "datos_exportar": [],
+    "tot_resultados": 1141
+  }
+}

@@ -105,14 +105,28 @@ export const SOURCES: Record<string, SourceExpectation> = {
     nombre: "Corte Constitucional — relatoría (Elasticsearch)",
     tier: "primaria",
     bodyKind: "json",
-    contentTypePrefix: "application/json",
+    // MEDIDO 2026-08-20 y CORRIGE lo que había aquí: la fuente sirve el JSON con
+    // `Content-Type: text/html; charset=UTF-8`. Estaba declarado
+    // `application/json`, así que el gate bloqueaba el 100 % de las respuestas
+    // VÁLIDAS — comprobado contra una captura real de 2.276.955 bytes con 1.141
+    // providencias dentro. Un gate mal especificado no se nota: parece que la
+    // fuente está caída.
+    contentTypePrefix: "text/html",
     minBytes: 5_000,
     cadenciaHoras: 24,
-    errorMarkers: ["<html", "<!DOCTYPE"],
+    // Y como el content-type ya no discrimina (bueno y malo llegan igual), los
+    // marcadores pasan a ser la defensa real. El fragmento de error empieza por
+    // `<div class="row alert alert-danger" ... id="div_alert_danger">`, que NO
+    // casaba con `<html` ni con `<!DOCTYPE`: hasta hoy solo lo paraba el suelo
+    // de tamaño, y eso deja de funcionar en cuanto el error crezca de 5 KB.
+    errorMarkers: ["div_alert_danger", "alert-danger", "<html", "<!DOCTYPE"],
     evidencia:
-      "refute-jurisprudencia.json: maxprov=10001 devuelve HTTP 200 con 2.882 bytes de " +
-      "FRAGMENTO HTML, no JSON. Un ingestor que valide solo el status registra cero " +
-      "resultados en silencio. De ahí los errorMarkers.",
+      "refute-jurisprudencia.json + medición propia 2026-08-20: maxprov=10001 devuelve " +
+      "HTTP 200 con 2.882 bytes de FRAGMENTO HTML, no JSON — bytes exactos reproducidos. " +
+      "Un ingestor que valide solo el status registra cero resultados en silencio. " +
+      "La respuesta BUENA (maxprov=2000, 2.276.955 B, 1.141 providencias) llega con el " +
+      "mismo Content-Type text/html, de ahí que la barrera de verdad sea el marcador " +
+      "de error y que el cuerpo parsee como JSON.",
   },
 
   "dnp-conpes": {

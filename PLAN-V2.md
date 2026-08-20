@@ -590,6 +590,10 @@ La auditoría de §6.1 ya se hizo (era la tarea 0 del borrador anterior) y **enc
 **Entregable de medición, no de confirmación** (§8.4): tamaño medio de artículo del corpus real, **latencia p95 de `hybrid_search` sobre la instancia Nano con caché pre-calentada**, y el bake-off de embeddings (voyage-4 a 256 vs. 1024, `voyage-context-4`, y cuantización binaria contra el gold set). De ahí sale el techo real de chunks — hoy es una estimación, no un hecho.
 
 ### Fase 3 — Jurisprudencia (semanas 9-10)
+✅ **Colector de relatoría — HECHO.** Medido en vivo el 2026-08-20: **1.141 providencias de 2026 en UNA llamada** (2,3 MB), 0 anomalías, las 1.141 con URL de texto resuelta. Desglose: 946 Autos, 152 Tutela, 31 Constitucionalidad, 12 SU.
+  - ⚠️ **Corregido un fallo que habría dejado la fase entera sin datos:** `sources.ts` declaraba `application/json` para esta fuente y **la relatoría sirve su JSON con `Content-Type: text/html`** — el gate bloqueaba el **100 % de las respuestas válidas**. Un gate mal especificado no se nota: parece que la fuente está caída. Los tests del gate codificaban esa misma especificación equivocada y cayeron al corregirla, que es justo lo que debían hacer.
+  - ⚠️ Y como el content-type ya no discrimina (la respuesta buena y el fragmento de error llegan igual), la barrera pasa a ser el marcador. El error empieza por `<div class="row alert alert-danger">`, que **no casaba** con `<html` ni `<!DOCTYPE`: hasta hoy solo lo paraba el suelo de 5 KB. Verificado que ahora lo atrapa aunque el error crezca.
+  - **La envoltura también estaba a un nivel de distancia:** la raíz es `{data, parametros}` y el índice vive en `data.hits.hits[]._source`, no en la raíz como decía la investigación. `rutahtml` se **guarda**, no se deriva: `A. 1126/26` no se convierte en `Autos/2026/A1126-26.htm` por ninguna regla que la fuente garantice. Texto completo verificado en **windows-1252** (UTF-8 falla).
 Backfill de la Corte 2015-2026 (~12 peticiones). Doble registro comunicado/sentencia. Enlace sentencia→norma afectada. Alerta temprana diaria de comunicados.
 
 ### Fase 4 — Búsqueda y Q&A (semanas 11-14) · *el producto*
