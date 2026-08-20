@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   buscar,
   type Consultante,
+  contextoQa,
   PROCEDENCIA_CAMPOS,
   verificarProcedencia,
   vigencia,
@@ -227,6 +228,80 @@ describe("buscar() pasa por hybrid_search, también sin vector", () => {
     const { db, llamadas } = espia();
     const r = await buscar(db, "   ", "api_bloque");
     expect(llamadas).toHaveLength(0);
+    expect(r.advertencia).toBe("consulta vacía");
+  });
+});
+
+/**
+ * El Q&A NO puede ser una segunda puerta de egreso.
+ *
+ * `recuperarContexto()` de `rag/contexto.ts` devuelve el articulado completo y
+ * NO pasa por esta frontera: al escribirlo construí el endpoint número catorce
+ * y no me acordé, que es literalmente el fallo que el comentario de cabecera de
+ * este módulo predice. `contextoQa()` es la versión que sí pasa.
+ */
+describe("contextoQa — el Q&A sale por la misma puerta", () => {
+  const fila = (p: Record<string, unknown> = {}) => ({
+    posicion_entidad: 1,
+    origen: "norma",
+    entidad_id: "454ca224-538e-4392-aeef-35f2540da1b1",
+    entidad: "ley 1616 de 2013",
+    chunk_id: "ley:1616:2013:art:1",
+    referencia: "Ley 1616 de 2013, artículo 1",
+    texto: "ARTÍCULO 1o. OBJETO.",
+    caracteres: 20,
+    url_fuente: "http://x/ley_1616_2013.html",
+    captured_at: "2026-08-20T00:00:00.000Z",
+    tier: "primaria",
+    ...p,
+  });
+
+  const con = (filas: unknown[]): Consultante => ({ rpc: async () => ({ filas }) });
+
+  it("deja pasar el articulado y su procedencia", async () => {
+    const r = await contextoQa(con([fila()]), "salud mental", "api_bloque");
+    expect(r.chunks).toHaveLength(1);
+    expect(r.chunks[0]?.texto).toBe("ARTÍCULO 1o. OBJETO.");
+    expect(r.chunks[0]?.urlFuente).toBe("http://x/ley_1616_2013.html");
+    expect(r.omitidos).toEqual([]);
+  });
+
+  /**
+   * LO QUE ESTO ATAJA, y no es el presente: el campo que alguien añada MAÑANA a
+   * `chunk`. Sin declarar en la lista blanca, no sale — y se REPORTA, porque un
+   * filtro mudo no es auditable.
+   */
+  it("un campo no declarado NO sale, y se reporta", async () => {
+    const r = await contextoQa(
+      con([fila({ nota_del_editor: "prosa de Avance Jurídico" })]),
+      "salud mental",
+      "api_bloque",
+    );
+    expect(r.omitidos).toContain("nota_del_editor");
+    expect(JSON.stringify(r.chunks)).not.toContain("Avance Jurídico");
+  });
+
+  it("el articulado va como texto normativo, no como metadato suelto", () => {
+    expect(PROCEDENCIA_CAMPOS.texto).toBe("normativo_oficial");
+  });
+
+  /** Un hueco de corpus y una redacción de política no son lo mismo. */
+  it("distingue el hueco de evidencia de lo que la política quitó", async () => {
+    const hueco = await contextoQa(con([fila({ chunk_id: null, texto: null })]), "x", "api_bloque");
+    expect(hueco.huecos).toHaveLength(1);
+    expect(hueco.redactados).toEqual([]);
+  });
+
+  it("una consulta vacía no llega a la base", async () => {
+    let llamada = false;
+    const db: Consultante = {
+      rpc: async () => {
+        llamada = true;
+        return { filas: [] };
+      },
+    };
+    const r = await contextoQa(db, "  ", "api_bloque");
+    expect(llamada).toBe(false);
     expect(r.advertencia).toBe("consulta vacía");
   });
 });

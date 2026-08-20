@@ -74,7 +74,33 @@ describe("agruparContexto — chunks y huecos", () => {
   });
 
   it("sin resultados no inventa advertencia", () => {
-    expect(agruparContexto([])).toEqual({ chunks: [], huecos: [], advertencia: null });
+    expect(agruparContexto([])).toEqual({
+      chunks: [],
+      huecos: [],
+      redactados: [],
+      advertencia: null,
+    });
+  });
+
+  /**
+   * «No lo hemos capturado» y «no te lo podemos enseñar» son cosas distintas.
+   * Un chunk que EXISTE (tiene id) pero llega sin texto no es una laguna del
+   * corpus: es la política de egreso habiendo quitado el campo. Colapsarlo con
+   * los huecos dejaría una censura disfrazada de laguna documental.
+   */
+  it("un chunk que existe pero llega sin texto es redacción, no hueco", () => {
+    const c = agruparContexto([fila({ texto: null })]);
+    expect(c.huecos).toEqual([]);
+    expect(c.redactados).toEqual(["ley:1616:2013:art:1"]);
+    expect(c.chunks).toEqual([]);
+  });
+
+  it("y con el campo ausente del todo, igual", () => {
+    const sinCampo = fila();
+    const { texto: _quitado, ...resto } = sinCampo;
+    const c = agruparContexto([resto as typeof sinCampo]);
+    expect(c.redactados).toEqual(["ley:1616:2013:art:1"]);
+    expect(c.huecos).toEqual([]);
   });
 });
 

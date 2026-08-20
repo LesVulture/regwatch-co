@@ -18,6 +18,12 @@ import {
   filtrarRegistro,
   type Procedencia,
 } from "../../../collectors/src/egreso/politica.ts";
+import {
+  agruparContexto,
+  type Contexto,
+  type FilaContexto,
+  type OpcionesContexto,
+} from "../../../collectors/src/rag/contexto.ts";
 
 /** Lo mínimo que esta capa necesita de un cliente de base de datos. */
 export interface Consultante {
@@ -48,6 +54,15 @@ export const PROCEDENCIA_CAMPOS: Readonly<Record<string, Procedencia>> = {
   score: "hecho_metadato",
   posicion_lexica: "hecho_metadato",
   posicion_semantica: "hecho_metadato",
+  // Contexto del Q&A (`contexto_qa`). `texto` es el ARTICULADO: sale como
+  // texto normativo oficial, con las condiciones del art. 41 —igual que
+  // `clausula_prueba`— y no como un metadato cualquiera.
+  posicion_entidad: "hecho_metadato",
+  entidad_id: "hecho_metadato",
+  entidad: "hecho_metadato",
+  chunk_id: "hecho_metadato",
+  caracteres: "hecho_metadato",
+  texto: "normativo_oficial",
   url_fuente: "hecho_metadato",
   captured_at: "hecho_metadato",
   tier: "hecho_metadato",
@@ -117,6 +132,55 @@ export async function buscar(
     ...(opciones.pesoSemantico !== undefined ? { peso_semantico: opciones.pesoSemantico } : {}),
   });
   return aplicarEgreso(filas, contexto, texto);
+}
+
+/**
+ * Contexto citable para el Q&A, filtrado por la MISMA política.
+ *
+ * Existe porque al escribir `recuperarContexto()` construí la puerta de egreso
+ * número catorce y no me acordé de esta frontera — que es, literalmente, el
+ * fallo que el comentario de cabecera de este módulo predice. El Q&A devuelve
+ * el articulado completo: si sale por otro sitio, la lista blanca deja de ser
+ * una lista blanca.
+ *
+ * Hoy no cambia ningún resultado (`normativo_oficial` y `hecho_metadato` salen
+ * en los cuatro contextos), y ese es justo el motivo de ponerlo ahora: lo que
+ * esto ataja es el campo que alguien añada MAÑANA a `chunk`.
+ */
+export async function contextoQa(
+  db: Consultante,
+  consulta: string,
+  contexto: ContextoEgreso,
+  opciones: OpcionesContexto = {},
+): Promise<Contexto & { readonly omitidos: readonly string[] }> {
+  const texto = consulta.trim();
+  if (texto === "") {
+    return { chunks: [], huecos: [], redactados: [], advertencia: "consulta vacía", omitidos: [] };
+  }
+
+  const { filas } = await db.rpc("contexto_qa", {
+    consulta: texto,
+    consulta_embedding: opciones.embedding ? `[${opciones.embedding.join(",")}]` : null,
+    ...(opciones.maxEntidades !== undefined ? { max_entidades: opciones.maxEntidades } : {}),
+    ...(opciones.maxChunksPorEntidad !== undefined
+      ? { max_chunks_por_entidad: opciones.maxChunksPorEntidad }
+      : {}),
+    ...(opciones.pesoLexico !== undefined ? { peso_lexico: opciones.pesoLexico } : {}),
+    ...(opciones.pesoSemantico !== undefined ? { peso_semantico: opciones.pesoSemantico } : {}),
+  });
+
+  const omitidos = new Set<string>();
+  const limpias = filas.map((f) => {
+    const { datos, omitidos: om } = filtrarRegistro(
+      f as Record<string, unknown>,
+      PROCEDENCIA_CAMPOS,
+      contexto,
+    );
+    for (const o of om) omitidos.add(o);
+    return datos as unknown as FilaContexto;
+  });
+
+  return { ...agruparContexto(limpias), omitidos: [...omitidos] };
 }
 
 /** Vigencia a fecha arbitraria, filtrada igual. */

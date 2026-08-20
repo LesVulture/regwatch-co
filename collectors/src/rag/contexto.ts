@@ -46,6 +46,15 @@ export interface Contexto {
   readonly chunks: readonly Chunk[];
   readonly huecos: readonly HuecoEvidencia[];
   /**
+   * Chunks que EXISTEN pero cuyo texto la política de egreso no dejó salir.
+   *
+   * Va aparte de `huecos` a propósito: «no lo hemos capturado» y «no te lo
+   * podemos enseñar» son cosas distintas, y colapsarlas dejaría una censura
+   * disfrazada de laguna documental. Hoy está vacío —`normativo_oficial` sale
+   * en los cuatro contextos— y existe para el día que no.
+   */
+  readonly redactados: readonly string[];
+  /**
    * Qué hay que decirle al lector. `null` solo cuando no falta nada: si hay
    * huecos, esta frase acompaña a la respuesta, no al log.
    */
@@ -62,9 +71,18 @@ export function agruparContexto(filas: readonly FilaContexto[]): Contexto {
   const chunks: Chunk[] = [];
   const huecos: HuecoEvidencia[] = [];
 
+  const redactados: string[] = [];
+
   for (const f of filas) {
-    if (f.chunk_id === null || f.texto === null) {
+    // Sin chunk: la entidad casó y su texto no está capturado. Hueco real.
+    if (f.chunk_id === null) {
       huecos.push({ entidad: f.entidad, origen: f.origen, urlFuente: f.url_fuente });
+      continue;
+    }
+    // CON chunk pero sin texto: el chunk existe y algo lo quitó por el camino
+    // —la política de egreso—. No es una laguna del corpus.
+    if (f.texto === null || f.texto === undefined) {
+      redactados.push(f.chunk_id);
       continue;
     }
     chunks.push({
@@ -78,7 +96,7 @@ export function agruparContexto(filas: readonly FilaContexto[]): Contexto {
     });
   }
 
-  return { chunks, huecos, advertencia: advertenciaDe(chunks.length, huecos) };
+  return { chunks, huecos, redactados, advertencia: advertenciaDe(chunks.length, huecos) };
 }
 
 function advertenciaDe(nChunks: number, huecos: readonly HuecoEvidencia[]): string | null {
@@ -118,7 +136,7 @@ export async function recuperarContexto(
 ): Promise<Contexto> {
   const texto = consulta.trim();
   if (texto === "") {
-    return { chunks: [], huecos: [], advertencia: "consulta vacía" };
+    return { chunks: [], huecos: [], redactados: [], advertencia: "consulta vacía" };
   }
 
   const { filas } = await db.rpc("contexto_qa", {
