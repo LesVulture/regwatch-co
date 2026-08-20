@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { parseNumero } from "./crosswalk.js";
+import { parseNumero } from "./crosswalk.ts";
 import fixture from "./fixtures/numero-camara-2024-2025.json" with { type: "json" };
 
 const VALORES: string[] = fixture.valores;

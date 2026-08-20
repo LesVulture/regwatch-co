@@ -15,8 +15,8 @@
  * a JSON.parse no admite mejora por parte de un modelo de lenguaje.
  */
 
-import type { RawCapture } from "../evidence.js";
-import { getSource, type SourceExpectation } from "../sources.js";
+import type { RawCapture } from "../evidence.ts";
+import { getSource, type SourceExpectation } from "../sources.ts";
 
 export type GateOutcome = "ok" | "bloqueado";
 

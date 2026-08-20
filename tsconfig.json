@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["collectors/src/**/*.ts", "db/**/*.ts", "web/src/**/*.ts"],
   "exclude": ["node_modules", "**/dist", "**/.next"]

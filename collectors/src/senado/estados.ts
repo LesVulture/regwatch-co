@@ -51,7 +51,7 @@ export type EstadoCanonico = (typeof ESTADOS_CANONICOS)[number];
  * reales: no hay estados imaginados en este mapa.
  */
 const MAPA: Record<string, EstadoCanonico> = {
-  // — medidos en 2024-2025 y 2026-2027 —
+  // — medidos en las legislaturas cerradas —
   ARCHIVADO: "archivado",
   "ARCHIVADO POR RETIRO DEL AUTOR": "retirado",
   LEY: "ley",
@@ -63,8 +63,36 @@ const MAPA: Record<string, EstadoCanonico> = {
   "PENDIENTE ENVIAR A CORTE": "control_constitucional",
   "RADICADO EN CAMARA": "en_camara_revisora",
   OBJETADO: "objetado",
+  CONCILIACION: "conciliacion",
+
+  // — los 10 que solo enseña la legislatura activa (medidos 2026-08-20) —
+  //
+  // PRIMER debate = comisión · SEGUNDO debate = plenaria. Se clasifica por
+  // ETAPA, no por cámara: la cámara va aparte en `camaraMencionada`, porque
+  // deducirla como estado exigiría saber la cámara de origen del proyecto.
+  "PENDIENTE RENDIR PONENCIA PARA PRIMER DEBATE EN SENADO": "en_comision",
+  "PENDIENTE DISCUTIR PONENCIA PARA PRIMER DEBATE EN SENADO": "en_comision",
+  "PENDIENTE RENDIR PONENCIA PARA SEGUNDO DEBATE EN SENADO": "en_plenaria",
+  "PENDIENTE DISCUTIR PONENCIA PARA SEGUNDO DEBATE EN SENADO": "en_plenaria",
+  "PENDIENTE RENDIR PONENCIA PARA PRIMER DEBATE EN CAMARA": "en_comision",
+  "PENDIENTE RENDIR PONENCIA PARA SEGUNDO DEBATE EN CAMARA": "en_plenaria",
   "PENDIENTE DISCUTIR PONENCIA PARA SEGUNDO DEBATE EN CAMARA": "en_plenaria",
+
+  // Estos SÍ dicen dónde está el proyecto, no en qué etapa: aprobado en su
+  // cámara y camino de la otra, o ya llegado a la revisora.
+  "PENDIENTE DE ENVIAR A CAMARA": "aprobado_camara_origen",
+  "PENDIENTE DESIGNAR PONENTES EN CAMARA": "en_camara_revisora",
+  "PENDIENTE DE ENVIAR A COMISION EN CAMARA": "en_camara_revisora",
 };
+
+/** Qué cámara nombra el estado, si nombra alguna. Es el SEGUNDO eje. */
+export type CamaraMencionada = "senado" | "camara" | null;
+
+function camaraDe(claveNormalizada: string): CamaraMencionada {
+  if (/\bSENADO\b/.test(claveNormalizada)) return "senado";
+  if (/\bCAMARA\b/.test(claveNormalizada)) return "camara";
+  return null;
+}
 
 /**
  * Quita tildes y homogeneiza espacios para que la comparación no dependa de
@@ -80,6 +108,12 @@ export interface EstadoNormalizado {
   readonly original: string;
   /** `true` si hubo que mandarlo a revisión humana. */
   readonly requiereRevision: boolean;
+  /**
+   * El segundo eje: qué cámara nombra el estado. `null` cuando no nombra
+   * ninguna (`ARCHIVADO`, `LEY`…). Se devuelve aparte a propósito — meterlo
+   * en `canonico` obligaría a adivinar la cámara de origen del proyecto.
+   */
+  readonly camaraMencionada: CamaraMencionada;
 }
 
 /**
@@ -92,19 +126,22 @@ export function normalizarEstado(raw: string | null | undefined): EstadoNormaliz
   const original = (raw ?? "").trim();
 
   if (!original) {
-    return { canonico: "desconocido", original, requiereRevision: true };
+    return { canonico: "desconocido", original, requiereRevision: true, camaraMencionada: null };
   }
 
   const clave = normalizarTexto(original);
   const canonico = MAPA[clave];
+  const camaraMencionada = camaraDe(clave);
 
   if (!canonico) {
-    // Un valor nuevo NO se adivina por parecido: «PENDIENTE …» podría ser
-    // cualquier punto del trámite, y colocarlo mal es peor que declararlo.
-    return { canonico: "desconocido", original, requiereRevision: true };
+    // Un valor nuevo NO se adivina por parecido: «PENDIENTE …» aparece en
+    // cuatro puntos distintos del trámite, y colocarlo mal es peor que
+    // declararlo. Se devuelve la cámara igualmente: es dato observado, no
+    // inferencia, y le ahorra trabajo a quien revise.
+    return { canonico: "desconocido", original, requiereRevision: true, camaraMencionada };
   }
 
-  return { canonico, original, requiereRevision: false };
+  return { canonico, original, requiereRevision: false, camaraMencionada };
 }
 
 /** Los valores crudos que este mapa ya reconoce. Útil para tests y auditoría. */

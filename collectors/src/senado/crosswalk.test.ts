@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { clasificarCrosswalk, parseNumero } from "./crosswalk.js";
+import { clasificarCrosswalk, parseNumero } from "./crosswalk.ts";
 
 describe("parseNumero — las 7 variantes medidas en 2024-2025", () => {
   it("NNN/NN — el formato normal (213 de 224 casos)", () => {

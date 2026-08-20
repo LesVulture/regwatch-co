@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizarEstado, normalizarTexto, valoresConocidos } from "./estados.js";
+import { normalizarEstado, normalizarTexto, valoresConocidos } from "./estados.ts";
 
 describe("normalizarEstado — los 13 valores medidos en 2 legislaturas", () => {
   it("mapea los estados frecuentes", () => {
@@ -69,5 +69,64 @@ describe("normalizarTexto", () => {
     // lo colapsa. Este test lo hace explícito para que nadie lo "arregle".
     const conTilde = valoresConocidos().filter((k) => /[ÁÉÍÓÚ]/.test(k));
     expect(conTilde).toEqual([]);
+  });
+});
+
+describe("los 10 estados que solo enseña la legislatura activa", () => {
+  /**
+   * Medir sobre legislaturas cerradas y extrapolar dejaba 81 filas en
+   * `desconocido`: los estados de trámite EN CURSO no aparecen en una
+   * legislatura que ya terminó. Lo cazó correr el colector, no leer el plan.
+   */
+  it("primer debate es comisión y segundo es plenaria", () => {
+    expect(
+      normalizarEstado("PENDIENTE RENDIR PONENCIA PARA PRIMER DEBATE EN SENADO").canonico,
+    ).toBe("en_comision");
+    expect(
+      normalizarEstado("PENDIENTE DISCUTIR PONENCIA PARA SEGUNDO DEBATE EN SENADO").canonico,
+    ).toBe("en_plenaria");
+  });
+
+  it("mapea el resto de los medidos", () => {
+    expect(normalizarEstado("CONCILIACIÓN").canonico).toBe("conciliacion");
+    expect(normalizarEstado("PENDIENTE DE ENVIAR A CÁMARA").canonico).toBe(
+      "aprobado_camara_origen",
+    );
+    expect(normalizarEstado("PENDIENTE DESIGNAR PONENTES EN CÁMARA").canonico).toBe(
+      "en_camara_revisora",
+    );
+    expect(normalizarEstado("PENDIENTE DE ENVIAR A COMISIÓN EN CÁMARA").canonico).toBe(
+      "en_camara_revisora",
+    );
+  });
+});
+
+describe("el segundo eje: qué cámara nombra el estado", () => {
+  /**
+   * EL PUNTO DE TODO ESTO. «SEGUNDO DEBATE EN CÁMARA» dice etapa Y cámara.
+   * Cuál es «el estado» depende de la cámara de ORIGEN del proyecto, que la
+   * cadena no dice. Así que la etapa va en `canonico` y la cámara aparte.
+   */
+  it("distingue la cámara sin meterla en el estado canónico", () => {
+    const senado = normalizarEstado("PENDIENTE RENDIR PONENCIA PARA SEGUNDO DEBATE EN SENADO");
+    const camara = normalizarEstado("PENDIENTE RENDIR PONENCIA PARA SEGUNDO DEBATE EN CÁMARA");
+    // Misma ETAPA...
+    expect(senado.canonico).toBe("en_plenaria");
+    expect(camara.canonico).toBe("en_plenaria");
+    // ...distinta CÁMARA, y eso no se pierde.
+    expect(senado.camaraMencionada).toBe("senado");
+    expect(camara.camaraMencionada).toBe("camara");
+  });
+
+  it("es null cuando el estado no nombra cámara alguna", () => {
+    expect(normalizarEstado("ARCHIVADO").camaraMencionada).toBeNull();
+    expect(normalizarEstado("LEY").camaraMencionada).toBeNull();
+  });
+
+  it("un estado desconocido igual reporta la cámara: es dato observado", () => {
+    const e = normalizarEstado("PENDIENTE DE ALGO INÉDITO EN CÁMARA");
+    expect(e.canonico).toBe("desconocido");
+    expect(e.requiereRevision).toBe(true);
+    expect(e.camaraMencionada).toBe("camara");
   });
 });

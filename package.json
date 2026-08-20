@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test",
+    "collect:senado": "node collectors/src/senado/run-pdly.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",

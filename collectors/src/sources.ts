@@ -10,7 +10,7 @@
  * deliberadamente aburrido y explícito: es la tabla que un humano mantiene.
  */
 
-import type { Tier } from "./evidence.js";
+import type { Tier } from "./evidence.ts";
 
 /** Qué formato debe traer el cuerpo. Se valida parseando, nunca por status. */
 export type BodyKind = "json" | "xml" | "html" | "pdf";

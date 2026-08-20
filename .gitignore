@@ -16,6 +16,10 @@ dist/
 .cache/
 collectors/.raw/
 
+# artefactos intermedios de recolección: derivados y regenerables, como el
+# grafo o el índice. La fuente de verdad es la fuente primaria, no esto.
+artefactos/
+
 # artefactos de sesión
 *.log
 .DS_Store

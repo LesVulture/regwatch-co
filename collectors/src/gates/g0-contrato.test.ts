@@ -5,8 +5,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { RawCapture } from "../evidence.js";
-import { g0Contrato } from "./g0-contrato.js";
+import type { RawCapture } from "../evidence.ts";
+import { g0Contrato } from "./g0-contrato.ts";
 
 function capture(over: Partial<RawCapture> = {}): RawCapture {
   return {
