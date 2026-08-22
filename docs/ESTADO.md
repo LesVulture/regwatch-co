@@ -155,6 +155,8 @@ Dumps semanales a git · frescura por fuente en la UI · API JSON · timeline ·
 
 Ya **no** es hueco en el árbol (otra cosa es que haya corrido en prod): `g2-pulso`, embeddings MCP, `INSERT` de `captura` (meta + hash), `collect.yml` diario en `main` con `SUPABASE_DB_URL`, enlace búsqueda → vigencia, `collect:basedoc` / `db:load-afectaciones`, filtros de búsqueda en SQL (`legislatura`, `estado`, `camara` del trámite según Senado, `anio`, paginación `hay_mas`), browse `/proyectos` y `/providencias`, fichas, `/cobertura`, TUI Ink (`pnpm tui`), Tailwind 4 en `web/`. El dispatch del 22 **no** es un collect verde: `load-providencias` sale 1 si el artefacto de Corte del año viene vacío. Los filtros SQL **hay que desplegarlos** en la instancia (`DROP`+`CREATE`; `db:drift` revierte y no persiste).
 
+**Instancia viva 2026-08-22 (PostgREST, no snapshot):** `hybrid_search` / `busqueda_lexica` / `consultar_vigencia` sí están. `ficha_proyecto`, `ficha_providencia`, `listar_proyectos`, `opciones_filtro_proyectos` **no** (PGRST202). Las tablas `proyecto_ley` y `providencia` sí se leen con anon (200). La web, ante PGRST202, proyecta la ficha/listado desde esas tablas — la misma forma que `10_listados.sql`, por la misma puerta de egreso. Un clic a un resultado ya no enseña el JSON de PostgREST. `filtro_anio` / `desplazamiento` en `hybrid_search` tampoco están: se reintenta sin ellos y se declara; no se filtra post-LIMIT.
+
 ---
 
 ## Cómo se mantiene este fichero

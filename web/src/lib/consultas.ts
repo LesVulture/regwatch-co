@@ -25,9 +25,29 @@ import {
   type OpcionesContexto,
 } from "../../../collectors/src/rag/contexto.ts";
 
+/**
+ * Tablas del corpus que el producto puede leer por PostgREST cuando un RPC
+ * no está en el schema cache. No es un atajo genérico: `captura` no entra.
+ *
+ * Medido 2026-08-22 contra la instancia viva: `ficha_proyecto` /
+ * `listar_proyectos` / `ficha_providencia` devuelven PGRST202; `GET
+ * /rest/v1/proyecto_ley?id=eq.…` y `GET /rest/v1/providencia` responden 200
+ * con RLS de lectura pública. `db:drift` revierte y no despliega.
+ */
+export type TablaConsulta = "proyecto_ley" | "providencia";
+
 /** Lo mínimo que esta capa necesita de un cliente de base de datos. */
 export interface Consultante {
   rpc(nombre: string, args: Record<string, unknown>): Promise<{ filas: unknown[] }>;
+  /**
+   * Lectura de tabla PostgREST. El doble de tests no la implementa: si el RPC
+   * existe, no se llama. Si el RPC falta (PGRST202) y esto no está, el error
+   * original se propaga — no se finge un vacío.
+   */
+  filasTabla?(
+    tabla: TablaConsulta,
+    params: Readonly<Record<string, string>>,
+  ): Promise<{ filas: unknown[] }>;
 }
 
 /**
@@ -324,7 +344,9 @@ export async function buscar(
     ...(opciones.pesoSemantico !== undefined ? { peso_semantico: opciones.pesoSemantico } : {}),
   });
 
-  const { filas } = await db.rpc("hybrid_search", args(texto));
+  const primero = await hybridSearch(db, args(texto));
+  const filas = primero.filas;
+  const avisoFirma = avisoFiltrosFueraDeFirma(primero.filtrosNoAplicados);
 
   // LA SEÑAL NO ES «cero filas», y confundirlas deja el fallo escondido.
   //
@@ -338,13 +360,19 @@ export async function buscar(
   const sinLexico =
     filas.length === 0 ||
     filas.every((f) => (f as { posicion_lexica?: unknown }).posicion_lexica == null);
-  if (!sinLexico) return aplicarEgreso(filas, contexto, texto, false, limite);
+  if (!sinLexico) {
+    return conAvisoFirma(aplicarEgreso(filas, contexto, texto, false, limite), avisoFirma);
+  }
 
   const laxa = ensanchar(texto);
-  if (laxa === null) return aplicarEgreso(filas, contexto, texto, false, limite);
+  if (laxa === null) {
+    return conAvisoFirma(aplicarEgreso(filas, contexto, texto, false, limite), avisoFirma);
+  }
 
-  const reintento = await db.rpc("hybrid_search", args(laxa));
-  if (reintento.filas.length === 0) return aplicarEgreso(filas, contexto, texto, false, limite);
+  const reintento = await hybridSearch(db, args(laxa));
+  if (reintento.filas.length === 0) {
+    return conAvisoFirma(aplicarEgreso(filas, contexto, texto, false, limite), avisoFirma);
+  }
 
   // UNIÓN, no sustitución — y la diferencia es que la versión anterior sí podía
   // quitar resultados pese al comentario que juraba lo contrario. El reintento
@@ -358,7 +386,7 @@ export async function buscar(
   const idsNuevas = new Set(nuevas.map((f) => String((f as { id?: unknown }).id)));
   const recortadas = union.slice(0, limite);
   const aportaNuevas = recortadas.some((f) => idsNuevas.has(String((f as { id?: unknown }).id)));
-  return aplicarEgreso(union, contexto, texto, aportaNuevas, limite);
+  return conAvisoFirma(aplicarEgreso(union, contexto, texto, aportaNuevas, limite), avisoFirma);
 }
 
 /**
@@ -510,6 +538,193 @@ function argsFiltro(o: OpcionesBusqueda): Record<string, unknown> {
   return a;
 }
 
+/**
+ * Parámetros que la instancia viva (firma de `hybrid_search` al 2026-08-22)
+ * no tiene. Medido: `filtro_anio` → PGRST202 con hint
+ * `hybrid_search(consulta, consulta_embedding, limite, peso_lexico,
+ * peso_semantico, pool, rrf_k, solo_tipo)`. `solo_tipo` sí está.
+ */
+const FILTROS_FIRMA_NUEVA = [
+  "filtro_legislatura",
+  "filtro_estado",
+  "filtro_camara",
+  "filtro_anio",
+  "filtro_tipo_providencia",
+  "desplazamiento",
+] as const;
+
+const ETIQUETA_FILTRO_NUEVO: Record<(typeof FILTROS_FIRMA_NUEVA)[number], string> = {
+  filtro_legislatura: "legislatura",
+  filtro_estado: "estado",
+  filtro_camara: "cámara",
+  filtro_anio: "año",
+  filtro_tipo_providencia: "tipo de providencia",
+  desplazamiento: "página",
+};
+
+function recortarFiltrosNuevos(args: Record<string, unknown>): {
+  recortado: Record<string, unknown>;
+  ignorados: string[];
+} {
+  const recortado = { ...args };
+  const ignorados: string[] = [];
+  for (const k of FILTROS_FIRMA_NUEVA) {
+    if (k in recortado) {
+      delete recortado[k];
+      ignorados.push(ETIQUETA_FILTRO_NUEVO[k]);
+    }
+  }
+  return { recortado, ignorados };
+}
+
+function esPgrst202(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return msg.includes("PGRST202");
+}
+
+async function hybridSearch(
+  db: Consultante,
+  args: Record<string, unknown>,
+): Promise<{ filas: unknown[]; filtrosNoAplicados: readonly string[] }> {
+  try {
+    const { filas } = await db.rpc("hybrid_search", args);
+    return { filas, filtrosNoAplicados: [] };
+  } catch (e) {
+    if (!esPgrst202(e)) throw e;
+    const { recortado, ignorados } = recortarFiltrosNuevos(args);
+    if (ignorados.length === 0) throw e;
+    const { filas } = await db.rpc("hybrid_search", recortado);
+    return { filas, filtrosNoAplicados: ignorados };
+  }
+}
+
+function avisoFiltrosFueraDeFirma(nombres: readonly string[]): string | null {
+  if (nombres.length === 0) return null;
+  return (
+    `El recorte por ${nombres.join(", ")} no se aplicó: la búsqueda desplegada ` +
+    "sigue siendo consulta + tipo, sin esos parámetros. No se filtró después " +
+    "del límite."
+  );
+}
+
+function conAvisoFirma(r: ResultadoBusqueda, extra: string | null): ResultadoBusqueda {
+  if (extra === null) return r;
+  return {
+    ...r,
+    advertencia: r.advertencia ? `${r.advertencia} ${extra}` : extra,
+  };
+}
+
+async function rpcOTabla(
+  db: Consultante,
+  nombre: string,
+  args: Record<string, unknown>,
+  alternativa: (leer: NonNullable<Consultante["filasTabla"]>) => Promise<{ filas: unknown[] }>,
+): Promise<{ filas: unknown[] }> {
+  try {
+    return await db.rpc(nombre, args);
+  } catch (e) {
+    if (!esPgrst202(e) || db.filasTabla === undefined) throw e;
+    return alternativa(db.filasTabla);
+  }
+}
+
+function citaPostgrest(v: string): string {
+  if (/^[A-Za-z0-9_./-]+$/.test(v)) return v;
+  return `"${v.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
+const SELECT_FICHA_PROYECTO =
+  "id,titulo,legislatura,cuatrenio,autor,comision,estado,estado_original,estado_camara,numero_senado_canonico,numero_camara_raw,crosswalk,crosswalk_motivo,url_fuente,captured_at,tier";
+
+const SELECT_LISTAR_PROYECTO =
+  "id,titulo,numero_senado_canonico,estado,legislatura,autor,comision,estado_camara,url_fuente,captured_at,tier";
+
+const SELECT_FICHA_PROVIDENCIA =
+  "id,tema,sentencia,tipo,fecha_publicacion,fecha_sentencia,expediente,magistrados,url_fuente,url_texto,captured_at,tier";
+
+const SELECT_LISTAR_PROVIDENCIA =
+  "id,tema,sentencia,tipo,fecha_publicacion,url_texto,captured_at,tier";
+
+function proyectarFichaProyecto(f: Record<string, unknown>): Record<string, unknown> {
+  return { ...f, referencia: f.numero_senado_canonico };
+}
+
+function proyectarListarProyecto(f: Record<string, unknown>): Record<string, unknown> {
+  return {
+    origen: "proyecto_ley",
+    id: f.id,
+    titulo: f.titulo,
+    referencia: f.numero_senado_canonico,
+    estado: f.estado,
+    fecha: null,
+    legislatura: f.legislatura,
+    autor: f.autor,
+    comision: f.comision,
+    estado_camara: f.estado_camara,
+    url_fuente: f.url_fuente,
+    captured_at: f.captured_at,
+    tier: f.tier,
+  };
+}
+
+function tituloProvidencia(tema: unknown): string | null {
+  if (typeof tema !== "string" || tema === "" || tema === "Sin información") return null;
+  return tema;
+}
+
+function proyectarFichaProvidencia(f: Record<string, unknown>): Record<string, unknown> {
+  return { ...f, titulo: tituloProvidencia(f.tema) };
+}
+
+function proyectarListarProvidencia(f: Record<string, unknown>): Record<string, unknown> {
+  return {
+    origen: "providencia",
+    id: f.id,
+    titulo: tituloProvidencia(f.tema),
+    referencia: f.sentencia,
+    estado: f.tipo,
+    fecha: f.fecha_publicacion,
+    url_fuente: f.url_texto,
+    captured_at: f.captured_at,
+    tier: f.tier,
+  };
+}
+
+function paramsListarProyectos(o: OpcionesBusqueda, pedido: number): Record<string, string> {
+  const p: Record<string, string> = {
+    select: SELECT_LISTAR_PROYECTO,
+    order: "captured_at.desc,id.asc",
+    limit: String(pedido),
+    offset: String(Math.max(o.desplazamiento ?? 0, 0)),
+  };
+  const and: string[] = [];
+  if (o.legislatura !== undefined) and.push(`legislatura.eq.${citaPostgrest(o.legislatura)}`);
+  if (o.estado !== undefined) and.push(`estado.eq.${citaPostgrest(o.estado)}`);
+  if (o.camara !== undefined) and.push(`estado_camara.eq.${citaPostgrest(o.camara)}`);
+  if (o.comision !== undefined) and.push(`comision.eq.${citaPostgrest(o.comision)}`);
+  if (o.anio !== undefined) and.push(`legislatura.like.*${o.anio}*`);
+  if (and.length > 0) p.and = `(${and.join(",")})`;
+  return p;
+}
+
+function paramsListarProvidencias(o: OpcionesBusqueda, pedido: number): Record<string, string> {
+  const p: Record<string, string> = {
+    select: SELECT_LISTAR_PROVIDENCIA,
+    order: "fecha_publicacion.desc.nullslast,id.asc",
+    limit: String(pedido),
+    offset: String(Math.max(o.desplazamiento ?? 0, 0)),
+  };
+  const and: string[] = [];
+  if (o.tipoProvidencia !== undefined) and.push(`tipo.eq.${citaPostgrest(o.tipoProvidencia)}`);
+  if (o.anio !== undefined) {
+    and.push(`fecha_publicacion.gte.${o.anio}-01-01`);
+    and.push(`fecha_publicacion.lt.${o.anio + 1}-01-01`);
+  }
+  if (and.length > 0) p.and = `(${and.join(",")})`;
+  return p;
+}
+
 export async function listarProyectos(
   db: Consultante,
   contexto: ContextoEgreso,
@@ -517,18 +732,32 @@ export async function listarProyectos(
   limite = 20,
 ): Promise<ResultadoBusqueda> {
   const pedido = limite + 1;
-  const { filas } = await db.rpc("listar_proyectos", {
-    limite: pedido,
-    ...(opciones.legislatura !== undefined ? { filtro_legislatura: opciones.legislatura } : {}),
-    ...(opciones.estado !== undefined ? { filtro_estado: opciones.estado } : {}),
-    ...(opciones.camara !== undefined ? { filtro_camara: opciones.camara } : {}),
-    ...(opciones.comision !== undefined ? { filtro_comision: opciones.comision } : {}),
-    ...(opciones.anio !== undefined ? { filtro_anio: opciones.anio } : {}),
-    ...(opciones.desplazamiento !== undefined && opciones.desplazamiento > 0
-      ? { desplazamiento: opciones.desplazamiento }
-      : {}),
-  });
-  return aplicarEgreso(filas, contexto, "el recorte de proyectos pedido", false, limite);
+  const { filas } = await rpcOTabla(
+    db,
+    "listar_proyectos",
+    {
+      limite: pedido,
+      ...(opciones.legislatura !== undefined ? { filtro_legislatura: opciones.legislatura } : {}),
+      ...(opciones.estado !== undefined ? { filtro_estado: opciones.estado } : {}),
+      ...(opciones.camara !== undefined ? { filtro_camara: opciones.camara } : {}),
+      ...(opciones.comision !== undefined ? { filtro_comision: opciones.comision } : {}),
+      ...(opciones.anio !== undefined ? { filtro_anio: opciones.anio } : {}),
+      ...(opciones.desplazamiento !== undefined && opciones.desplazamiento > 0
+        ? { desplazamiento: opciones.desplazamiento }
+        : {}),
+    },
+    (leer) => leer("proyecto_ley", paramsListarProyectos(opciones, pedido)),
+  );
+  const proyectadas = filas.map((f) =>
+    esFilaListarProyecto(f) ? f : proyectarListarProyecto(f as Record<string, unknown>),
+  );
+  return aplicarEgreso(proyectadas, contexto, "el recorte de proyectos pedido", false, limite);
+}
+
+function esFilaListarProyecto(f: unknown): boolean {
+  return (
+    typeof f === "object" && f !== null && (f as { origen?: unknown }).origen === "proyecto_ley"
+  );
 }
 
 export async function listarProvidencias(
@@ -538,15 +767,29 @@ export async function listarProvidencias(
   limite = 20,
 ): Promise<ResultadoBusqueda> {
   const pedido = limite + 1;
-  const { filas } = await db.rpc("listar_providencias", {
-    limite: pedido,
-    ...(opciones.anio !== undefined ? { filtro_anio: opciones.anio } : {}),
-    ...(opciones.tipoProvidencia !== undefined ? { filtro_tipo: opciones.tipoProvidencia } : {}),
-    ...(opciones.desplazamiento !== undefined && opciones.desplazamiento > 0
-      ? { desplazamiento: opciones.desplazamiento }
-      : {}),
-  });
-  return aplicarEgreso(filas, contexto, "el recorte de jurisprudencia pedido", false, limite);
+  const { filas } = await rpcOTabla(
+    db,
+    "listar_providencias",
+    {
+      limite: pedido,
+      ...(opciones.anio !== undefined ? { filtro_anio: opciones.anio } : {}),
+      ...(opciones.tipoProvidencia !== undefined ? { filtro_tipo: opciones.tipoProvidencia } : {}),
+      ...(opciones.desplazamiento !== undefined && opciones.desplazamiento > 0
+        ? { desplazamiento: opciones.desplazamiento }
+        : {}),
+    },
+    (leer) => leer("providencia", paramsListarProvidencias(opciones, pedido)),
+  );
+  const proyectadas = filas.map((f) =>
+    esFilaListarProvidencia(f) ? f : proyectarListarProvidencia(f as Record<string, unknown>),
+  );
+  return aplicarEgreso(proyectadas, contexto, "el recorte de jurisprudencia pedido", false, limite);
+}
+
+function esFilaListarProvidencia(f: unknown): boolean {
+  return (
+    typeof f === "object" && f !== null && (f as { origen?: unknown }).origen === "providencia"
+  );
 }
 
 export async function fichaProyecto(
@@ -554,8 +797,18 @@ export async function fichaProyecto(
   id: string,
   contexto: ContextoEgreso,
 ): Promise<ResultadoBusqueda> {
-  const { filas } = await db.rpc("ficha_proyecto", { proyecto: id });
-  return aplicarEgreso(filas, contexto, `proyecto ${id}`, false);
+  const { filas } = await rpcOTabla(db, "ficha_proyecto", { proyecto: id }, (leer) =>
+    leer("proyecto_ley", {
+      id: `eq.${id}`,
+      select: SELECT_FICHA_PROYECTO,
+      limit: "1",
+    }),
+  );
+  const proyectadas = filas.map((f) => {
+    const r = f as Record<string, unknown>;
+    return r.referencia !== undefined ? r : proyectarFichaProyecto(r);
+  });
+  return aplicarEgreso(proyectadas, contexto, `proyecto ${id}`, false);
 }
 
 export async function fichaProvidencia(
@@ -563,8 +816,18 @@ export async function fichaProvidencia(
   id: string,
   contexto: ContextoEgreso,
 ): Promise<ResultadoBusqueda> {
-  const { filas } = await db.rpc("ficha_providencia", { prov: id });
-  return aplicarEgreso(filas, contexto, `providencia ${id}`, false);
+  const { filas } = await rpcOTabla(db, "ficha_providencia", { prov: id }, (leer) =>
+    leer("providencia", {
+      id: `eq.${id}`,
+      select: SELECT_FICHA_PROVIDENCIA,
+      limit: "1",
+    }),
+  );
+  const proyectadas = filas.map((f) => {
+    const r = f as Record<string, unknown>;
+    return Object.hasOwn(r, "titulo") ? r : proyectarFichaProvidencia(r);
+  });
+  return aplicarEgreso(proyectadas, contexto, `providencia ${id}`, false);
 }
 
 export async function opcionesFiltroProyectos(db: Consultante): Promise<{
@@ -573,7 +836,13 @@ export async function opcionesFiltroProyectos(db: Consultante): Promise<{
   camaras: string[];
   comisiones: string[];
 }> {
-  const { filas } = await db.rpc("opciones_filtro_proyectos", {});
+  let filas: unknown[];
+  try {
+    ({ filas } = await db.rpc("opciones_filtro_proyectos", {}));
+  } catch (e) {
+    if (!esPgrst202(e)) throw e;
+    return { legislaturas: [], estados: [], camaras: [], comisiones: [] };
+  }
   const f = filas[0] as
     | {
         legislaturas?: unknown;
@@ -593,7 +862,13 @@ export async function opcionesFiltroProyectos(db: Consultante): Promise<{
 export async function opcionesFiltroProvidencias(
   db: Consultante,
 ): Promise<{ anios: number[]; tipos: string[] }> {
-  const { filas } = await db.rpc("opciones_filtro_providencias", {});
+  let filas: unknown[];
+  try {
+    ({ filas } = await db.rpc("opciones_filtro_providencias", {}));
+  } catch (e) {
+    if (!esPgrst202(e)) throw e;
+    return { anios: [], tipos: [] };
+  }
   const f = filas[0] as { anios?: unknown; tipos?: unknown } | undefined;
   return { anios: enteros(f?.anios), tipos: textos(f?.tipos) };
 }

@@ -16,6 +16,7 @@ import {
   identidadNorma,
   listarProyectos,
   MAX_ENTIDADES_QA,
+  opcionesFiltroProyectos,
   PROCEDENCIA_CAMPOS,
   verificarProcedencia,
   vigencia,
@@ -720,5 +721,107 @@ describe("listarProyectos — browse, no FTS", () => {
     );
     expect(r.hay_mas).toBe(false);
     expect(r.filas).toEqual([]);
+  });
+
+  it("si ficha_proyecto no está en el cache, lee proyecto_ley y proyecta referencia", async () => {
+    const tablas: { tabla: string; params: Record<string, string> }[] = [];
+    const dbTabla: Consultante = {
+      rpc: async () => {
+        throw new Error('ficha_proyecto devolvió 404: {"code":"PGRST202"}');
+      },
+      filasTabla: async (tabla, params) => {
+        tablas.push({ tabla, params: { ...params } });
+        return {
+          filas: [
+            {
+              id: "454ca224-538e-4392-aeef-35f2540da1b1",
+              titulo: "Un proyecto",
+              numero_senado_canonico: "001/22",
+              url_fuente: "https://leyes.senado.gov.co/api/search_pdly.php",
+              captured_at: "2026-08-22T00:00:00.000Z",
+              tier: "primaria",
+            },
+          ],
+        };
+      },
+    };
+    const r = await fichaProyecto(
+      dbTabla,
+      "454ca224-538e-4392-aeef-35f2540da1b1",
+      "ficha_individual",
+    );
+    expect(tablas[0]?.tabla).toBe("proyecto_ley");
+    expect(tablas[0]?.params.id).toBe("eq.454ca224-538e-4392-aeef-35f2540da1b1");
+    expect(r.filas[0]?.referencia).toBe("001/22");
+    expect(r.filas[0]?.titulo).toBe("Un proyecto");
+  });
+
+  it("un PGRST202 sin filasTabla no se convierte en vacío", async () => {
+    await expect(
+      fichaProyecto(
+        {
+          rpc: async () => {
+            throw new Error('ficha_proyecto devolvió 404: {"code":"PGRST202"}');
+          },
+        },
+        "454ca224-538e-4392-aeef-35f2540da1b1",
+        "ficha_individual",
+      ),
+    ).rejects.toThrow("PGRST202");
+  });
+
+  it("si listar_proyectos falta, lee la tabla y pone origen", async () => {
+    const dbTabla: Consultante = {
+      rpc: async () => {
+        throw new Error('listar_proyectos devolvió 404: {"code":"PGRST202"}');
+      },
+      filasTabla: async () => ({
+        filas: [
+          {
+            id: "454ca224-538e-4392-aeef-35f2540da1b1",
+            titulo: "Un proyecto",
+            numero_senado_canonico: "001/22",
+            estado: "ley",
+            url_fuente: "https://leyes.senado.gov.co/api/search_pdly.php",
+            captured_at: "2026-08-22T00:00:00.000Z",
+            tier: "primaria",
+          },
+        ],
+      }),
+    };
+    const r = await listarProyectos(dbTabla, "api_bloque", {}, 20);
+    expect(r.filas[0]?.origen).toBe("proyecto_ley");
+    expect(r.filas[0]?.referencia).toBe("001/22");
+  });
+
+  it("si opciones_filtro_proyectos falta, no inventa facetas", async () => {
+    const r = await opcionesFiltroProyectos({
+      rpc: async () => {
+        throw new Error('opciones_filtro_proyectos devolvió 404: {"code":"PGRST202"}');
+      },
+    });
+    expect(r.legislaturas).toEqual([]);
+    expect(r.comisiones).toEqual([]);
+  });
+});
+
+describe("buscar — firma desplegada más corta que el SQL del repo", () => {
+  it("si hybrid_search no tiene filtro_anio, reintenta sin él y lo declara", async () => {
+    const llamadas: Record<string, unknown>[] = [];
+    const dbFirma: Consultante = {
+      rpc: async (_n, args) => {
+        llamadas.push(args);
+        if ("filtro_anio" in args) {
+          throw new Error('hybrid_search devolvió 404: {"code":"PGRST202"}');
+        }
+        return { filas: [{ ...FILA_BUSQUEDA }] };
+      },
+    };
+    const r = await buscar(dbFirma, "salud mental", "api_bloque", 20, { anio: 2024 });
+    expect(llamadas).toHaveLength(2);
+    expect(llamadas[0]).toMatchObject({ filtro_anio: 2024 });
+    expect(llamadas[1]).not.toHaveProperty("filtro_anio");
+    expect(r.advertencia).toContain("año");
+    expect(r.filas).toHaveLength(1);
   });
 });

@@ -2,16 +2,23 @@
  * Cliente de consulta contra PostgREST.
  *
  * Se habla con `fetch` en vez de con el SDK a propósito: lo único que este
- * producto necesita son dos llamadas RPC de solo lectura, y una dependencia
- * menos en la superficie de un repo público es una decisión, no un ahorro.
+ * producto necesita son llamadas de solo lectura, y una dependencia menos en
+ * la superficie de un repo público es una decisión, no un ahorro.
  *
  * Usa la clave **publicable** (anon). Puede vivir en el cliente porque RLS ya
  * decide lo que se puede leer: lectura abierta en las tablas públicas, cerrada
  * en `captura`, y escritura denegada para anon en todas. La clave no es el
  * control de acceso; el control de acceso es la política.
+ *
+ * Además de RPC, lee `proyecto_ley` y `providencia` por GET. Medido 2026-08-22:
+ * `ficha_proyecto` no está en el schema cache (PGRST202) y la tabla sí
+ * responde 200. Sin este camino, un clic en un resultado de búsqueda enseña
+ * el JSON de PostgREST en vez de la ficha. `captura` no se lee por aquí.
  */
 
-import type { Consultante } from "./consultas.ts";
+import type { Consultante, TablaConsulta } from "./consultas.ts";
+
+const TABLAS: ReadonlySet<TablaConsulta> = new Set(["proyecto_ley", "providencia"]);
 
 export function crearConsultante(url: string, anonKey: string): Consultante {
   if (!url || !anonKey) {
@@ -21,14 +28,19 @@ export function crearConsultante(url: string, anonKey: string): Consultante {
     );
   }
 
+  const raiz = url.replace(/\/$/, "").replace(/\/rest\/v1$/i, "");
+  const auth = {
+    apikey: anonKey,
+    Authorization: `Bearer ${anonKey}`,
+  };
+
   return {
     async rpc(nombre, args) {
-      const res = await fetch(`${url}/rest/v1/rpc/${nombre}`, {
+      const res = await fetch(`${raiz}/rest/v1/rpc/${nombre}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          ...auth,
         },
         body: JSON.stringify(args),
       });
@@ -40,6 +52,21 @@ export function crearConsultante(url: string, anonKey: string): Consultante {
         throw new Error(`${nombre} devolvió ${res.status}: ${(await res.text()).slice(0, 300)}`);
       }
 
+      const json = await res.json();
+      return { filas: Array.isArray(json) ? json : [json] };
+    },
+
+    async filasTabla(tabla, params) {
+      if (!TABLAS.has(tabla)) {
+        throw new Error(`tabla no permitida: ${tabla}`);
+      }
+      const qs = new URLSearchParams(params);
+      const res = await fetch(`${raiz}/rest/v1/${tabla}?${qs}`, {
+        headers: { Accept: "application/json", ...auth },
+      });
+      if (!res.ok) {
+        throw new Error(`${tabla} devolvió ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      }
       const json = await res.json();
       return { filas: Array.isArray(json) ? json : [json] };
     },
