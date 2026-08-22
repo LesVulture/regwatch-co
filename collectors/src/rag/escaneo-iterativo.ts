@@ -12,8 +12,10 @@
  *    de fábrica, no un caso raro.
  * 2. **No se puede fijar en la definición de la función.** `create function …
  *    set hnsw.iterative_scan` da `42501 permission denied` en Supabase, con el
- *    módulo cargado y sin él. Así que es responsabilidad de quien abre la
- *    conexión, quiera o no.
+ *    módulo cargado y sin él. Y tampoco lo puede poner `consultas.ts`: esa
+ *    capa habla por PostgREST, sin sesión SQL. El único caller de producción
+ *    es una conexión postgres.js directa (`db/embed-chunks.ts`). Las consultas
+ *    de la web y del MCP corren con el default (`off`).
  * 3. **Y aquí está la trampa:** antes de que pgvector cargue su librería en la
  *    sesión, `hnsw.iterative_scan` es un *placeholder* que acepta CUALQUIER
  *    cadena. Se comprobó poniéndole `esto_no_es_un_valor_valido`: lo aceptó y

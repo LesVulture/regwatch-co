@@ -1,0 +1,31 @@
+#!/bin/sh
+# Impide publicar en el repo PÚBLICO las ramas de respaldo locales.
+#
+# `backup/pre-redaccion` conserva 8 commits que NO están en `main`: la historia
+# anterior a la redacción del 2026-08-19, con rutas del scratchpad de la sesión
+# —home del usuario, nombre del repo privado, UUID de sesión— dentro de varios
+# JSON de `research/`. Se redactaron a propósito (commit 12693e4) y `main` no
+# los contiene. Un `git push --all` o `--mirror` los republica de golpe, y una
+# vez en GitHub ya no se retiran: quedan en la caché de los forks.
+#
+# La rama NO se borra —es el respaldo de su dueño— pero no se empuja sola.
+# Para publicarla a conciencia:  git push --no-verify origin backup/pre-redaccion
+#
+# Se activa con:  git config core.hooksPath .githooks
+
+bloqueadas=""
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/backup/*) bloqueadas="$bloqueadas $remote_ref" ;;
+  esac
+done
+
+if [ -n "$bloqueadas" ]; then
+  echo "pre-push: BLOQUEADO. Estas ramas no van al repositorio público:" >&2
+  for r in $bloqueadas; do echo "  · $r" >&2; done
+  echo "" >&2
+  echo "Contienen historia anterior a la redacción de rutas locales (12693e4)." >&2
+  echo "Si de verdad quieres publicarlas: git push --no-verify origin <rama>" >&2
+  exit 1
+fi
+exit 0

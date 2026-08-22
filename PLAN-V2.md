@@ -1,5 +1,7 @@
 # regwatch-co v2 — Plan de construcción
 
+> **Estado vivo (as-built):** [`docs/ESTADO.md`](docs/ESTADO.md) y el [`README.md`](README.md). Este fichero es el **plan histórico de construcción** (redactado 2026-08-19). No se reescribe el cuerpo: si una cifra, un stack o un «ya hecho» de aquí discrepa de lo construido, manda ESTADO.md.
+
 > **Estado:** plan aprobado para implementar. Redactado el 2026-08-19.
 > **Base:** 13 investigaciones especializadas con verificación en vivo (fetch real contra cada fuente), **12 auditorías adversariales** en dos rondas y **4 verificaciones contra documentación viva**. Todo se abrió y comprobó entre el 2026-08-16 y el 2026-08-19.
 > **Insumos crudos:** `research/*.json` (13 informes + 12 refutaciones + 4 verificaciones de docs + el panel de diseño de §14) — conservarlos en el repo como anexo auditable.
@@ -381,12 +383,14 @@ Canasta base: La Silla Vacía, El Tiempo (`/rss/politica_congreso.xml`), El Espe
 
 ### 8.1 Las siete reglas de diseño (no negociables)
 
+> ⚠️ **Superado el 2026-08-20 por la decisión de coste cero.** El proyecto no incurre en ningún gasto más allá de Supabase y de la suscripción de Claude Code ya pagada. Lo que corre de verdad, y qué se perdió en cada sustitución, está en el recuadro de §8.2 — que es el único sitio donde este aviso estaba, y por eso el resto del capítulo seguía prometiendo proveedores que ya no existen.
+
 Destiladas del estudio de Stanford RegLab (17-33% de alucinación medida en Lexis/Westlaw **con** RAG) y de los cuatro líderes del mercado:
 
 | # | Regla |
 |---|---|
 | **R1** | **La vigencia NUNCA sale del LLM.** Es consulta determinista al grafo de afectaciones. Si falta la cadena, la respuesta dice «vigencia no confirmada con fuente primaria» |
-| **R2** | **Citas por construcción.** Chunks → Citations API de Anthropic (GA, `cited_text` no factura output) → post-validar que cada cita resuelva a un `chunk_id` existente. **Frase sin cita válida = frase que se elimina.** Implementación: **bloques `search_result`, no `document`** (ver §8.2) |
+| **R2** | **Citas por construcción.** Chunks → el modelo → post-validar que cada cita resuelva a un `chunk_id` existente. **Frase sin cita válida = frase que se elimina.** ⚠️ La Citations API que este plan daba por hecha ya no se usa: la literalidad la comprueba `verificarTextualidad()` contra el texto enviado (`collectors/src/rag/qa.ts`), que es una garantía más fuerte. La regla no cambia; su implementación sí |
 | **R3** | **Dos llamadas, no una.** Citations y structured outputs son incompatibles (400): extracción estructurada y redacción citada son pasos separados |
 | **R4** | **Retrieval piso 2026:** chunking **por artículo** (nunca por tokens) + header contextual determinista + híbrido léxico/vectorial + rerank + descomposición de preguntas compuestas |
 | **R5** | **Anti-sycophancy:** reformular toda pregunta a forma neutral antes del retrieval (ante premisa falsa, los LLM fabrican autoridades que la apoyan) |
@@ -394,6 +398,34 @@ Destiladas del estudio de Stanford RegLab (17-33% de alucinación medida en Lexi
 | **R7** | **Medir antes de prometer:** gold set colombiano de 30-50 preguntas (con negaciones y premisas falsas) preregistrado en el repo, evaluando *correctness* y *groundedness* por separado. **Prohibido el claim «sin alucinaciones»** — LexisNexis lo dijo en 2023, Stanford midió 17%, y su página de 2026 ya no usa el término |
 
 ### 8.2 Modelos y costes (verificados el 2026-08-19)
+
+> ⚠️ **Esta subsección quedó SUPERADA el 2026-08-20 por una decisión del dueño, y
+> se conserva porque el razonamiento de coste sigue siendo el que justifica la
+> decisión.** La instrucción es que el proyecto **no incurra en ningún gasto**
+> más allá de Supabase y de la suscripción de Claude Code que ya está pagada.
+> Las tres partidas de IA de la tabla de abajo dejan de aplicar:
+>
+> | Partida del plan | Lo que corre hoy | Dónde |
+> |---|---|---|
+> | Q&A con Sonnet 5 + Citations API (~$18/mes) | `claude -p` con la sesión **OAuth** del usuario | `collectors/src/rag/proveedor-claude-code.ts` |
+> | Embeddings voyage-4 ($0 solo durante el bootstrap) | **nomic-embed-text** en Ollama local, truncado a 256 dims | `collectors/src/rag/embeddings.ts` |
+> | Rerank voyage rerank-2.5 | **no hay rerank.** No se ha sustituido: `hybrid_search` fusiona léxico y semántico por RRF y ahí se acaba | — |
+> | OCR con Mistral | **no hay OCR.** §7 sigue pendiente y ya no tiene proveedor presupuestado | — |
+> | Pipeline de ingesta con Haiku 4.5 + Batch API (~$48/mes) | **no existe.** La clasificación con LLM del §14 nunca llegó a construirse | — |
+>
+> **Lo que se pierde, y no se va a disimular:** (a) la garantía de literalidad
+> que daba `cited_text` pasa a comprobarse en casa contra el texto enviado —es
+> más fuerte, y está en `qa.ts` → `verificarTextualidad()`—; (b) el truncado a
+> 256 dims de un modelo local cuesta un 25 % del top-1 frente a sus 768 dims
+> nativas, **medido**, en `docs/matryoshka-256.md`; (c) sin rerank, el orden
+> final es el de RRF; (d) `claude -p` gasta cuota de la suscripción, que es un
+> recurso finito aunque no facture por llamada.
+>
+> **R3 («dos llamadas, no una») queda sin efecto.** Existía solo porque
+> citations y structured outputs son incompatibles en la API de Anthropic (400).
+> Fuera de esa API la restricción no existe y mantener la forma sería copiar una
+> cicatriz.
+
 
 | Uso | Elección | Coste |
 |---|---|---|
@@ -427,6 +459,8 @@ Con bloques `document`, «validar que cada cita resuelva a un `chunk_id`» oblig
 **5. Verificar capacidades en runtime en vez de fijarlas en prosa.** `GET /v1/models/{id}` devuelve `max_input_tokens`, `max_tokens` y un objeto `capabilities` con banderas por feature (`citations.supported`, `structured_outputs.supported`, `batch.supported`). Un check de arranque que compare lo que el código asume contra lo que la API declara convierte una nota que envejece en una aserción ejecutable — coherente con el espíritu de R1.
 
 ### 8.3 Búsqueda híbrida en Postgres
+
+> ⚠️ **Superado el 2026-08-20 por la decisión de coste cero.** El proyecto no incurre en ningún gasto más allá de Supabase y de la suscripción de Claude Code ya pagada. Lo que corre de verdad, y qué se perdió en cada sustitución, está en el recuadro de §8.2 — que es el único sitio donde este aviso estaba, y por eso el resto del capítulo seguía prometiendo proveedores que ya no existen.
 
 Receta oficial de Supabase (`hybrid_search` con RRF, `rrf_k = 50`, pesos configurables, `FULL OUTER JOIN` de las dos CTEs). Los pesos permiten sesgar a léxico para `"ley 2277 de 2022"` y a semántico para `"impuesto a bebidas azucaradas"`.
 
@@ -603,7 +637,7 @@ Grafo de afectaciones completo. Backfill del SODA `88h2-dykw`. CONPES completo (
   - ⚠️ **Corregido un fallo que habría dejado la fase entera sin datos:** `sources.ts` declaraba `application/json` para esta fuente y **la relatoría sirve su JSON con `Content-Type: text/html`** — el gate bloqueaba el **100 % de las respuestas válidas**. Un gate mal especificado no se nota: parece que la fuente está caída. Los tests del gate codificaban esa misma especificación equivocada y cayeron al corregirla, que es justo lo que debían hacer.
   - ⚠️ Y como el content-type ya no discrimina (la respuesta buena y el fragmento de error llegan igual), la barrera pasa a ser el marcador. El error empieza por `<div class="row alert alert-danger">`, que **no casaba** con `<html` ni `<!DOCTYPE`: hasta hoy solo lo paraba el suelo de 5 KB. Verificado que ahora lo atrapa aunque el error crezca.
   - **La envoltura también estaba a un nivel de distancia:** la raíz es `{data, parametros}` y el índice vive en `data.hits.hits[]._source`, no en la raíz como decía la investigación. `rutahtml` se **guarda**, no se deriva: `A. 1126/26` no se convierte en `Autos/2026/A1126-26.htm` por ninguna regla que la fuente garantice. Texto completo verificado en **windows-1252** (UTF-8 falla).
-✅ **Backfill 2015-2026 — HECHO: 21.661 providencias** (14.964 Autos, 4.571 Tutela, 1.696 Constitucionalidad, 430 SU), en 17 ventanas, **0 bloqueadas y 0 truncadas**, todas con URL de texto resuelta. Ventanas contiguas verificadas: sin huecos, sin solapes, 0 ids duplicados y las sumas cuadran.
+✅ **Backfill 2015-2026 — HECHO: 21.665 providencias** (14.964 Autos, 4.571 Tutela, 1.696 Constitucionalidad, 430 SU), en 17 ventanas, **0 bloqueadas y 0 truncadas**, todas con URL de texto resuelta. Ventanas contiguas verificadas: sin huecos, sin solapes, 0 ids duplicados y las sumas cuadran.
   - ⚠️ **Y sin esto se habrían perdido 3.158 providencias en silencio.** `maxprov` corta en 2.000 y **no avisa**: 2023 tiene 3.705 y la consulta anual devuelve 2.000 con `HTTP 200` y aspecto sano. La versión ingenua traía **18.503**. La señal es el contraste contra `hits.total.value`; la respuesta, partir la ventana por la mitad y reintentar — recursivo, porque una mitad puede seguir pasándose (a 2023 hubo que partirlo dos veces). Doble registro comunicado/sentencia. Enlace sentencia→norma afectada. Alerta temprana diaria de comunicados.
 
 ### Fase 4 — Búsqueda y Q&A (semanas 11-14) · *el producto*
@@ -645,7 +679,7 @@ Grafo de afectaciones completo. Backfill del SODA `88h2-dykw`. CONPES completo (
   - ⚠️ **Y el fallo caro del batching:** un lote que vuelve incompleto emparejaría cada chunk con el vector del siguiente. No lanza nada: produce un índice que devuelve resultados plausibles y equivocados. Se rechaza, y además se respeta el `index` de la respuesta en vez de asumir el orden.
   - **Bloques `search_result`, con el `chunk_id` en `source`.** Así la cita vuelve con el identificador dentro y R2 es una comparación de cadenas, no aritmética de offsets con un mapa paralelo que se desincroniza en silencio cuando cambia el orden del request.
 Lo que sigue necesitando claves: **solo las llamadas** — `VOYAGE_API_KEY` para embeber y `ANTHROPIC_API_KEY` para redactar.
-Chunking por artículo. Embeddings voyage-4 a 256 dims, con el presupuesto de **~176k chunks** de §8.4 como techo provisional (§8.4). `hybrid_search` RRF en español, con el wrapper `IMMUTABLE` de `unaccent` ya creado en la Fase 0 y `hnsw.iterative_scan` encendido. Q&A con **bloques `search_result`** y las siete reglas. Exposición del Q&A solo tras superar el gold set.
+Chunking por artículo. ⚠️ Embeddings **nomic-embed-text local** a 256 dims (el plan decía voyage-4; ver §8.2), con el presupuesto de **~176k chunks** de §8.4 como techo provisional (§8.4). `hybrid_search` RRF en español, con el wrapper `IMMUTABLE` de `unaccent` ya creado en la Fase 0 y `hnsw.iterative_scan` encendido. Q&A con `claude -p` y las siete reglas (el plan decía bloques `search_result` de la Citations API; ver §8.2). Exposición del Q&A solo tras superar el gold set.
 
 ### Fase 5 — Producto público (semanas 15-18)
 🟡 **La aplicación existe y compila.** Next.js **16.3.1** con Turbopack, React 19.2.8, App Router: dos rutas server-rendered (búsqueda y vigencia a fecha arbitraria) sobre `pnpm web:build` verde. Tenía el frontend clasificado como bloqueado por §13.2 y era impreciso: esa decisión afecta a **dónde se despliega y qué se expone**, no a escribir la aplicación.
@@ -680,11 +714,19 @@ PWA completa. **Auth** (RLS ya quedó puesto y verificado en la Fase 0, ver `doc
   - ⚠️ **Un OCR sobre una tabla de votación no falla: devuelve una tabla perfectamente formada con el voto de alguien cambiado.** Publicar eso es atribuirle a una persona identificada un voto que no emitió — el error más caro que este proyecto puede cometer, porque las consecuencias son de un tercero y no de quien lo comete. De ahí que **un «S1» no se convierta en «SÍ»** y que la regla de publicación sea el contraste contra los totales que el acta imprime: si no cuadran, algo se leyó mal y **no se sabe qué**, así que se publica el total del acta y **ningún voto individual**. Publicar 106 votos con 105 correctos es peor que no publicar ninguno.
   - Sin totales que contrastar tampoco se publica: «no pude comprobarlo» y «lo comprobé y está bien» no son lo mismo, y aquí la diferencia le cuesta a un tercero.
   - 🐛 Su propio test cazó un bug del parser: una línea cuyo sentido llevara un dígito (`S1`) **se descartaba en silencio** en vez de declararse ilegible.
-Falta: la clave de Mistral para el OCR. Indicador de probabilidad de aprobación: **dos regresiones logísticas encadenadas con factores explicables y tasa base publicada** (patrón GovTrack), solo cuando haya ≥1 legislatura completa de datos. Con la tasa base honesta de 12,5% y el predictor autor-Gobierno (7,6x), no con el 23% inflado.
+Falta: el OCR, que ⚠️ ya no tiene proveedor presupuestado — la clave de Mistral se eliminó con la decisión de coste cero (§8.2). Indicador de probabilidad de aprobación: **dos regresiones logísticas encadenadas con factores explicables y tasa base publicada** (patrón GovTrack), solo cuando haya ≥1 legislatura completa de datos. Con la tasa base honesta de 12,5% y el predictor autor-Gobierno (7,6x), no con el 23% inflado.
 
 ---
 
 ## 11 bis. Presupuesto: el que no existía
+
+> ⚠️ **Las tres partidas de IA de esta tabla valen CERO desde el 2026-08-20.**
+> No se han rebajado: se han eliminado, sustituyéndolas por Ollama local y por
+> `claude -p` con OAuth (§8.2). El total mensual conocido del piloto pasa de
+> ~$60 a **~$0,81** —el almacenamiento del crudo— más los $0 del plan Free de
+> Supabase. La tabla se conserva porque el razonamiento de coste es lo que
+> justifica la decisión, y porque volver a un proveedor de pago tiene que ser
+> una decisión visible, no una deriva.
 
 El plan daba cifras de coste en tres sitios y **no las sumaba en ninguno**, con partidas que no tenían fila en ningún lado. Dos escenarios, con los supuestos escritos:
 

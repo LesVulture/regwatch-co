@@ -90,3 +90,14 @@ describe("toda respuesta arrastra la advertencia", () => {
     expect(usos.length).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe("buscar_normatividad embebe igual que la web", () => {
+  /**
+   * Callar la degradación aquí y declararla en la web haría que un agente
+   * creyera que busca en semántico cuando no. El aviso tiene que ser el mismo.
+   */
+  it("pide el vector y declara si no hay semántica", () => {
+    expect(CODIGO).toContain("embeberConsulta");
+    expect(FUENTE).toContain("Solo búsqueda léxica en esta consulta");
+  });
+});

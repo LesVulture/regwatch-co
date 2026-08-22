@@ -28,6 +28,8 @@ export interface CorridaAnio {
   readonly anio: number;
   readonly ventana: Ventana;
   readonly gate: ReturnType<typeof g0Contrato>;
+  readonly url: string;
+  readonly contentType: string | null;
   readonly httpStatus: number;
   readonly bytes: number;
   readonly contentHash: string;
@@ -64,6 +66,8 @@ async function recogerVentana(
     anio,
     ventana: v,
     gate,
+    url: capture.url,
+    contentType: capture.contentType,
     httpStatus: capture.httpStatus,
     bytes: capture.byteLength,
     contentHash: capture.contentHash,
@@ -97,7 +101,15 @@ async function recogerVentana(
     totalDeclarado: r.totalDeclarado,
     anomalias: r.anomalias,
   });
-  for (const p of r.providencias) providencias.push({ anio, ...p });
+  // `ventanaIdx` apunta a la corrida que ACABA de registrarse, y no es un
+  // adorno: un año se parte en varias ventanas, cada una con su URL de
+  // consulta y su `capturedAt`. Sin este índice, el importador tendría que
+  // adivinar de cuál salió cada providencia — y adivinarla es exactamente el
+  // modo de fallo «procedencia falsificada» que CLAUDE.md enumera. Se guarda
+  // el índice y no la ventana entera porque son 21.665 filas: repetir la URL
+  // en cada una multiplicaría el artefacto sin añadir un solo hecho.
+  const ventanaIdx = corridas.length - 1;
+  for (const p of r.providencias) providencias.push({ anio, ventanaIdx, ...p });
 }
 
 export async function recolectar(

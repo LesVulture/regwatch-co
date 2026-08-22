@@ -22,6 +22,8 @@ import { type Anomalia, legislaturas, parsePdly, peticionLegislatura } from "./p
 export interface CorridaLegislatura {
   readonly legislatura: string;
   readonly gate: ReturnType<typeof g0Contrato>;
+  readonly url: string;
+  readonly contentType: string | null;
   readonly httpStatus: number;
   readonly bytes: number;
   readonly contentHash: string;
@@ -55,16 +57,22 @@ export async function recolectar(
     const { capture, body } = await pedir(peticionLegislatura(leg), deps);
     const gate = g0Contrato(capture, body);
 
+    const meta = {
+      legislatura: leg,
+      gate,
+      url: capture.url,
+      contentType: capture.contentType,
+      httpStatus: capture.httpStatus,
+      bytes: capture.byteLength,
+      contentHash: capture.contentHash,
+      capturedAt: capture.capturedAt,
+    };
+
     // Una captura BLOQUEADA se registra igual: es evidencia de que la fuente
     // se rompió, y el punto de replay. Lo que no se hace es parsearla.
     if (gate.outcome === "bloqueado") {
       corridas.push({
-        legislatura: leg,
-        gate,
-        httpStatus: capture.httpStatus,
-        bytes: capture.byteLength,
-        contentHash: capture.contentHash,
-        capturedAt: capture.capturedAt,
+        ...meta,
         proyectos: 0,
         totalDeclarado: null,
         anomalias: [],
@@ -74,12 +82,7 @@ export async function recolectar(
 
     const r = parsePdly(new TextDecoder("utf-8").decode(body));
     corridas.push({
-      legislatura: leg,
-      gate,
-      httpStatus: capture.httpStatus,
-      bytes: capture.byteLength,
-      contentHash: capture.contentHash,
-      capturedAt: capture.capturedAt,
+      ...meta,
       proyectos: r.proyectos.length,
       totalDeclarado: r.totalDeclarado,
       anomalias: r.anomalias,

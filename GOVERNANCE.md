@@ -29,8 +29,13 @@ colombianos se reestructuran, y un enlace que hoy resuelve puede no resolver en
 seis meses. `captured_at` dice cuándo era cierto lo que el registro afirma.
 
 **Cómo se hace cumplir:** el dominio `url_fuente` de Postgres rechaza cualquier
-cosa que no sea `http(s)`; `captured_at` es `not null` en las cinco tablas de
-hechos. `collectors/src/evidence.ts` lo replica en los tipos.
+cosa que no sea `http(s)`; `captured_at` es `not null` en **todas** las tablas
+de hechos del corpus (`captura`, `norma`, `norma_version`, `afectacion`,
+`proyecto_ley`, `providencia`, `chunk`). `suscripcion` no es un hecho normativo:
+lleva `creada_en`. `collectors/src/evidence.ts` replica la procedencia en los
+tipos. Los loaders escriben `captura` vía `db/import-captura.ts` (`INSERT`
+con `blob_uri` NULL: no hay R2). El unique `(url, content_hash)` evita
+duplicar la misma captura.
 
 ## 2. Jerarquía probatoria, y no se puede subir
 
@@ -118,7 +123,28 @@ fallo más caro, porque parece verificable. Y por debajo del 80 % de frases
 supervivientes no se publica la respuesta entera: una respuesta con agujeros no
 es «un poco peor», y los agujeros no se ven.
 
-**Cómo se hace cumplir:** `collectors/src/rag/citas.ts`, con tests.
+**Y la cita tiene que ser LITERAL.** No basta con que el `chunk_id` exista: el
+fragmento entrecomillado tiene que aparecer, palabra por palabra, en el texto de
+ese chunk. Un entrecomillado que la fuente no dice se descarta, y con él la
+frase que sostenía.
+
+**Cómo se hace cumplir:** dos módulos, y conviene saber cuál hace qué.
+`collectors/src/rag/citas.ts` comprueba que la cita RESUELVA;
+`collectors/src/rag/qa.ts` → `verificarTextualidad()` comprueba que sea
+literal. Los dos con tests.
+
+**Dónde vivía antes esta regla, y por qué se movió (2026-08-20).** La mitad de
+literalidad la garantizaba la Citations API de Anthropic (`cited_text` es texto
+del bloque, por construcción). Esa API exige clave de pago, y el proyecto pasó a
+invocar el modelo por Claude Code con la sesión OAuth del usuario
+(`proveedor-claude-code.ts`). Sin la garantía de la API, la comprobación se hace
+en casa contra el texto que se envió — que es más fuerte, no un apaño: antes se
+confiaba en que la API extrajera bien.
+
+**Lo que R2 sigue sin cubrir, en las dos versiones:** citas literales y
+correctas hiladas en una inferencia que la fuente no sostiene. Eso lo mide el
+gold set (R7), no el validador, y decir lo contrario sería el claim vacío que
+este documento existe para impedir.
 
 ## 7. Recolección respetuosa
 
@@ -133,8 +159,8 @@ declarado en el mapa `EXCLUIDAS` de `collectors/src/sources.ts`, donde figurar
 
 Donde los términos de uso exigen autorización previa y por escrito, **no se
 recolecta hasta tenerla**: es el caso de la Cámara de Representantes, la Función
-Pública y el DNP. Los derechos de petición están redactados en
-`legal/peticiones/`.
+Pública y el DNP. Los derechos de petición están **redactados en borrador** en
+`legal/peticiones/` (no hay constancia de radicación).
 
 **Cómo se hace cumplir:** `USER_AGENT` y `CORTESIA_MS` en
 `collectors/src/http.ts`; el colector de Cámara lleva una guarda que se niega a

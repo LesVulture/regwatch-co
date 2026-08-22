@@ -20,6 +20,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
+import { categorizarGold } from "./run-gold.ts";
 
 const TIPOS = ["factual", "negacion", "premisa_falsa", "rechazo", "multi_hop", "trampa_temporal"];
 
@@ -88,6 +89,11 @@ describe("el gold set está bien formado", () => {
 });
 
 describe.skipIf(!hayArtefacto)("las cifras del gold set siguen siendo ciertas", () => {
+  /**
+   * Remedido 2026-08-21 contra artefactos/senado-pdly.json (collect:senado vivo):
+   * 1.693, no 1.694 — 2024-2025 pasó de 471 a 470.
+   * Evidencia: docs/verificacion-viva-2026-08-21.md.
+   */
   it("el corpus tiene el tamaño que declara el gold set", () => {
     expect(proyectos.length).toBe(doc._meta.corpus_medido.proyectos);
   });
@@ -135,5 +141,40 @@ describe.skipIf(!hayArtefacto)("las cifras del gold set siguen siendo ciertas", 
       (p) => p.estado.requiereRevision || p.crosswalk.residuo.length > 0,
     );
     expect(revision).toHaveLength(2);
+  });
+});
+
+describe("categorizarGold — declino_correcto no es vacio", () => {
+  const base = {
+    publicable: false,
+    chunksEnContexto: 0,
+    ilegible: null,
+    fallosMecanicos: [] as string[],
+    error: null,
+  };
+
+  it("una negación sin chunks es declino_correcto, no un hueco de corpus", () => {
+    expect(categorizarGold("negacion", base)).toBe("declino_correcto");
+    expect(categorizarGold("premisa_falsa", base)).toBe("declino_correcto");
+    expect(categorizarGold("rechazo", base)).toBe("declino_correcto");
+  });
+
+  it("una factual sin chunks es vacio: el corpus no tenía qué citar", () => {
+    expect(categorizarGold("factual", base)).toBe("vacio");
+    expect(categorizarGold("multi_hop", base)).toBe("vacio");
+  });
+
+  it("una factual con chunks que R2 borró es sin_citas, no vacio", () => {
+    expect(categorizarGold("factual", { ...base, chunksEnContexto: 4 })).toBe("sin_citas");
+  });
+
+  it("publicable gana a las demás", () => {
+    expect(categorizarGold("negacion", { ...base, publicable: true, chunksEnContexto: 2 })).toBe(
+      "publicable",
+    );
+  });
+
+  it("trampa_temporal sin chunks es vacio, no declino", () => {
+    expect(categorizarGold("trampa_temporal", base)).toBe("vacio");
   });
 });

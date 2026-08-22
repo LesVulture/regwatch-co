@@ -13,11 +13,12 @@
  * ciudadano puede verificar; «caracteres 4.200 a 4.700 del documento» no lo es.
  *
  * Este módulo no embebe nada. Produce los chunks y sus identificadores; la
- * vectorización es otro paso y necesita una clave de API que este proyecto
- * todavía no tiene.
+ * vectorización es otro paso (`embeddings.ts` / `db/embed-chunks.ts`) y corre
+ * contra nomic-embed-text en Ollama local. Sin Ollama el chunk se queda con
+ * `embedding` NULL, que es un estado legítimo: `hybrid_search` degrada a léxico.
  */
 
-import { partirArticulos } from "../senado/articulado.ts";
+import { partirArticulos, partirArticulosDePaginas } from "../senado/articulado.ts";
 
 /** De dónde sale el chunk. Decide cómo se cita y con qué tier. */
 export type FuenteChunk = "norma" | "providencia" | "proyecto_ley";
@@ -68,10 +69,19 @@ function slug(s: string): string {
  * menos artículos— y no partir la unidad citable.
  */
 export function chunkNorma(html: string, o: OpcionesChunk): Chunk[] {
+  return chunkNormaDePaginas([html], o);
+}
+
+/**
+ * Igual que `chunkNorma`, sobre páginas basedoc ya saneadas por separado.
+ * Concatenar el HTML crudo tiraría todo lo que sigue al primer
+ * `<!--Fin documento-->`.
+ */
+export function chunkNormaDePaginas(htmls: readonly string[], o: OpcionesChunk): Chunk[] {
   const base = `${slug(o.tipo)}:${slug(o.numero)}:${o.anio}`;
-  return partirArticulos(html).map((a) => ({
-    // `designacion`, no `numero`: el 36A de una reforma es un artículo DISTINTO
-    // del 36, y con el número a secas los dos chunks comparten id.
+  const arts =
+    htmls.length === 1 ? partirArticulos(htmls[0] as string) : partirArticulosDePaginas(htmls);
+  return arts.map((a) => ({
     id: `${base}:art:${a.designacion.toLowerCase()}`,
     fuente: "norma" as const,
     referencia: `${o.tipo} ${o.numero} de ${o.anio}, artículo ${a.designacion}`,

@@ -146,7 +146,7 @@ describe("partirVentana — la respuesta al truncamiento silencioso", () => {
    * POR QUÉ EXISTE, con la cifra medida: `maxprov` corta en 2.000 y **no avisa**.
    * 2023 tiene 3.705 providencias; una consulta anual devuelve 2.000 con HTTP
    * 200 y aspecto perfectamente sano. En el backfill 2015-2026 eso son **3.158
-   * providencias perdidas en silencio** — 18.503 en vez de 21.661.
+   * providencias perdidas en silencio** — 18.503 en vez de 21.665.
    */
   it("parte por la mitad dejando ventanas contiguas, sin hueco ni solape", () => {
     const [a, b] = partirVentana({ fini: "2023-01-01", ffin: "2023-12-31" });

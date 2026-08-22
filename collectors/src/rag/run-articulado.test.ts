@@ -7,7 +7,13 @@
 
 import { describe, expect, it } from "vitest";
 import type { HttpDeps } from "../http.ts";
-import { MARCADORES_EDITORIALES, recolectarArticulado, slugBasedoc } from "./run-articulado.ts";
+import {
+  codigoSalidaArticulado,
+  MARCADORES_EDITORIALES,
+  recolectarArticulado,
+  slugBasedoc,
+  urlSiguientePagina,
+} from "./run-articulado.ts";
 
 /**
  * El gate 0 exige DOS cosas para `senado-basedoc`, y las dos las descubrió este
@@ -92,6 +98,82 @@ describe("recolectarArticulado", () => {
     expect(art.estadisticas).toBeNull();
     // La procedencia se conserva: es el punto de replay.
     expect(art._procedencia.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(codigoSalidaArticulado(art)).toBe(1);
+  });
+
+  it("sigue la página antsig y parte el articulado de las dos", async () => {
+    const p1 = `${CABECERA}\n${ARTICULADO}\n${RELLENO}\n<p style="text-align:center;"><a class=antsig href="ley_1616_2013_pr001.html">Siguiente</a></p>\n${PIE_EDITORIAL}`;
+    const p2 = `${CABECERA}\n<p><a class="bookmarkaj" name="3">ART&Iacute;CULO 3o. DISPOSICIONES.</A> Texto de la continuaci&oacute;n.</p>\n${RELLENO}\n${PIE_EDITORIAL}`;
+    const deps: HttpDeps = {
+      fetch: async (input) => {
+        const u = String(input);
+        const html = u.includes("_pr001") ? p2 : p1;
+        return new Response(new TextEncoder().encode(html), {
+          status: 200,
+          headers: { "Content-Type": "text/html; charset=ISO-8859-1" },
+        });
+      },
+      now: () => new Date("2026-08-20T00:00:00Z"),
+      sleep: async () => {},
+    };
+    const art = await recolectarArticulado("Ley", "1616", 2013, deps);
+    expect(art.paginas).toHaveLength(2);
+    expect(art.paginacionIncompleta).toBe(false);
+    expect(art.anomalias).toEqual([]);
+    expect(art.chunks.map((c) => c.id)).toContain("ley:1616:2013:art:3");
+    expect(codigoSalidaArticulado(art)).toBe(0);
+  });
+
+  /**
+   * Medido en vivo el 2026-08-21: Ley 1616, antsig de la página 1 → `_pr001`,
+   * y `_pr001` vuelve a la primera. Sin corte de ciclo el colector pedía las
+   * mismas 2 URLs 15 veces (`MAX_PAGINAS`) y salía 1 por `paginacionIncompleta`.
+   * Evidencia: `docs/verificacion-viva-2026-08-21.md`.
+   */
+  it("corta el ciclo antsig página1 ↔ _pr001 y lo declara, sin pedir 15 páginas", async () => {
+    const p1 = `${CABECERA}\n${ARTICULADO}\n${RELLENO}\n<p style="text-align:center;"><a class=antsig href="ley_1616_2013_pr001.html">Siguiente</a></p>\n${PIE_EDITORIAL}`;
+    const p2 = `${CABECERA}\n<p><a class="bookmarkaj" name="3">ART&Iacute;CULO 3o. DISPOSICIONES.</A> Texto de la continuaci&oacute;n.</p>\n${RELLENO}\n<p style="text-align:center;"><a class=antsig href="ley_1616_2013.html">Siguiente</a></p>\n${PIE_EDITORIAL}`;
+    let peticiones = 0;
+    const deps: HttpDeps = {
+      fetch: async (input) => {
+        peticiones += 1;
+        const u = String(input);
+        const html = u.includes("_pr001") ? p2 : p1;
+        return new Response(new TextEncoder().encode(html), {
+          status: 200,
+          headers: { "Content-Type": "text/html; charset=ISO-8859-1" },
+        });
+      },
+      now: () => new Date("2026-08-21T00:00:00Z"),
+      sleep: async () => {},
+    };
+    const art = await recolectarArticulado("Ley", "1616", 2013, deps);
+    expect(peticiones).toBe(2);
+    expect(art.paginas).toHaveLength(2);
+    expect(art.paginas.map((p) => p.url)).toEqual([
+      "http://www.secretariasenado.gov.co/senado/basedoc/ley_1616_2013.html",
+      "http://www.secretariasenado.gov.co/senado/basedoc/ley_1616_2013_pr001.html",
+    ]);
+    expect(art.paginacionIncompleta).toBe(false);
+    expect(art.anomalias.some((a) => a.clase === "ciclo-paginacion")).toBe(true);
+    expect(art.anomalias[0]?.detalle).toMatch(/ley_1616_2013\.html/);
+    expect(codigoSalidaArticulado(art)).toBe(1);
+  });
+});
+
+describe("urlSiguientePagina y codigoSalidaArticulado", () => {
+  it("resuelve el href relativo de antsig y rechaza HTTPS", () => {
+    const base = "http://www.secretariasenado.gov.co/senado/basedoc/ley_1581_2012.html";
+    expect(
+      urlSiguientePagina('<a class=antsig href="ley_1581_2012_pr001.html">Siguiente</a>', base),
+    ).toBe("http://www.secretariasenado.gov.co/senado/basedoc/ley_1581_2012_pr001.html");
+    expect(
+      urlSiguientePagina(
+        '<a class=antsig href="https://www.secretariasenado.gov.co/x.html">Siguiente</a>',
+        base,
+      ),
+    ).toBeNull();
+    expect(urlSiguientePagina("<p>sin continuación</p>", base)).toBeNull();
   });
 });
 
