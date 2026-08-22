@@ -11,14 +11,14 @@
  * conecta a nada. Así se prueba sin credenciales y el runner que sí las
  * necesita queda tonto.
  *
- * **Los chunks se insertan con `embedding = NULL`.** No es un apaño hasta que
- * llegue la clave de Voyage: es lo que la tabla declara legítimo. Con el vector
- * ausente, `hybrid_search` NO los mira —su CTE semántico filtra por
- * `embedding is not null`— así que esto **no cambia hoy ningún resultado de
- * búsqueda**, y decirlo importa. Lo que sí hace es materializar el corpus
+ * **Los chunks se insertan con `embedding = NULL`.** No es un apaño a la
+ * espera de un proveedor de pago: es lo que la tabla declara legítimo. El
+ * vector lo escribe después `db/embed-chunks.ts` contra Ollama local. Con el
+ * vector ausente, `hybrid_search` NO los mira —su CTE semántico filtra por
+ * `embedding is not null`— así que cargar texto **no cambia el ranking
+ * semántico**, y decirlo importa. Lo que sí hace es materializar el corpus
  * citable que R2 necesita para validar (`validarCitas` compara contra los
- * chunks que existen) y dejar el vector como un UPDATE dirigido el día que haya
- * clave, en vez de una reingesta.
+ * chunks que existen).
  */
 
 import type { Chunk } from "../collectors/src/rag/chunking.ts";

@@ -20,6 +20,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { buscar, vigencia } from "../../web/src/lib/consultas.ts";
+import { embeberConsulta } from "../../web/src/lib/embedding-consulta.ts";
 import { consultanteDesdeEntorno } from "../../web/src/lib/supabase.ts";
 
 const server = new McpServer({ name: "regwatch-co", version: "0.1.0" });
@@ -53,8 +54,14 @@ server.registerTool(
     },
   },
   async ({ consulta, limite }) => {
-    // Contexto `mcp`: la política de egreso aplica su criterio de bloque.
-    const r = await buscar(consultanteDesdeEntorno(), consulta, "mcp", limite);
+    // Misma degradación que la web: se pide el vector ANTES. Si Ollama no
+    // está, `embeberConsulta` devuelve null con su motivo y `hybrid_search`
+    // degrada a léxico. Callarlo aquí y no en la web haría que un agente
+    // creyera que está buscando en semántico cuando no.
+    const { vector, motivo } = await embeberConsulta(consulta);
+    const r = await buscar(consultanteDesdeEntorno(), consulta, "mcp", limite, {
+      embedding: vector,
+    });
     const cuerpo =
       r.filas.length === 0
         ? (r.advertencia ?? "Sin resultados.")
@@ -65,12 +72,12 @@ server.registerTool(
                 `  fuente: ${String(f.url_fuente)} · capturado: ${String(f.captured_at ?? "").slice(0, 10)} · tier: ${String(f.tier)}`,
             )
             .join("\n");
-    // Si la búsqueda se ensanchó, el aviso va DELANTE de los resultados y no en
-    // la coletilla final. Un agente que recibe una lista la presenta como «lo
-    // que hay»: enterarse al final de que el criterio era más laxo que el
-    // pedido llega tarde.
     const aviso = r.ensanchada && r.advertencia ? `${r.advertencia}\n\n` : "";
-    return { content: [{ type: "text", text: aviso + cuerpo + ADVERTENCIA_SIEMPRE }] };
+    const sem =
+      motivo !== null
+        ? `Solo búsqueda léxica en esta consulta: ${motivo}. Los resultados que únicamente encontraría el vector no aparecen.\n\n`
+        : "";
+    return { content: [{ type: "text", text: sem + aviso + cuerpo + ADVERTENCIA_SIEMPRE }] };
   },
 );
 

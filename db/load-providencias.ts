@@ -13,11 +13,45 @@
 
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
-import { type ArtefactoCorte, generarSqlProvidencias } from "./import-providencias.ts";
+import { filasDesdeCorridas } from "../collectors/src/captura/desde-artefacto.ts";
+import { BUSCADOR, SOURCE_KEY } from "../collectors/src/corte/relatoria.ts";
+import type { GateVerdict } from "../collectors/src/gates/g0-contrato.ts";
+import { generarSqlCaptura } from "./import-captura.ts";
+import {
+  type ArtefactoCorte,
+  type CorridaArtefacto,
+  generarSqlProvidencias,
+} from "./import-providencias.ts";
 
 const DRY = process.argv.includes("--dry-run");
 const ARTEFACTO =
   process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "artefactos/corte-relatoria.json";
+
+function corridasConHash(corridas: readonly CorridaArtefacto[]) {
+  return corridas.flatMap((c) => {
+    if (!c.contentHash || !/^[0-9a-f]{64}$/.test(c.contentHash)) return [];
+    if (typeof c.httpStatus !== "number" || typeof c.bytes !== "number") return [];
+    const outcome = c.gate.outcome === "bloqueado" ? ("bloqueado" as const) : ("ok" as const);
+    const gate: GateVerdict = {
+      gate: "g0-contrato",
+      outcome,
+      sourceKey: c.gate.sourceKey ?? SOURCE_KEY,
+      url: c.url ?? c.gate.url ?? BUSCADOR,
+      ...(outcome === "bloqueado" ? { reglaViolada: c.gate.reglaViolada ?? "sin-regla" } : {}),
+    };
+    return [
+      {
+        url: c.url ?? c.gate.url ?? BUSCADOR,
+        contentHash: c.contentHash,
+        contentType: c.contentType ?? null,
+        httpStatus: c.httpStatus,
+        bytes: c.bytes,
+        capturedAt: c.capturedAt,
+        gate,
+      },
+    ];
+  });
+}
 
 function main(): void {
   const art = JSON.parse(readFileSync(ARTEFACTO, "utf-8")) as ArtefactoCorte;
@@ -27,12 +61,16 @@ function main(): void {
   const bloqueadas = art.corridas.filter((c) => c.gate.outcome === "bloqueado");
 
   const { lotes, excluidas } = generarSqlProvidencias(art);
+  const captura = generarSqlCaptura(
+    filasDesdeCorridas(SOURCE_KEY, corridasConHash(art.corridas), BUSCADOR),
+  );
   const aCargar = art.providencias.length - excluidas.length;
 
   console.log(`artefacto    : ${ARTEFACTO}`);
   console.log(`ventanas     : ${art.corridas.length} (${bloqueadas.length} bloqueada(s))`);
   console.log(`providencias : ${art.providencias.length}`);
   console.log(`a cargar     : ${aCargar} en ${lotes.length} lote(s)`);
+  console.log(`captura      : ${captura.length} lote(s) (blob_uri NULL; no hay R2)`);
 
   if (excluidas.length > 0) {
     console.log(`\n${excluidas.length} excluida(s), con motivo:`);
@@ -65,20 +103,23 @@ function main(): void {
     return;
   }
 
-  void cargar(url, lotes, aCargar, excluidas.length);
+  void cargar(url, lotes, captura, aCargar, excluidas.length);
 }
 
 async function cargar(
   url: string,
   lotes: string[],
+  captura: string[],
   esperadas: number,
   excluidas: number,
 ): Promise<void> {
   const sql = postgres(url, { onnotice: () => {} });
   try {
-    // Todo o nada, igual que `db/load.ts`: una carga a medias deja la base en
-    // un estado que nadie declaró.
     await sql.begin(async (tx) => {
+      for (const [i, lote] of captura.entries()) {
+        await tx.unsafe(lote);
+        console.log(`  captura lote ${i + 1}/${captura.length} ok`);
+      }
       for (const [i, lote] of lotes.entries()) {
         await tx.unsafe(lote);
         console.log(`  lote ${i + 1}/${lotes.length} ok`);

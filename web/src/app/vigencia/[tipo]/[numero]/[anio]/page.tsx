@@ -11,12 +11,21 @@ export default async function Vigencia({
   const { tipo, numero, anio } = await params;
   const { fecha } = await searchParams;
 
-  const r = await vigencia(
-    consultanteDesdeEntorno(),
-    { tipo, numero, anio: Number(anio) },
-    "ficha_individual",
-    fecha,
-  );
+  let resultado: Awaited<ReturnType<typeof vigencia>> | null = null;
+  let error: string | null = null;
+
+  try {
+    resultado = await vigencia(
+      consultanteDesdeEntorno(),
+      { tipo, numero, anio: Number(anio) },
+      "ficha_individual",
+      fecha,
+    );
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e);
+  }
+
+  const r = resultado;
 
   return (
     <>
@@ -25,13 +34,15 @@ export default async function Vigencia({
       </h2>
       <p style={{ color: "#555" }}>Vigencia {fecha ? `a fecha ${fecha}` : "a día de hoy"}.</p>
 
-      {r.advertencia && (
+      {error && <p style={{ color: "#a00" }}>No se pudo consultar: {error}</p>}
+
+      {r?.advertencia && (
         <p style={{ background: "#fff8e1", padding: ".75rem", borderLeft: "3px solid #f5a623" }}>
           {r.advertencia}
         </p>
       )}
 
-      {r.filas.map((f) => (
+      {r?.filas.map((f) => (
         <section
           // La fila TIENE identidad: artículo + norma afectante + fecha de
           // efecto. Usar el índice la perdería en cuanto cambiara el orden.

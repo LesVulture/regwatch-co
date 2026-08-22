@@ -1,11 +1,13 @@
 # Gold set de regwatch-co. Preregistrado el 2026-08-20.
 # Ver gold/README.md para el criterio. NO se edita para que el sistema apruebe.
+# Corpus remedido 2026-08-21 contra artefactos/senado-pdly.json (2024-2025:
+# 470, no 471). docs/verificacion-viva-2026-08-21.md.
 _meta:
   version: 1
-  fecha: "2026-08-20"
+  fecha: "2026-08-21"
   corpus_medido:
     fuente: "POST https://leyes.senado.gov.co/api/search_pdly.php (form-data)"
-    proyectos: 1694
+    proyectos: 1693
     legislaturas: ["2022-2023", "2023-2024", "2024-2025", "2025-2026", "2026-2027"]
   nota: >-
     Las cifras de trámite CADUCAN. Cada pregunta declara `volatil`. Una
@@ -20,7 +22,7 @@ preguntas:
       ¿Cuáles son los avances legislativos en inteligencia artificial aplicada a
       la salud en Colombia?
     respuesta_esperada: >-
-      NINGUNO en el Senado. De los 1.694 proyectos de ley de las cinco
+      NINGUNO en el Senado. De los 1.693 proyectos de ley de las cinco
       legislaturas medidas, 13 mencionan «inteligencia artificial» en el título
       y NINGUNO menciona además «salud»: la intersección es vacía. Responder
       esto —y no un resumen plausible de los proyectos de IA como si tocaran
@@ -60,7 +62,7 @@ preguntas:
     volatil: true
     pregunta: ¿Qué proyectos de ley regulan la telesalud en Colombia?
     respuesta_esperada: >-
-      Ninguno con «telesalud» en el título entre los 1.694 medidos. Cero no es
+      Ninguno con «telesalud» en el título entre los 1.693 medidos. Cero no es
       «no encontré»: es un dato, y debe distinguirse de un fallo de búsqueda.
     ancla: "artefacto senado-pdly.json, filtro titulo ⊇ TELESALUD = 0"
 
@@ -68,7 +70,7 @@ preguntas:
     tipo: negacion
     volatil: true
     pregunta: ¿Hay proyectos de ley sobre ciberseguridad tramitándose en el Senado?
-    respuesta_esperada: "Ninguno con «ciberseguridad» en el título entre los 1.694 medidos."
+    respuesta_esperada: "Ninguno con «ciberseguridad» en el título entre los 1.693 medidos."
     ancla: "artefacto senado-pdly.json, filtro titulo ⊇ CIBERSEGURIDAD = 0"
 
   - id: G006
@@ -76,7 +78,7 @@ preguntas:
     volatil: true
     pregunta: ¿Qué dice la legislación colombiana en trámite sobre blockchain y criptomonedas?
     respuesta_esperada: >-
-      Ningún proyecto de los 1.694 medidos lleva «blockchain» ni «criptomoneda»
+      Ningún proyecto de los 1.693 medidos lleva «blockchain» ni «criptomoneda»
       en el título. Puede haberlos que traten el tema sin nombrarlo en el
       título; el sistema debe decir EXACTAMENTE eso —qué buscó y dónde— y no
       afirmar que no existen en absoluto.
@@ -179,7 +181,7 @@ preguntas:
     volatil: false
     pregunta: ¿Qué proyectos del Senado tienen su equivalente identificado en Cámara?
     respuesta_esperada: >-
-      37,9 % de los 1.694 (37,1 % declarado + 0,8 % acumulado). El 62,1 %
+      37,9 % de los 1.693 (37,1 % declarado + 0,8 % acumulado). El 62,1 %
       restante NO es «sin equivalente»: es que la fuente no lo publica. Confundir
       «no declarado» con «no existe» es el error a evitar.
     ancla: "artefacto senado-pdly.json, conteo por crosswalk.estado"
@@ -192,7 +194,7 @@ preguntas:
     respuesta_esperada: >-
       NO, y debe decir por qué: (a) solo Senado — el colector de Cámara está
       detenido hasta que respondan el derecho de petición, porque sus ToS
-      prohíben el almacenamiento; (b) 2 filas de 1.694 tienen el crosswalk
+      prohíben el almacenamiento; (b) 2 filas de 1.693 tienen el crosswalk
       contado de menos y están en cola de revisión humana; (c) se indexa el
       título, no el articulado.
     por_que_rompe: >-
@@ -203,12 +205,12 @@ preguntas:
     tipo: factual
     volatil: true
     pregunta: ¿Cuántos proyectos de ley hay en total y de qué periodo?
-    respuesta_esperada: "1.694, de cinco legislaturas: 2022-2023 a 2026-2027, capturados el 2026-08-20."
+    respuesta_esperada: "1.693, de cinco legislaturas: 2022-2023 a 2026-2027, capturados el 2026-08-21."
     ancla: "artefacto senado-pdly.json, _procedencia + longitud de proyectos"
 
   - id: G018
     tipo: negacion
     volatil: true
     pregunta: ¿Qué proyectos de ley sobre el metaverso se están tramitando?
-    respuesta_esperada: "Ninguno con «metaverso» en el título entre los 1.694 medidos."
+    respuesta_esperada: "Ninguno con «metaverso» en el título entre los 1.693 medidos."
     ancla: "artefacto senado-pdly.json, filtro titulo ⊇ METAVERSO = 0"

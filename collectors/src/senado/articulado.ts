@@ -133,25 +133,115 @@ export function sinNotasDelEditor(texto: string): string {
     .trim();
 }
 
-export function partirArticulos(html: string): Articulo[] {
-  const texto = sinNotasDelEditor(aTextoPlano(soloArticulado(html)));
-  const marcas = [...texto.matchAll(/ART[IÍ]CULO\s*(\d+)([A-Z]?)\s*[oº°]?\s*\.?/g)];
+/**
+ * Encabezado de artículo PROPIO, no una cita a otro.
+ *
+ * El lookahead descarta `ARTÍCULO 5 de la Ley 1581…`: eso es una referencia,
+ * no un corte. Sin él, una concordancia en mayúsculas parte la ley en
+ * identificadores duplicados y deja un «artículo» de decenas de miles de
+ * caracteres — medido en Ley 1581 de 2012 (24 ids duplicados) y Ley 1712 de
+ * 2014 (3 duplicados, un trozo de 19.893 caracteres). Fallo del troceador,
+ * no de la fuente.
+ *
+ * El espacio opcional antes de la letra cubre `36A` y `36 A`.
+ */
+const MARCA_ARTICULO = /ART[IÍ]CULO\s*(\d+)\s*([A-Z])?\s*[oº°]?\s*\.?(?!\s*de\s+(?:la|el)\b)/g;
 
-  const salida: Articulo[] = [];
-  for (const [i, m] of marcas.entries()) {
-    const desde = m.index ?? 0;
-    const hasta = marcas[i + 1]?.index ?? texto.length;
+interface MarcaArticulo {
+  readonly index: number;
+  readonly encabezado: string;
+  readonly numero: number;
+  readonly sufijo: string;
+  readonly designacion: string;
+}
+
+function marcasDeArticulo(texto: string): MarcaArticulo[] {
+  const crudas: MarcaArticulo[] = [];
+  for (const m of texto.matchAll(MARCA_ARTICULO)) {
     const numero = Number(m[1]);
     const sufijo = m[2] ?? "";
-    salida.push({
+    crudas.push({
+      index: m.index ?? 0,
+      encabezado: m[0].trim(),
       numero,
       sufijo,
       designacion: `${numero}${sufijo}`,
-      encabezado: m[0].trim(),
-      texto: texto.slice(desde, hasta).trim(),
     });
   }
-  return salida;
+
+  // El ancla `bookmarkaj` de basedoc repite el encabezado a pocos caracteres
+  // del ARTÍCULO real: `ARTÍCULO 1o.` + `ARTÍCULO 1o. OBJETO.`. Quedarse con
+  // los dos produce el mismo id dos veces. Se descarta el PRIMERO del par
+  // cercano; el segundo es el que abre el texto.
+  const sinAncla: MarcaArticulo[] = [];
+  for (let i = 0; i < crudas.length; i++) {
+    const actual = crudas[i];
+    const siguiente = crudas[i + 1];
+    if (!actual) continue;
+    if (
+      siguiente &&
+      siguiente.designacion === actual.designacion &&
+      siguiente.index - actual.index < 80
+    ) {
+      continue;
+    }
+    sinAncla.push(actual);
+  }
+
+  // Tabla de contenido + cuerpo: la misma designación aparece dos veces, la
+  // segunda (el articulado) es la que vale. Quedarse con la más LARGA
+  // fallaría en el último ítem del índice, que se traga el preámbulo y puede
+  // medir más que el artículo real. Last-wins.
+  const ultimaPorDesignacion = new Map<string, MarcaArticulo>();
+  for (const m of sinAncla) ultimaPorDesignacion.set(m.designacion, m);
+  return [...ultimaPorDesignacion.values()].sort((a, b) => a.index - b.index);
+}
+
+function articulosDesdeTexto(texto: string): Articulo[] {
+  const marcas = marcasDeArticulo(texto);
+  return marcas
+    .map((m, i) => ({
+      numero: m.numero,
+      sufijo: m.sufijo,
+      designacion: m.designacion,
+      encabezado: m.encabezado,
+      texto: texto.slice(m.index, marcas[i + 1]?.index ?? texto.length).trim(),
+    }))
+    .filter(tieneCuerpo);
+}
+
+/**
+ * Un ítem de índice es `ARTÍCULO N.` sin prosa detrás. Last-wins no lo
+ * mata si ese artículo vive en otra página que aún no se unió, y entonces
+ * el TOC se cuela como artículo. Un artículo real, aunque corto («rige a
+ * partir de su publicación»), tiene cuerpo.
+ */
+function tieneCuerpo(a: Articulo): boolean {
+  const resto = a.texto
+    .slice(a.encabezado.length)
+    .replace(/^[.\s]*/, "")
+    .trim();
+  return resto.length >= 8;
+}
+
+export function partirArticulos(html: string): Articulo[] {
+  return articulosDesdeTexto(sinNotasDelEditor(aTextoPlano(soloArticulado(html))));
+}
+
+/**
+ * Parte el articulado de VARIAS páginas basedoc ya descargadas.
+ *
+ * `partirArticulos` llama a `soloArticulado`, que corta en el primer
+ * `<!--Fin documento-->`. Concatenar el HTML crudo de `ley_X.html` +
+ * `ley_X_pr001.html` tiraría la continuación. Hay que sanear CADA página
+ * y unir el texto, no el marcado.
+ */
+export function partirArticulosDePaginas(htmls: readonly string[]): Articulo[] {
+  const texto = htmls
+    .map((h) => sinNotasDelEditor(aTextoPlano(soloArticulado(h))))
+    .filter((t) => t.length > 0)
+    .join(" ");
+  return articulosDesdeTexto(texto);
 }
 
 /** Verbos con los que una norma declara que cambia a otra. */

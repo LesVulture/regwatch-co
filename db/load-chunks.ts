@@ -14,7 +14,9 @@
 
 import { readFileSync } from "node:fs";
 import postgres from "postgres";
+import { filasDesdeArticulado } from "../collectors/src/captura/desde-artefacto.ts";
 import type { ArtefactoArticulado } from "../collectors/src/rag/run-articulado.ts";
+import { generarSqlCaptura } from "./import-captura.ts";
 import { generarSqlChunks } from "./import-chunks.ts";
 
 const DRY = process.argv.includes("--dry-run");
@@ -137,12 +139,17 @@ async function cargar(url: string, art: ArtefactoArticulado): Promise<void> {
       return;
     }
 
+    const captura = generarSqlCaptura(filasDesdeArticulado(art));
     const lotes = generarSqlChunks(art.chunks, {
       fuente: "norma",
       entidadId: normaId,
       tier: "primaria",
     });
 
+    for (const [i, lote] of captura.entries()) {
+      await sql.unsafe(lote);
+      console.log(`  captura lote ${i + 1}/${captura.length} ok`);
+    }
     for (const [i, lote] of lotes.entries()) {
       await sql.unsafe(lote);
       console.log(`  lote ${i + 1}/${lotes.length} cargado`);

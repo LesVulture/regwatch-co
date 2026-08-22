@@ -27,6 +27,7 @@ import {
   MODELO,
   MODELO_ETIQUETA,
 } from "../collectors/src/rag/embeddings.ts";
+import { activarEscaneoIterativo } from "../collectors/src/rag/escaneo-iterativo.ts";
 
 const DRY = process.argv.includes("--dry-run");
 const TODOS = process.argv.includes("--todos");
@@ -67,6 +68,31 @@ async function main(): Promise<void> {
 
   const sql = postgres(url, { onnotice: () => {} });
   try {
+    // SET + comprobación en UNA transacción (misma conexión). Tres `unsafe`
+    // sueltos contra el pooler podrían SET en A y leer pg_settings en B, y
+    // eso es un no-op silencioso — exactamente lo que el helper existe para
+    // impedir. El GUC no afecta a estos UPDATE; se llama aquí porque es el
+    // único caller de producción con postgres.js. PostgREST no puede SET:
+    // web y MCP siguen en `off`. Un pooler en modo transacción que rechace
+    // SET no tumba el embed.
+    try {
+      await sql.begin(async (tx) => {
+        await activarEscaneoIterativo(async (q) => {
+          const filas = await tx.unsafe(q);
+          return filas as unknown as Record<string, unknown>[];
+        });
+      });
+      console.log(
+        "hnsw.iterative_scan = relaxed_order en postgres.js (esta sesión). " +
+          "Las consultas de la web y del MCP van por PostgREST y siguen en off.",
+      );
+    } catch (e) {
+      console.warn(
+        `hnsw.iterative_scan no se pudo fijar (${(e as Error).message}). ` +
+          "El embed continúa: escribir vectores no usa ese GUC.",
+      );
+    }
+
     const pendientes = await sql<{ id: string; texto: string; referencia: string }[]>`
       select id, texto, referencia from chunk
       ${TODOS ? sql`` : sql`where embedding is null`}

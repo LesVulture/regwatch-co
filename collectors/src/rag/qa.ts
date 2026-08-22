@@ -9,10 +9,10 @@
  *
  * El plan (§8.2, R2) construía las citas con bloques `search_result` de la API
  * de Anthropic, que devuelve el `source` de cada cita y garantiza que
- * `cited_text` es texto LITERAL del bloque. Eso exige `ANTHROPIC_API_KEY`, que
- * factura. La instrucción del dueño del proyecto es que no haya ninguna
- * dependencia de pago: el modelo se invoca ahora por **Claude Code con la
- * sesión OAuth del usuario** (`proveedor-claude-code.ts`).
+ * `cited_text` es texto LITERAL del bloque. Eso exigía `ANTHROPIC_API_KEY` y
+ * facturaba. El transporte vivo NO es esa API: el modelo se invoca por
+ * **Claude Code con la sesión OAuth del usuario** (`proveedor-claude-code.ts`).
+ * No hay clave de Anthropic en el entorno de este repo.
  *
  * Cambia el transporte y **no** cambia R2, pero sí cambia DÓNDE se hace
  * cumplir, y eso hay que decirlo:

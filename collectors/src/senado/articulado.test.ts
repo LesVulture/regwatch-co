@@ -12,6 +12,7 @@ import {
   clausulaDeAfectacion,
   clausulaVigencia,
   partirArticulos,
+  partirArticulosDePaginas,
   reglaEsDeterminista,
 } from "./articulado.ts";
 
@@ -228,5 +229,73 @@ describe("soloArticulado — el aparato editorial no es articulado", () => {
     const sinMarca = HTML.replace("<!--Fin documento-->", "");
     const a = partirArticulos(sinMarca);
     expect(a.map((x) => x.texto).join(" ")).not.toContain("Avance Jurídico");
+  });
+});
+
+/**
+ * El fallo del troceador sobre Ley 1581 de 2012 y Ley 1712 de 2014, con
+ * marcado de la FORMA real de basedoc — no el texto de esas leyes.
+ *
+ * README (2026-08-20): 24 ids duplicados + aparato editorial en 1581; 3
+ * duplicados y un «artículo» de 19.893 caracteres en 1712. Índice + ancla
+ * bookmarkaj + cita `ARTÍCULO N de la Ley` en mayúsculas + paginación
+ * `_pr001.html`. El texto de abajo imita esa estructura; las frases son de
+ * prueba, no de la compilación.
+ */
+describe("partirArticulos — índice, ancla y páginas, forma basedoc", () => {
+  const INDICE = [
+    "<p>ÍNDICE</p>",
+    "<p><a href='#1'>ART&Iacute;CULO 1o.</a></p>",
+    "<p><a href='#2'>ART&Iacute;CULO 2o.</a></p>",
+    "<p><a href='#3'>ART&Iacute;CULO 3o.</a></p>",
+  ].join("\n");
+
+  it("no duplica ids ni se traga la ley cuando hay índice + ancla + cita", () => {
+    const pagina = [
+      INDICE,
+      '<p><a class="bookmarkaj" name="1">ART&Iacute;CULO 1o.</A> ART&Iacute;CULO 1o. OBJETO.',
+      "El objeto de la presente ley es regular el derecho de acceso a la informaci&oacute;n.</p>",
+      '<p><a class="bookmarkaj" name="2">ART&Iacute;CULO 2o.</A> ART&Iacute;CULO 2o. PRINCIPIOS.',
+      "La interpretaci&oacute;n de esta ley se sujeta a los principios de transparencia.",
+      "Ver ART&Iacute;CULO 5 de la Ley 1581 de 2012 para el h&aacute;beas data.</p>",
+      '<p><a class="bookmarkaj" name="3">ART&Iacute;CULO 3o.</A> ART&Iacute;CULO 3o. VIGENCIA.',
+      "La presente ley rige a partir de su publicaci&oacute;n.</p>",
+      "<!--Fin documento-->",
+    ].join("\n");
+    const arts = partirArticulos(pagina);
+    expect(arts.map((a) => a.designacion)).toEqual(["1", "2", "3"]);
+    expect(new Set(arts.map((a) => a.designacion)).size).toBe(3);
+    expect(arts[0]?.texto).toContain("acceso a la información");
+    expect(arts[0]?.texto).not.toContain("ÍNDICE");
+    expect(arts[1]?.texto).toContain("principios de transparencia");
+    expect(arts.map((a) => a.designacion)).not.toContain("5");
+    expect(arts[1]?.texto).toContain("ARTÍCULO 5 de la Ley 1581");
+    expect(Math.max(...arts.map((a) => a.texto.length))).toBeLessThan(5_000);
+  });
+
+  /**
+   * `soloArticulado` corta en el primer `<!--Fin documento-->`. Concatenar el
+   * HTML crudo de la continuación perdería `_pr001.html`. Hay que sanear cada
+   * página y unir el texto.
+   */
+  it("une páginas basedoc sin que Fin documento de la primera se coma la segunda", () => {
+    const p1 = [
+      INDICE,
+      "<p>ART&Iacute;CULO 1o. PRIMERA P&Aacute;GINA. Texto del art&iacute;culo uno.</p>",
+      "<!--Fin documento-->",
+      '<div id="logo_aj">Avance Jur&iacute;dico</div>',
+    ].join("\n");
+    const p2 = [
+      "<!DOCTYPE html><html><body>",
+      "<p>ART&Iacute;CULO 2o. SEGUNDA P&Aacute;GINA. Texto del art&iacute;culo dos.</p>",
+      "<!--Fin documento-->",
+    ].join("\n");
+    expect(partirArticulos(p1).map((a) => a.designacion)).toEqual(["1"]);
+    expect(partirArticulosDePaginas([p1, p2]).map((a) => a.designacion)).toEqual(["1", "2"]);
+    expect(partirArticulosDePaginas([p1, p2])[1]?.texto).toContain("artículo dos");
+    expect(partirArticulos(p1).map((a) => a.designacion)).not.toContain("2");
+    expect(partirArticulos(p1).map((a) => a.designacion)).not.toContain("3");
+    // Concatenar el crudo es exactamente el fallo: la página 2 cae detrás del corte.
+    expect(partirArticulos(p1 + p2).map((a) => a.designacion)).toEqual(["1"]);
   });
 });

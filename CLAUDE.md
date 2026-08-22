@@ -1,8 +1,8 @@
 # regwatch-co — Monitor normativo y legislativo colombiano
 
-Motor de búsqueda y monitoreo de la normatividad y la actividad legislativa de Colombia, con datos actualizados a diario desde fuentes oficiales, consultable desde el móvil, capaz de responder preguntas en lenguaje natural **con cada afirmación anclada a fuente primaria con URL y fecha de captura**.
+Motor de búsqueda y monitoreo de la normatividad y la actividad legislativa de Colombia, consultable desde el móvil, capaz de responder preguntas en lenguaje natural **con cada afirmación anclada a fuente primaria con URL y fecha de captura**. La tesis pide datos frescos desde fuentes oficiales. **`collect.yml` está programado a diario** (Senado + Corte del año + piloto); **no se ha observado** que esa corrida de Actions haya terminado bien (ver `docs/ESTADO.md`).
 
-**El plan de construcción es `PLAN-V2.md`. Léelo antes de tocar nada.** Este fichero no lo resume: fija el contrato de trabajo y apunta allí. Si los dos discrepan, manda el plan.
+**As-built:** [`docs/ESTADO.md`](docs/ESTADO.md) y el [`README.md`](README.md). **Contrato de evidencia:** [`GOVERNANCE.md`](GOVERNANCE.md). **Plan histórico de construcción:** [`PLAN-V2.md`](PLAN-V2.md) (no se reescribe el cuerpo). Si ESTADO y el plan discrepan sobre **qué existe**, manda ESTADO. Si discrepan sobre **qué debe ser cierto de un dato**, manda GOVERNANCE.
 
 ---
 
@@ -26,15 +26,15 @@ Precedente vivo, y por eso esta regla existe: en la investigación previa, el **
 
 ## Estado del proyecto
 
-**Operativo de punta a punta, con el corpus cargado** (2026-08-20). El v1 fue un intento fallido: cero recolección, clasificación léxica pura, JSONL sin motor de consulta, sin modelo de vigencia. Se conserva de él únicamente el contrato de evidencia.
+**Operativo de punta a punta, con el corpus cargado** (2026-08-20; recorte as-built 2026-08-21 en `docs/ESTADO.md`). El v1 fue un intento fallido: cero recolección, clasificación léxica pura, JSONL sin motor de consulta, sin modelo de vigencia. Se conserva de él únicamente el contrato de evidencia.
 
-La instancia viva tiene 1.694 proyectos de ley, 21.665 providencias y 286 fragmentos de articulado de 8 normas; se busca, se consulta vigencia y se responde con citas comprobadas. El estado real y sus límites, en el README — que es donde vive el claim del producto y no se infla.
+La **base cargada** (2026-08-20, no recontada) tiene 1.694 proyectos, 21.665 providencias y 286 fragmentos de articulado de **7 normas** (8 filas en `norma`: la Ley 2460 de 2025 es afectante, sin texto). El re-fetch de Senado del **2026-08-21** es **1.693**. Se busca, se consulta vigencia y el Q&A ancla citas. El MCP **embebe** con `embeberConsulta` (degrada a léxico si no hay Ollama, y lo declara). Gates: `g0-contrato` y `g2-pulso`. Cámara está gated; las peticiones en `legal/peticiones/` son borrador, no radicadas. No hay `proxy.ts`. `collect:articulado Ley 1616 2013` sale **exit 1**: declara `ciclo-paginacion` y para a las 2 URLs (no pide 15). No es un collect limpio. El estado real y sus límites, en el README.
 
 **Y una advertencia contra el optimismo, que es el sesgo de este fichero:** «se responde con citas comprobadas» describe la MECÁNICA, no la cobertura. En la corrida del gold set del 2026-08-20, 1 de 18 preguntas superó el umbral de publicación — con 0 citas fantasma y 0 citas falsas, que es lo que la mecánica sí garantiza. El cuello de botella es el corpus (7 normas con articulado) y el hecho de que una negativa honesta no tiene nada que citar y por tanto se borra. Antes de escribir en ningún sitio que el Q&A «funciona», leer README §«El 1 de 18, explicado».
 
 **Y cuesta cero:** no hay ninguna clave de API de pago. Embeddings con **nomic-embed-text en Ollama local**, Q&A con **`claude -p` y la sesión OAuth del usuario**. Eso SUPERA el presupuesto de `PLAN-V2.md` §8.2, que está anotado como tal en el propio plan. Antes de reintroducir un proveedor de pago, es una decisión del dueño, no un detalle de implementación.
 
-Roadmap completo en `PLAN-V2.md` §11. Presupuesto en §11 bis (superado en su partida de IA).
+Roadmap histórico en `PLAN-V2.md` §11; lo que de eso está hecho, en `docs/ESTADO.md`. Presupuesto en §11 bis (superado en su partida de IA).
 
 ---
 
@@ -42,7 +42,8 @@ Roadmap completo en `PLAN-V2.md` §11. Presupuesto en §11 bis (superado en su p
 
 | Ruta | Qué es |
 |---|---|
-| `PLAN-V2.md` | **El plan.** 15 secciones. Fuente de verdad de la arquitectura |
+| `docs/ESTADO.md` | **As-built.** Qué corre, qué está gated, stack real vs §9, fechas de captura |
+| `PLAN-V2.md` | Plan histórico de construcción (15 secciones). No se reescribe el cuerpo |
 | `research/` | **Anexo de procedencia, auditable.** 13 informes de especialidad + 12 refutaciones adversariales + 4 verificaciones de documentación viva + el panel de diseño de §14. No es un dataset: nada de aquí alimenta la base |
 | `research/README.md` | Estatuto del anexo: estado de auditoría, citas de terceros, datos personales |
 | `GOVERNANCE.md` | Contrato de evidencia (heredado de v1, se amplía con §10) |
@@ -69,7 +70,7 @@ Los ficheros `refute2-*.json` y `docs-*.json` son los más recientes y **corrige
 | Procedencia falsificada | Afectación inferida de un tercero, presentada como declarada en la norma |
 | Defensa imaginaria | Manejo de rotación del `_ajax_nonce` de la Cámara, que **no se valida** |
 
-Validar **content-type y parseo**, no status. Frescura por `max(fecha_del_hecho)` contra cadencia esperada, nunca por status. El diseño completo de la capa que atrapa cada uno está en §14.
+Validar **content-type y parseo**, no status. Frescura por `max(fecha_del_hecho)` contra cadencia esperada, nunca por status. El diseño está en §14. **`g2-pulso` existe** (`pnpm g2`; lee `cadenciaHoras`). No hay `g1` / `g3`–`g6`.
 
 ---
 
@@ -77,7 +78,7 @@ Validar **content-type y parseo**, no status. Frescura por `max(fecha_del_hecho)
 
 Detalle en `PLAN-V2.md` §15. Lo que hay que tener presente al escribir un colector:
 
-- **Tres portales prohíben en sus términos de uso lo que su `robots.txt` permite**: camara.gov.co, funcionpublica.gov.co y dnp.gov.co. Hay derechos de petición pendientes. Hasta que respondan: UA identificado, cadencias conservadoras y sin republicación masiva.
+- **Tres portales prohíben en sus términos de uso lo que su `robots.txt` permite**: camara.gov.co, funcionpublica.gov.co y dnp.gov.co. Los escritos están en `legal/peticiones/` como **borrador** (no radicados). Hasta que haya respuesta favorable: UA identificado, cadencias conservadoras y sin republicación masiva. Cámara no se ejecuta (`AUTORIZACION.concedida = false`).
 - **La Silla Vacía bloquea `ClaudeBot`, `anthropic-ai` y `GPTBot`** en su `robots.txt`. **Se acata**: fuera de la ingesta automatizada. Una exclusión no se rodea.
 - **`robots.txt` se audita por fuente ANTES** de meterla en la canasta.
 - El **correo institucional** de los congresistas se almacena y se muestra en la ficha individual, pero **nunca** en dumps, API en bloque ni MCP server.
@@ -91,8 +92,8 @@ Detalle en `PLAN-V2.md` §15. Lo que hay que tener presente al escribir un colec
 - **Ningún proveedor de pago.** Los embeddings salen de Ollama local y el modelo de Q&A de `claude -p`. Si una tarea parece necesitar una clave de API, la respuesta por defecto es que NO, y se pregunta
 - TypeScript. Node fijado en `.nvmrc`
 - Un colector = un pipeline CLI + **fixtures versionados con tests de snapshot**
-- Los colectores usan el `$` que inyecta Crawlee y **no declaran `cheerio` propio** (conflicto de versión latente)
-- `raw bytes + url + captured_at + content_hash` se persisten **antes** de cualquier parseo. Parseo y OCR son derivados reproducibles
+- Los colectores vivos piden bytes con `fetch` en `collectors/src/http.ts` y parsean JSON/HTML a mano. `collectors/package.json` ya no declara `crawlee` / `feedsmith` / `playwright` / `unpdf`
+- El contrato pide `raw bytes + url + captured_at + content_hash` **antes** de parsear. Los loaders (`db/load.ts` y hermanos) **escriben** `captura` (`blob_uri` NULL; no hay R2). El cuerpo sigue siendo el JSON de `artefactos/`
 - Toda rama de manejo de error **cita la evidencia de que ese error ocurre**. Mantenimiento sin contrapartida también es deuda
 
 ---

@@ -1,0 +1,77 @@
+name: collect
+
+# Recolección conservadora de las fuentes que SÍ están abiertas: Senado PDLY,
+# Corte (año en curso) y articulado del piloto. No abre Cámara, DNP ni
+# Función Pública. El UA identificado vive en collectors/src/http.ts.
+#
+# Fuera de horario de oficina en Bogotá. No es un martillo: una corrida de
+# Senado, una ventana de Corte, y el piloto con 3 s entre normas.
+
+on:
+  schedule:
+    # 07:41 UTC = 02:41 en Bogotá. Minuto no redondo a propósito.
+    - cron: "41 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Recolectar Senado
+        run: pnpm collect:senado
+
+      - name: Recolectar Corte (año en curso)
+        run: pnpm collect:corte -- "$(date +%Y)" "$(date +%Y)"
+
+      - name: Recolectar articulado del piloto
+        # Una norma contaminada no cancela Senado/Corte. El runner ya espera 3 s.
+        continue-on-error: true
+        run: pnpm collect:piloto
+
+      - name: g2 pulso
+        run: |
+          archivos=()
+          [ -f artefactos/senado-pdly.json ] && archivos+=(artefactos/senado-pdly.json)
+          [ -f artefactos/corte-relatoria.json ] && archivos+=(artefactos/corte-relatoria.json)
+          shopt -s nullglob
+          archivos+=(artefactos/articulado-*.json)
+          if [ ${#archivos[@]} -eq 0 ]; then
+            echo "::error::No hay artefactos que pulsar."
+            exit 1
+          fi
+          pnpm g2 -- "${archivos[@]}"
+
+      - name: Cargar captura y hechos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::warning::Sin SUPABASE_DB_URL. La recolección quedó en artefactos del runner"
+            echo "::warning::y no se escribió captura ni hechos. Configura el secreto"
+            echo "::warning::SUPABASE_DB_URL (session pooler o conexión directa) en el repositorio."
+            exit 0
+          fi
+          pnpm db:load
+          pnpm db:load-providencias
+          shopt -s nullglob
+          for f in artefactos/articulado-*.json; do
+            if ! pnpm db:load-chunks -- "$f" --crear-norma; then
+              echo "::warning::no se cargó $f"
+            fi
+          done

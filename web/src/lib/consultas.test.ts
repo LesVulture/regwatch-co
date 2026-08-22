@@ -12,6 +12,7 @@ import {
   type Consultante,
   contextoQa,
   ensanchar,
+  identidadNorma,
   MAX_ENTIDADES_QA,
   PROCEDENCIA_CAMPOS,
   verificarProcedencia,
@@ -137,6 +138,26 @@ describe("verificarProcedencia", () => {
 
   it("no exige captured_at donde la consulta no lo devuelve", () => {
     expect(verificarProcedencia([{ verificable_en: "http://x" }])).toEqual([]);
+  });
+});
+
+describe("identidadNorma — el enlace a vigencia sale de la referencia, no de una columna nueva", () => {
+  it("parsea tipo/numero/anio de la referencia que hybrid_search ya publica", () => {
+    expect(identidadNorma("norma", "ley 1616 de 2013")).toEqual({
+      tipo: "ley",
+      numero: "1616",
+      anio: 2013,
+    });
+    expect(identidadNorma("norma", "decreto ley 19 de 2012")).toEqual({
+      tipo: "decreto ley",
+      numero: "19",
+      anio: 2012,
+    });
+  });
+
+  it("un proyecto o una referencia rota no inventan identidad", () => {
+    expect(identidadNorma("proyecto_ley", "001/24")).toBeNull();
+    expect(identidadNorma("norma", "sin forma")).toBeNull();
   });
 });
 

@@ -19,25 +19,31 @@ AFECTADA — el cambio ya surtió efecto a la fecha consultada
 
 Esa cláusula entre comillas no es decorativa: **es la prueba**. Sin ella la fila no existe — lo impide una restricción del esquema, no una convención.
 
+El mapa de **lo construido** (qué corre, qué está gated, stack real vs el plan) vive en [`docs/ESTADO.md`](docs/ESTADO.md). [`PLAN-V2.md`](PLAN-V2.md) es el plan histórico de construcción; no se reescribe.
+
 ## Estado real
 
-Esto es un proyecto en construcción y el README no va a decir otra cosa. Las
-cifras son de la instancia viva, medidas el **2026-08-20**.
+Esto es un proyecto en construcción y el README no va a decir otra cosa. El
+recorte as-built del **2026-08-21** está en `docs/ESTADO.md` y
+`docs/verificacion-viva-2026-08-21.md`. La **base cargada** sigue siendo la del
+**2026-08-20** (no se recontó). El **re-fetch** de Senado de esa noche es 1.693.
 
 | | |
 |---|---|
-| ✅ **Recolección** | Senado (1.694 proyectos, 5 legislaturas), Corte Constitucional (21.665 providencias, 2015-2026 en 17 ventanas), articulado por artículo. Corren contra las fuentes vivas |
-| ✅ **Corpus cargado** | 1.694 proyectos · 21.665 providencias · **8 normas registradas, 7 de ellas con articulado** (286 fragmentos). La octava, la Ley 2460 de 2025, existe como norma AFECTANTE —es la que prueba la vigencia de la 1616— y su texto no está capturado. 39 MB de los 500 del plan Free |
+| ✅ **Recolección** | Senado **1.693** proyectos el 2026-08-21 (5 legislaturas; 2024-2025 471→470). Corte: ventana 2026 viva 1.152; el artefacto 2015–2026 en disco sigue siendo el del 20 (21.665). Articulado por artículo. `collect:articulado Ley 1616 2013` **exit 1**: detecta `ciclo-paginacion` (2 fetches; no gira 15 páginas). Un Siguiente cíclico no certifica la ley |
+| ✅ **Corpus cargado** | Instancia del **2026-08-20**, no recontada: 1.694 proyectos · 21.665 providencias · **8 normas registradas, 7 de ellas con articulado** (286 fragmentos). La octava, la Ley 2460 de 2025, existe como norma AFECTANTE —es la que prueba la vigencia de la 1616— y su texto no está capturado. 39 MB de los 500 del plan Free |
 | ✅ **Vigencia a fecha arbitraria** | Funciona de punta a punta, con la cláusula probatoria y su Diario Oficial |
 | ✅ **Búsqueda léxica** | FTS en español sobre normas, proyectos y providencias, con ensanchado declarado cuando el AND no casa nada |
 | ✅ **Búsqueda semántica** | 282 de los 286 fragmentos tienen vector. **nomic-embed-text en Ollama local**, truncado a 256 dims — con la fidelidad del truncado medida (`docs/matryoshka-256.md`) |
 | 🟡 **Q&A con citas** | `pnpm qa "…"`. El modelo se invoca por **Claude Code con la sesión OAuth** y cada cita se comprueba LITERAL contra el texto enviado. Medido contra el gold set (18 preguntas, 2026-08-20): **0 citas fantasma, 0 citas entrecomilladas falsas**, y 1 salida del modelo que no se pudo leer — declarada como fallo, no como ausencia de datos. Lo que no está resuelto es cuánto RESPONDE: 1 de 18 pasó el umbral de publicación — ver abajo |
 | ⛔ **Preguntas de conteo** | «¿cuántos proyectos de ley hay?» **no la contesta ninguna superficie**. El `qa` declina por diseño (no hay fragmento citable que diga un agregado, y una frase sin cita se borra), y ni la búsqueda ni el MCP devuelven totales: devuelven filas, hasta su `limite`. El dato existe en la base y hoy solo se saca con SQL |
-| ✅ **Servidor MCP** | Dos herramientas de solo lectura, con advertencia de procedencia en cada respuesta |
+| ✅ **Servidor MCP** | Dos herramientas de solo lectura (`buscar_normatividad`, `consultar_vigencia`), con advertencia de procedencia en cada respuesta. La búsqueda **embebe** con `embeberConsulta` (igual que la web) y declara la degradación léxica si Ollama no está |
 | ⛔ **Alertas por correo** | Las piezas están escritas y probadas por separado —construir el digest, decidir a quién va, y un transporte de fichero que escribe `SIN-ENVIAR-…` en vez de enviar— pero **nada las encadena todavía**: no hay comando que corra una tanda de alertas. Faltan las dos cosas: el proveedor de correo (la única pieza sin sustituto gratuito) y el runner que las una |
 | 🟡 **Articulado, cobertura** | 8 normas de las miles que existen, y el troceador no saca todos los artículos de las leyes largas. Buscar y citar funciona sobre lo que hay; ampliarlo es correr `collect:articulado` más veces |
 | ⛔ **OCR de escaneados** | Sin proveedor. §7 del plan lo tenía en Mistral, que factura |
-| ⛔ **Cámara de Representantes** | El colector está escrito **con una guarda que impide correrlo** hasta que haya respuesta al derecho de petición (`legal/peticiones/`) |
+| ⛔ **Cámara de Representantes** | El colector está escrito **con una guarda que impide correrlo** (`AUTORIZACION.concedida = false`). Los tres derechos de petición en `legal/peticiones/` son **borrador**, no radicados |
+| 🟡 **Recolección diaria** | **Programada** en `.github/workflows/collect.yml` (`41 7 * * *` UTC: Senado + Corte del año + piloto + g2 + load si hay `SUPABASE_DB_URL`). Siguen `verify`, `gold` (lunes) y `latido` (cada 3 días). **No se ha observado** que esa corrida de Actions haya terminado bien |
+| 🟡 **Gates** | Existen `g0-contrato` y `g2-pulso` (`pnpm g2` lee `cadenciaHoras`). No hay `g1` / `g3`–`g6`. No hay `proxy.ts` |
 
 ### El 1 de 18, explicado (porque el número solo engaña)
 
@@ -149,7 +155,7 @@ pnpm db:drift                 # ¿los .sql del repo reconstruyen las funciones v
 
 pnpm collect:senado           # proyectos de ley       → artefactos/senado-pdly.json
 pnpm collect:corte            # providencias           → artefactos/corte-relatoria.json
-pnpm collect:articulado Ley 1616 2013
+pnpm collect:articulado Ley 1616 2013   # exit 1: ciclo-paginacion (2 URLs; no es collect limpio)
 
 pnpm db:load                  # carga proyectos de ley
 pnpm db:load-providencias     # carga providencias
@@ -208,7 +214,7 @@ supo partir esa página. Son fallos del troceador, no de la fuente, y están abi
 }
 ```
 
-Expone `buscar_normatividad` y `consultar_vigencia`. Las dos son de solo lectura y ninguna afirma vigencia sin fuente primaria.
+Expone `buscar_normatividad` y `consultar_vigencia`. Las dos son de solo lectura y ninguna afirma vigencia sin fuente primaria. **La búsqueda embebe** con `embeberConsulta`, igual que `/`: si Ollama no está, `hybrid_search` degrada a léxico y la respuesta lo dice.
 
 ## Cómo está hecho
 
@@ -220,7 +226,7 @@ Tres cosas que no son detalles de implementación:
 2. **Cero filas no significa «vigente para siempre».** Significa que no consta ninguna afectación capturada. La interfaz lo dice con esas palabras.
 3. **El aparato editorial de terceros no se republica.** El articulado es dominio público (art. 41 de la Ley 23 de 1982); las notas de vigencia y del editor de las compilaciones privadas **no lo son**, y hay un saneado estructural con tests que lo impide.
 
-Las reglas completas están en **[GOVERNANCE.md](GOVERNANCE.md)**, que dice de cada una *dónde se hace cumplir*. El plan y sus correcciones medidas, en `PLAN-V2.md`.
+Las reglas completas están en **[GOVERNANCE.md](GOVERNANCE.md)**, que dice de cada una *dónde se hace cumplir*. Lo construido, en [`docs/ESTADO.md`](docs/ESTADO.md). El plan histórico y sus correcciones medidas, en `PLAN-V2.md`.
 
 ## Licencia
 

@@ -60,8 +60,18 @@ export interface ProvidenciaArtefacto {
 export interface CorridaArtefacto {
   readonly anio: number;
   readonly ventana: { readonly fini: string; readonly ffin: string };
-  readonly gate: { readonly outcome: string; readonly url?: string };
+  readonly gate: {
+    readonly outcome: string;
+    readonly url?: string;
+    readonly reglaViolada?: string;
+    readonly sourceKey?: string;
+  };
   readonly capturedAt: string;
+  readonly url?: string;
+  readonly contentType?: string | null;
+  readonly httpStatus?: number;
+  readonly bytes?: number;
+  readonly contentHash?: string;
 }
 
 export interface ArtefactoCorte {

@@ -28,6 +28,8 @@ export interface CorridaAnio {
   readonly anio: number;
   readonly ventana: Ventana;
   readonly gate: ReturnType<typeof g0Contrato>;
+  readonly url: string;
+  readonly contentType: string | null;
   readonly httpStatus: number;
   readonly bytes: number;
   readonly contentHash: string;
@@ -64,6 +66,8 @@ async function recogerVentana(
     anio,
     ventana: v,
     gate,
+    url: capture.url,
+    contentType: capture.contentType,
     httpStatus: capture.httpStatus,
     bytes: capture.byteLength,
     contentHash: capture.contentHash,

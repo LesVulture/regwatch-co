@@ -1,9 +1,18 @@
-import { buscar } from "../lib/consultas.ts";
+import { buscar, identidadNorma } from "../lib/consultas.ts";
 import { embeberConsulta } from "../lib/embedding-consulta.ts";
 import { consultanteDesdeEntorno } from "../lib/supabase.ts";
 
-// Next 16: `searchParams` es asíncrono. Es una de las dos convenciones que un
-// greenfield adopta de nacimiento (la otra es `proxy.ts` en vez de middleware).
+// Next 16: `searchParams` es asíncrono. No hay `proxy.ts`: este app no
+// intercepta requests (Context7, Next 16.2: proxy.ts sustituye a middleware
+// SOLO cuando hay interceptación). Inventar un proxy vacío para «cumplir
+// la convención» sería el mismo teatro que este repo prohíbe.
+function diasDesde(iso: unknown): number | null {
+  if (typeof iso !== "string" || iso.length < 10) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 86_400_000));
+}
+
 export default async function Buscar({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;
 
@@ -59,28 +68,46 @@ export default async function Buscar({ searchParams }: { searchParams: Promise<{
         </p>
       )}
 
-      {resultado?.filas.map((f) => (
-        <article key={String(f.id)} style={{ borderBottom: "1px solid #eee", padding: "1rem 0" }}>
-          <div style={{ fontSize: ".8rem", color: "#666" }}>
-            {String(f.origen)} · {String(f.referencia ?? "")}
-            {f.estado ? ` · ${String(f.estado)}` : ""}
-            {f.posicion_semantica != null && f.posicion_lexica == null
-              ? " · lo encontró el vector"
-              : ""}
-          </div>
-          <div style={{ fontWeight: 600, margin: ".25rem 0" }}>
-            {String(f.titulo ?? "(sin título)")}
-          </div>
-          {/* La procedencia se muestra SIEMPRE, no en un desplegable: un
+      {resultado?.filas.map((f) => {
+        const idn = identidadNorma(f.origen, f.referencia);
+        const titulo = String(f.titulo ?? "(sin título)");
+        const dias = diasDesde(f.captured_at);
+        return (
+          <article key={String(f.id)} style={{ borderBottom: "1px solid #eee", padding: "1rem 0" }}>
+            <div style={{ fontSize: ".8rem", color: "#666" }}>
+              {String(f.origen)} · {String(f.referencia ?? "")}
+              {f.estado ? ` · ${String(f.estado)}` : ""}
+              {f.posicion_semantica != null && f.posicion_lexica == null
+                ? " · lo encontró el vector"
+                : ""}
+            </div>
+            <div style={{ fontWeight: 600, margin: ".25rem 0" }}>
+              {idn ? (
+                <a
+                  href={`/vigencia/${encodeURIComponent(idn.tipo)}/${encodeURIComponent(idn.numero)}/${idn.anio}`}
+                >
+                  {titulo}
+                </a>
+              ) : (
+                titulo
+              )}
+            </div>
+            {/* La procedencia se muestra SIEMPRE, no en un desplegable: un
               resultado sin fuente visible invita a citarlo sin comprobarlo. */}
-          <div style={{ fontSize: ".8rem" }}>
-            <a href={String(f.url_fuente)} rel="noreferrer">
-              fuente
-            </a>{" "}
-            · capturado {String(f.captured_at ?? "").slice(0, 10)} · tier {String(f.tier)}
-          </div>
-        </article>
-      ))}
+            <div style={{ fontSize: ".8rem" }}>
+              <a href={String(f.url_fuente)} rel="noreferrer">
+                fuente
+              </a>{" "}
+              · capturado {String(f.captured_at ?? "").slice(0, 10)}
+              {dias !== null ? ` · hace ${dias} día${dias === 1 ? "" : "s"}` : ""}
+              {dias !== null && dias > 2
+                ? " · frescura: rezago respecto de una corrida diaria"
+                : ""}
+              {" · "}tier {String(f.tier)}
+            </div>
+          </article>
+        );
+      })}
     </>
   );
 }

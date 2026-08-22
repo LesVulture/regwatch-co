@@ -33,8 +33,10 @@ create table chunk (
   texto       text not null,
   caracteres  int  not null,
 
-  -- NULL mientras no haya clave de Voyage. Un NULL honesto: la fila existe,
-  -- se puede buscar léxicamente y se sabe que le falta el vector.
+  -- NULL mientras el chunk no se haya embebido. Un NULL honesto: la fila
+  -- existe, se busca léxicamente y se sabe que le falta el vector. El modelo
+  -- vivo es nomic-embed-text en Ollama local (`embed-chunks.ts`); no hay
+  -- clave de Voyage ni de ningún proveedor de pago.
   embedding         extensions.vector(256),
   -- Qué modelo lo produjo. Si `embedding` está, esto también: comparar un
   -- vector de voyage-4@256 con la consulta embebida por otro modelo no falla,
@@ -90,8 +92,8 @@ comment on table chunk is
 comment on column chunk.embedding is
   'vector(256) = el modelo de embeddings truncado y RE-NORMALIZADO. Hoy es '
   'nomic-embed-text en Ollama local (antes voyage-4, eliminado con la decisión '
-  'de coste cero del 2026-08-20). La etiqueta exacta del modelo va en la '
-  'columna `modelo` de cada fila, que es donde se comprueba. Las 256 dims son un '
+  'de coste cero del 2026-08-20). La etiqueta exacta del modelo va en '
+  '`modelo_embedding`, que es donde se comprueba. Las 256 dims son un '
   'contrato con DIMS de embeddings.ts; si divergen, el índice HNSW rechaza la '
   'inserción en vez de degradarse en silencio.';
 
@@ -103,18 +105,25 @@ comment on column chunk.embedding is
 -- consumía. Esto la consume.
 --
 -- LA PROPIEDAD QUE IMPORTA HOY, y la que nadie probaría si esto se escribiera
--- junto con los embeddings: con `consulta_embedding` NULL —el estado real del
--- sistema hasta que llegue la clave de Voyage— el resultado tiene que ser
--- EXACTAMENTE el de `busqueda_lexica`. Mismas filas, mismo orden, sin error y
--- sin reordenar. Ese es el camino de producción desde ahora.
+-- junto con los embeddings: con `consulta_embedding` NULL —Ollama caído, o
+-- chunks aún sin vector— el resultado tiene que ser EXACTAMENTE el de
+-- `busqueda_lexica`. Mismas filas, mismo orden, sin error y sin reordenar.
+-- Ese es el camino de producción cuando no hay semántica, no un parche
+-- temporal a la espera de una clave de pago.
 --
 -- `rrf_k = 50` viene de la receta de §11. Los pesos son parámetros porque el
 -- plan quiere sesgar a léxico en `"ley 2277 de 2022"` y a semántico en
 -- `"impuesto a bebidas azucaradas"`.
 --
 -- Nota sobre `hnsw.iterative_scan` (§621): es un GUC de sesión y no puede
--- fijarse dentro de una función STABLE. Lo pone quien llama —la capa de
--- `web/src/lib/consultas.ts`— y por eso no aparece aquí.
+-- fijarse dentro de una función STABLE (`create function … set hnsw.iterative_scan`
+-- da 42501 en Supabase, medido). TAMPOCO lo pone `web/src/lib/consultas.ts`:
+-- esa capa habla por PostgREST (RPC HTTP, conexión pooled, sin SET). El
+-- helper `activarEscaneoIterativo` vive en `collectors/src/rag/escaneo-iterativo.ts`,
+-- está cubierto por tests, y solo tiene efecto en una conexión postgres.js
+-- directa —hoy `db/embed-chunks.ts`—. Una consulta por la web o el MCP corre
+-- con el default del servidor (`off`). No se finge un SET que el cliente
+-- de producción no puede emitir.
 -- ---------------------------------------------------------------------------
 create or replace function hybrid_search(
   consulta            text,
@@ -222,5 +231,6 @@ $$;
 
 comment on function hybrid_search is
   'RRF sobre el ranking léxico y el semántico. Con consulta_embedding NULL '
-  'degrada EXACTAMENTE a busqueda_lexica: ese es el camino de producción hasta '
-  'que exista clave de embeddings, y es la propiedad que este diseño protege.';
+  'degrada EXACTAMENTE a busqueda_lexica: ese es el camino de producción '
+  'cuando no hay vector (Ollama ausente o chunk aún sin embeber), y es la '
+  'propiedad que este diseño protege.';

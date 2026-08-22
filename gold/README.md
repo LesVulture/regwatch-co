@@ -32,8 +32,10 @@ Cada respuesta lleva `ancla`: de dónde sale y cómo re-verificarla. Las que sal
 del trámite legislativo se re-verifican corriendo `pnpm collect:senado` y
 consultando el artefacto; las de normatividad esperan a la Fase 2.
 
-**Estado de la medición:** las cifras se midieron el **2026-08-20** sobre 1.694
-proyectos de 5 legislaturas (2022-2023 … 2026-2027). Una cifra de trámite
-**caduca**: un proyecto radicado hoy cambia de estado mañana. Por eso cada
-pregunta declara `volatil: true|false` — las volátiles se re-miden antes de cada
-evaluación, y una discrepancia NO es un fallo del sistema hasta comprobarlo.
+**Estado de la medición:** las cifras se re-midieron el **2026-08-21** sobre
+1.693 proyectos de 5 legislaturas (artefacto `senado-pdly.json`; 2024-2025 pasó
+de 471 a 470). Evidencia: `docs/verificacion-viva-2026-08-21.md`. Una cifra de
+trámite **caduca**: un proyecto radicado hoy cambia de estado mañana. Por eso
+cada pregunta declara `volatil: true|false` — las volátiles se re-miden antes de
+cada evaluación, y una discrepancia NO es un fallo del sistema hasta
+comprobarlo.

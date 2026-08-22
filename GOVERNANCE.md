@@ -29,8 +29,13 @@ colombianos se reestructuran, y un enlace que hoy resuelve puede no resolver en
 seis meses. `captured_at` dice cuándo era cierto lo que el registro afirma.
 
 **Cómo se hace cumplir:** el dominio `url_fuente` de Postgres rechaza cualquier
-cosa que no sea `http(s)`; `captured_at` es `not null` en las cinco tablas de
-hechos. `collectors/src/evidence.ts` lo replica en los tipos.
+cosa que no sea `http(s)`; `captured_at` es `not null` en **todas** las tablas
+de hechos del corpus (`captura`, `norma`, `norma_version`, `afectacion`,
+`proyecto_ley`, `providencia`, `chunk`). `suscripcion` no es un hecho normativo:
+lleva `creada_en`. `collectors/src/evidence.ts` replica la procedencia en los
+tipos. Los loaders escriben `captura` vía `db/import-captura.ts` (`INSERT`
+con `blob_uri` NULL: no hay R2). El unique `(url, content_hash)` evita
+duplicar la misma captura.
 
 ## 2. Jerarquía probatoria, y no se puede subir
 
@@ -154,8 +159,8 @@ declarado en el mapa `EXCLUIDAS` de `collectors/src/sources.ts`, donde figurar
 
 Donde los términos de uso exigen autorización previa y por escrito, **no se
 recolecta hasta tenerla**: es el caso de la Cámara de Representantes, la Función
-Pública y el DNP. Los derechos de petición están redactados en
-`legal/peticiones/`.
+Pública y el DNP. Los derechos de petición están **redactados en borrador** en
+`legal/peticiones/` (no hay constancia de radicación).
 
 **Cómo se hace cumplir:** `USER_AGENT` y `CORTESIA_MS` en
 `collectors/src/http.ts`; el colector de Cámara lleva una guarda que se niega a

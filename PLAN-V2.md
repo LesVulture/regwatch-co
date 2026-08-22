@@ -1,5 +1,7 @@
 # regwatch-co v2 — Plan de construcción
 
+> **Estado vivo (as-built):** [`docs/ESTADO.md`](docs/ESTADO.md) y el [`README.md`](README.md). Este fichero es el **plan histórico de construcción** (redactado 2026-08-19). No se reescribe el cuerpo: si una cifra, un stack o un «ya hecho» de aquí discrepa de lo construido, manda ESTADO.md.
+
 > **Estado:** plan aprobado para implementar. Redactado el 2026-08-19.
 > **Base:** 13 investigaciones especializadas con verificación en vivo (fetch real contra cada fuente), **12 auditorías adversariales** en dos rondas y **4 verificaciones contra documentación viva**. Todo se abrió y comprobó entre el 2026-08-16 y el 2026-08-19.
 > **Insumos crudos:** `research/*.json` (13 informes + 12 refutaciones + 4 verificaciones de docs + el panel de diseño de §14) — conservarlos en el repo como anexo auditable.

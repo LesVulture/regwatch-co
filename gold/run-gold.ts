@@ -39,6 +39,41 @@ interface Pregunta {
 /** Tipos en los que la respuesta correcta es negarse o corregir la premisa. */
 const DEBE_NEGARSE = new Set(["negacion", "premisa_falsa", "rechazo"]);
 
+/**
+ * Por qué una pregunta del gold set no es publicable — o sí lo es.
+ *
+ * `publicable` y `vacio` mezclados convertían el 1/18 en un solo número que
+ * no distinguía «el modelo declinó bien» de «el corpus no tenía nada que
+ * citar». Son dos fenómenos: cobertura vs. conducta.
+ */
+export type CategoriaGold =
+  | "publicable"
+  | "declino_correcto"
+  | "vacio"
+  | "sin_citas"
+  | "ilegible"
+  | "error"
+  | "fallo_mecanico";
+
+export function categorizarGold(
+  tipo: string,
+  r: {
+    publicable: boolean;
+    chunksEnContexto: number;
+    ilegible: string | null;
+    fallosMecanicos: readonly string[];
+    error: string | null;
+  },
+): CategoriaGold {
+  if (r.error !== null) return "error";
+  if (r.ilegible !== null) return "ilegible";
+  if (r.fallosMecanicos.length > 0) return "fallo_mecanico";
+  if (r.publicable) return "publicable";
+  if (DEBE_NEGARSE.has(tipo)) return "declino_correcto";
+  if (r.chunksEnContexto === 0) return "vacio";
+  return "sin_citas";
+}
+
 export interface FilaGold {
   readonly id: string;
   readonly tipo: string;
@@ -91,6 +126,11 @@ export interface FilaGold {
   readonly frasesPublicables: number;
   /** Fallos MECÁNICOS. Vacío no significa «respuesta correcta». */
   readonly fallosMecanicos: readonly string[];
+  /**
+   * `declino_correcto` ≠ `vacio`. El 1/18 mezclaba «negó como debía» con
+   * «el corpus no tenía chunks». Van aparte a propósito.
+   */
+  readonly categoria: CategoriaGold;
   readonly error: string | null;
 }
 
@@ -142,7 +182,7 @@ async function main(): Promise<void> {
       const r = await responder(p.pregunta);
       const fallos = revisarMecanica(p, r);
       const falsas = r.noLiterales.filter((n) => n.motivo === "no_literal");
-      filas.push({
+      const fila = {
         id: p.id,
         tipo: p.tipo,
         volatil: p.volatil,
@@ -162,15 +202,19 @@ async function main(): Promise<void> {
         frasesPublicables: r.frasesPublicables,
         fallosMecanicos: fallos,
         error: null,
+      };
+      filas.push({
+        ...fila,
+        categoria: categorizarGold(p.tipo, fila),
       });
       const estado = r.ilegible !== null ? "ILEGIBLE" : r.publicable ? "respondió" : "no responde";
       console.log(
-        `${estado} · ${r.chunksEnContexto} chunk(s) · ${r.huecos.length} hueco(s)` +
+        `${estado} · ${categorizarGold(p.tipo, fila)} · ${r.chunksEnContexto} chunk(s) · ${r.huecos.length} hueco(s)` +
           (fallos.length > 0 ? ` · ⚠ ${fallos.length} fallo(s) mecánico(s)` : ""),
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      filas.push({
+      const filaErr = {
         id: p.id,
         tipo: p.tipo,
         volatil: p.volatil,
@@ -190,7 +234,8 @@ async function main(): Promise<void> {
         frasesPublicables: 0,
         fallosMecanicos: [],
         error: msg,
-      });
+      };
+      filas.push({ ...filaErr, categoria: categorizarGold(p.tipo, filaErr) });
       console.log(`ERROR: ${msg.slice(0, 120)}`);
     }
   }
@@ -217,7 +262,8 @@ async function main(): Promise<void> {
           nota:
             "Los `fallosMecanicos` son lo ÚNICO evaluado automáticamente. La " +
             "corrección de cada respuesta la juzga una persona comparando `texto` " +
-            "con `respuesta_esperada`.",
+            "con `respuesta_esperada`. `categoria` separa declino_correcto de vacio: " +
+            "no son el mismo fenómeno.",
         },
         filas,
       },
@@ -230,11 +276,16 @@ async function main(): Promise<void> {
   const conFallos = filas.filter((f) => f.fallosMecanicos.length > 0);
   const conError = filas.filter((f) => f.error !== null);
   const ilegibles = filas.filter((f) => f.ilegible !== null);
-  const respondidas = filas.filter((f) => f.publicable);
+  const respondidas = filas.filter((f) => f.categoria === "publicable");
+  const declino = filas.filter((f) => f.categoria === "declino_correcto");
+  const vacio = filas.filter((f) => f.categoria === "vacio");
+  const sinCitas = filas.filter((f) => f.categoria === "sin_citas");
 
   console.log(`\n${"─".repeat(70)}`);
-  console.log(`respondidas       : ${respondidas.length}/${filas.length}`);
-  console.log(`sin evidencia     : ${filas.filter((f) => f.chunksEnContexto === 0).length}`);
+  console.log(`publicable        : ${respondidas.length}/${filas.length}`);
+  console.log(`declino_correcto  : ${declino.length}  (negó o corrigió la premisa)`);
+  console.log(`vacio             : ${vacio.length}  (cero chunks: hueco de corpus)`);
+  console.log(`sin_citas         : ${sinCitas.length}  (hubo chunks; R2 no dejó frase)`);
   console.log(`fallos mecánicos  : ${conFallos.length}`);
   // Aparte de los mecánicos a propósito: una salida ilegible no es el modelo
   // fabricando una cita, es el proveedor incumpliendo el contrato. Sumarlas

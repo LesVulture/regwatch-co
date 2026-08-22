@@ -487,6 +487,23 @@ function aplicarEgreso(
 }
 
 /**
+ * Identidad de una norma a partir de una fila de búsqueda.
+ *
+ * `hybrid_search` ya devuelve `referencia` = `{tipo} {numero} de {anio}`
+ * (medido en 08_rag.sql). No se añaden columnas nuevas: parsear lo que ya
+ * sale por la lista blanca evita filtrar un campo sin procedencia.
+ */
+export function identidadNorma(
+  origen: unknown,
+  referencia: unknown,
+): { tipo: string; numero: string; anio: number } | null {
+  if (origen !== "norma" || typeof referencia !== "string") return null;
+  const m = /^(.+?)\s+(\S+)\s+de\s+(\d{4})$/.exec(referencia.trim());
+  if (!m) return null;
+  return { tipo: m[1] as string, numero: m[2] as string, anio: Number(m[3]) };
+}
+
+/**
  * ¿Toda fila lleva su procedencia?
  *
  * Se comprueba en la frontera, no se confía. Una fila sin `url_fuente` o sin
