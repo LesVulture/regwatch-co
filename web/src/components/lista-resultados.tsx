@@ -1,3 +1,4 @@
+import { etiquetaEstado } from "../lib/filtros.ts";
 import { diasDesde, etiquetaDeFila, hrefDeFila } from "../lib/presentacion.ts";
 import { Badge } from "./ui/badge.tsx";
 import { Card, CardTitle } from "./ui/card.tsx";
@@ -14,7 +15,7 @@ export function ListaResultados({ filas }: { filas: readonly Record<string, unkn
             <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge>{etiquetaDeFila(f)}</Badge>
               <span>{String(f.referencia ?? "")}</span>
-              {f.estado ? <span>· {String(f.estado).replaceAll("_", " ")}</span> : null}
+              {f.estado ? <span>· {etiquetaEstado(String(f.estado))}</span> : null}
               {f.posicion_semantica != null && f.posicion_lexica == null ? (
                 <span>· lo encontró el vector</span>
               ) : null}

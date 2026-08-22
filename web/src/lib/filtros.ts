@@ -176,11 +176,54 @@ export function etiquetaOrigen(origen: string): string {
 }
 
 export function etiquetaEstado(estado: string): string {
-  return estado.replaceAll("_", " ");
+  switch (estado) {
+    case "en_comision":
+      return "en comisión";
+    case "en_plenaria":
+      return "en plenaria";
+    case "aprobado_camara_origen":
+      return "aprobado en cámara de origen";
+    case "en_camara_revisora":
+      return "en cámara revisora";
+    case "conciliacion":
+      return "conciliación";
+    case "sancion_presidencial":
+      return "sanción presidencial";
+    case "control_constitucional":
+      return "control constitucional";
+    default:
+      return estado.replaceAll("_", " ");
+  }
 }
 
 export function etiquetaCamara(camara: string): string {
   return camara === "camara" ? "Cámara (trámite, fuente Senado)" : "Senado (trámite)";
+}
+
+/** Etiqueta visible. El parámetro en la URL sigue sin tilde (`anio`, `camara`). */
+export function etiquetaCampo(nombre: string): string {
+  switch (nombre) {
+    case "q":
+      return "Consulta";
+    case "tipo":
+      return "Tipo";
+    case "legislatura":
+      return "Legislatura";
+    case "estado":
+      return "Estado";
+    case "camara":
+      return "Cámara";
+    case "anio":
+      return "Año";
+    case "comision":
+      return "Comisión";
+    case "tipo_providencia":
+      return "Tipo de providencia";
+    case "page":
+      return "Página";
+    default:
+      return nombre;
+  }
 }
 
 const CAMPOS_FILTRO = [

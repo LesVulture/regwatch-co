@@ -4,6 +4,8 @@ import {
   advertenciaFiltros,
   avisoComisionEnBusqueda,
   esUuid,
+  etiquetaCampo,
+  etiquetaEstado,
   parsearFiltros,
   parsearSearchParams,
 } from "./filtros.ts";
@@ -75,5 +77,17 @@ describe("avisoComisionEnBusqueda", () => {
   it("con texto se declara que la comisión no recorta el FTS", () => {
     expect(avisoComisionEnBusqueda("Séptima", true)).toContain("no la búsqueda por texto");
     expect(avisoComisionEnBusqueda("Séptima", false)).toBeNull();
+  });
+});
+
+describe("etiquetas visibles — español de Colombia, no el identificador ASCII", () => {
+  it("año y cámara llevan tilde; comisión, eñe", () => {
+    expect(etiquetaCampo("anio")).toBe("Año");
+    expect(etiquetaCampo("camara")).toBe("Cámara");
+    expect(etiquetaCampo("comision")).toBe("Comisión");
+    expect(etiquetaCampo("page")).toBe("Página");
+    expect(etiquetaEstado("en_comision")).toBe("en comisión");
+    expect(etiquetaEstado("conciliacion")).toBe("conciliación");
+    expect(etiquetaEstado("sancion_presidencial")).toBe("sanción presidencial");
   });
 });

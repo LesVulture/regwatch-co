@@ -53,3 +53,12 @@ describe("ciclo de filtros en teclado", () => {
     expect(anterior(TIPOS_CICLO, "")).toBe("norma");
   });
 });
+
+describe("las flags de argv son ASCII; la etiqueta visible no", () => {
+  it("sigue aceptando --anio y --camara", () => {
+    expect(parsearArgv(["--anio=2026", "--camara=senado"])).toMatchObject({
+      anio: "2026",
+      camara: "senado",
+    });
+  });
+});

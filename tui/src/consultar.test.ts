@@ -18,8 +18,9 @@ describe("presentación de filas", () => {
   });
 
   it("la ficha no inventa un timeline: solo campos presentes", () => {
-    const t = camposFicha({ titulo: "X", estado: "radicado", id: "uuid" });
-    expect(t).toContain("titulo: X");
+    const t = camposFicha({ titulo: "X", estado: "en_comision", id: "uuid" });
+    expect(t).toContain("Título: X");
+    expect(t).toContain("Estado: en comisión");
     expect(t).not.toContain("id:");
     expect(t).not.toMatch(/timeline|tramite_evento/i);
   });

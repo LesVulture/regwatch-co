@@ -63,12 +63,21 @@ server.registerTool(
       estado: z
         .string()
         .optional()
-        .describe("Estado de trámite canónico (radicado, en_comision…). Solo proyectos."),
+        .describe("Estado de trámite canónico (radicado, en comisión…). Solo proyectos."),
       camara: z
         .enum(["senado", "camara"])
         .optional()
         .describe("Cámara del trámite según el Senado, no el corpus de la Cámara (gated)."),
-      anio: z.number().int().min(1810).max(2100).optional(),
+      anio: z
+        .number()
+        .int()
+        .min(1810)
+        .max(2100)
+        .optional()
+        .describe(
+          "Año. En normas es el de la norma; en providencias, el de publicación; " +
+            "en proyectos, el contenido en la legislatura.",
+        ),
       tipo_providencia: z
         .string()
         .optional()

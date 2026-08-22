@@ -12,6 +12,9 @@ import {
 import { embeberConsulta } from "../../web/src/lib/embedding-consulta.ts";
 import {
   advertenciaFiltros,
+  etiquetaCamara,
+  etiquetaCampo,
+  etiquetaEstado,
   type ParamsFiltro,
   parsearFiltros,
 } from "../../web/src/lib/filtros.ts";
@@ -28,13 +31,46 @@ export function pieFila(f: Record<string, unknown>): string {
   );
 }
 
+const ETIQUETA_FICHA: Record<string, string> = {
+  titulo: "Título",
+  referencia: "Referencia",
+  legislatura: "Legislatura",
+  cuatrenio: "Cuatrienio",
+  autor: "Autor",
+  comision: "Comisión",
+  estado: "Estado",
+  estado_original: "Estado en la fuente",
+  estado_camara: "Cámara del trámite (fuente Senado)",
+  numero_senado_canonico: "Número Senado",
+  numero_camara_raw: "Número Cámara (texto fuente)",
+  crosswalk: "Crosswalk",
+  crosswalk_motivo: "Motivo del crosswalk",
+  sentencia: "Sentencia",
+  tipo: "Tipo",
+  fecha_publicacion: "Fecha de publicación",
+  fecha_sentencia: "Fecha de sentencia",
+  expediente: "Expediente",
+  magistrados: "Magistrados",
+  url_fuente: "Fuente",
+  url_texto: "Texto en la fuente",
+  captured_at: "Capturado",
+  tier: "Tier",
+};
+
 export function camposFicha(f: Record<string, unknown>): string {
   const lineas: string[] = [];
   for (const [k, v] of Object.entries(f)) {
     if (v == null || v === "") continue;
     if (k === "id") continue;
-    const texto = Array.isArray(v) ? v.join(", ") : String(v);
-    lineas.push(`${k}: ${texto}`);
+    const textoBruto = Array.isArray(v) ? v.join(", ") : String(v);
+    const texto =
+      k === "estado"
+        ? etiquetaEstado(textoBruto)
+        : k === "estado_camara"
+          ? etiquetaCamara(textoBruto)
+          : textoBruto;
+    const etiqueta = ETIQUETA_FICHA[k] ?? etiquetaCampo(k);
+    lineas.push(`${etiqueta}: ${texto}`);
   }
   return lineas.join("\n");
 }
@@ -95,8 +131,8 @@ export async function correrFicha(fila: Record<string, unknown>): Promise<string
       .map(
         (x) =>
           `${String(x.veredicto)}\n` +
-          `artículo: ${String(x.articulo)} · por: ${String(x.norma_afectante)}\n` +
-          `cláusula: ${String(x.clausula_prueba)}\n` +
+          `Artículo: ${String(x.articulo)} · por: ${String(x.norma_afectante)}\n` +
+          `Cláusula: ${String(x.clausula_prueba)}\n` +
           `${String(x.procedencia)} · ${String(x.verificable_en)}`,
       )
       .join("\n\n");

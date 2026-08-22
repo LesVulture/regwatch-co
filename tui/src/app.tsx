@@ -1,7 +1,12 @@
 import { Box, Text, useApp, useInput } from "ink";
 import { useEffect, useState } from "react";
 import type { ParamsFiltro } from "../../web/src/lib/filtros.ts";
-import { etiquetaCamara, etiquetaEstado, etiquetaOrigen } from "../../web/src/lib/filtros.ts";
+import {
+  etiquetaCamara,
+  etiquetaCampo,
+  etiquetaEstado,
+  etiquetaOrigen,
+} from "../../web/src/lib/filtros.ts";
 import { correrBusqueda, correrFicha, lineaFila, pieFila } from "./consultar.ts";
 import {
   anterior,
@@ -133,7 +138,9 @@ export function App({ flags }: { flags: ParamsFiltro }) {
   return (
     <Box flexDirection="column" padding={1}>
       <Text bold>regwatch-co</Text>
-      <Text dimColor>Tab filtros · ←→ valor · Enter busca · ↑↓ lista · q sale</Text>
+      <Text dimColor>
+        Tab recorre los filtros · ←→ cambia el valor · Enter busca · ↑↓ lista · q sale
+      </Text>
       {sinSemantica ? (
         <Text color="yellow">
           Solo búsqueda léxica en esta consulta: {sinSemantica}. Los resultados que únicamente
@@ -147,23 +154,25 @@ export function App({ flags }: { flags: ParamsFiltro }) {
       {campo !== "ficha" ? (
         <Box flexDirection="column" marginTop={1}>
           <Text>
-            {marca("q")} q: {q}
+            {marca("q")} {etiquetaCampo("q")}: {q}
             {campo === "q" ? "█" : ""}
           </Text>
           <Text>
-            {marca("tipo")} tipo: {tipo ? etiquetaOrigen(tipo) : "(todos)"}
+            {marca("tipo")} {etiquetaCampo("tipo")}: {tipo ? etiquetaOrigen(tipo) : "(todos)"}
           </Text>
           <Text>
-            {marca("legislatura")} legislatura: {legislatura || "(cualquiera)"}
+            {marca("legislatura")} {etiquetaCampo("legislatura")}: {legislatura || "(cualquiera)"}
           </Text>
           <Text>
-            {marca("estado")} estado: {estado ? etiquetaEstado(estado) : "(cualquiera)"}
+            {marca("estado")} {etiquetaCampo("estado")}:{" "}
+            {estado ? etiquetaEstado(estado) : "(cualquiera)"}
           </Text>
           <Text>
-            {marca("camara")} camara: {camara ? etiquetaCamara(camara) : "(cualquiera)"}
+            {marca("camara")} {etiquetaCampo("camara")}:{" "}
+            {camara ? etiquetaCamara(camara) : "(cualquiera)"}
           </Text>
           <Text>
-            {marca("anio")} anio: {anio}
+            {marca("anio")} {etiquetaCampo("anio")}: {anio}
             {campo === "anio" ? "█" : ""}
           </Text>
         </Box>
