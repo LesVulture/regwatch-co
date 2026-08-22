@@ -123,7 +123,8 @@ pnpm install
 git config core.hooksPath .githooks   # ver más abajo: no es opcional si vas a empujar
 
 cp .env.example .env      # y rellena SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_DB_URL
-pnpm web:dev              # http://localhost:3000
+pnpm web:dev              # http://localhost:3000  — filtros en la URL (?q=&tipo=&anio=)
+pnpm tui                  # TUI Ink (mismos filtros; q sale, Ctrl+C también)
 ```
 
 **El hook de `pre-push` no es burocracia.** `git config core.hooksPath .githooks`
@@ -165,6 +166,7 @@ pnpm embed:chunks             # rellena los vectores que falten (necesita Ollama
 pnpm qa "¿Qué obligaciones tiene el Estado en política migratoria?"
 pnpm gold:run                 # pasa el gold set por el Q&A y escribe la corrida
 pnpm mcp:start                # servidor MCP por stdio
+pnpm tui                      # TUI: misma capa de consulta que web y MCP
 ```
 
 Los colectores **no escriben nunca directo a la base**: producen un artefacto
@@ -214,11 +216,11 @@ supo partir esa página. Son fallos del troceador, no de la fuente, y están abi
 }
 ```
 
-Expone `buscar_normatividad` y `consultar_vigencia`. Las dos son de solo lectura y ninguna afirma vigencia sin fuente primaria. **La búsqueda embebe** con `embeberConsulta`, igual que `/`: si Ollama no está, `hybrid_search` degrada a léxico y la respuesta lo dice.
+Expone `buscar_normatividad` y `consultar_vigencia`. Las dos son de solo lectura y ninguna afirma vigencia sin fuente primaria. **La búsqueda embebe** con `embeberConsulta`, igual que `/`: si Ollama no está, `hybrid_search` degrada a léxico y la respuesta lo dice. Los filtros opcionales (`tipo`, `legislatura`, `estado`, `camara`, `anio`, `tipo_providencia`) son los mismos que la web y el TUI.
 
 ## Cómo está hecho
 
-Monorepo pnpm: `collectors/` (recolección, gates y RAG), `db/` (esquema e importadores), `web/` (Next 16) y `mcp/`. Postgres 17 con pgvector en Supabase.
+Monorepo pnpm: `collectors/` (recolección, gates y RAG), `db/` (esquema e importadores), `web/` (Next 16, Tailwind 4), `mcp/` y `tui/` (Ink). Postgres 17 con pgvector en Supabase. La búsqueda web acepta `tipo`, `legislatura`, `estado`, `camara` (trámite según el Senado, no el corpus de la Cámara), `anio` y `page`; un recorte que no aplica a un tipo lo excluye. `hay_mas` no es un total.
 
 Tres cosas que no son detalles de implementación:
 

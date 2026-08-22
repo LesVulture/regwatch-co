@@ -38,7 +38,8 @@
     "measure:matryoshka": "node --env-file-if-exists=.env collectors/src/rag/medir-matryoshka.ts",
     "mcp:start": "node --env-file-if-exists=.env mcp/src/server.ts",
     "qa": "node --env-file-if-exists=.env collectors/src/rag/run-qa.ts",
-    "gold:run": "node --env-file-if-exists=.env gold/run-gold.ts"
+    "gold:run": "node --env-file-if-exists=.env gold/run-gold.ts",
+    "tui": "pnpm --filter @regwatch/tui start"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",

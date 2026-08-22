@@ -21,7 +21,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const RAICES = ["collectors/src", "db", "gold", "mcp/src", "web/src"];
+const RAICES = ["collectors/src", "db", "gold", "mcp/src", "web/src", "tui/src"];
 const IGNORAR = new Set(["node_modules", ".next", "dist"]);
 
 function ficheros(dir: string): string[] {

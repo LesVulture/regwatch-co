@@ -56,8 +56,9 @@ Leído de los ficheros, no inferido del plan.
 | Articulado basedoc | HTTP only. `collect:articulado` / `collect:piloto`. Ley 1616: **exit 1** con `ciclo-paginacion` declarado (2 URLs; no gira 15 veces) | `pnpm collect:articulado` → `pnpm db:load-chunks` |
 | Leads basedoc | Runner `collect:basedoc` existe | `pnpm collect:basedoc` → `pnpm db:load-afectaciones` |
 | Embeddings | `nomic-embed-text` en Ollama, 256 dims | `pnpm embed:chunks` |
-| Web | `/` (híbrida) y `/vigencia/…`. La búsqueda **enlaza** normas a vigencia. CSS inline. Serwist | `pnpm web:dev` |
-| Q&A CLI | `claude -p` + OAuth. Citas literales | `pnpm qa` / `pnpm gold:run` |
+| Web | `/` (q+tipo+año+atajos), `/proyectos`, `/providencias`, fichas, `/vigencia/…`, `/cobertura`. Tailwind 4 + componentes estilo shadcn (radix). Filtros en SQL. Serwist | `pnpm web:dev` |
+| TUI | Ink: mismos filtros que la URL, lista+ficha, banner si Ollama no está | `pnpm tui` |
+| Q&A CLI | `claude -p` + OAuth. Citas literales. **No hay chat en la web** (gold 1/18) | `pnpm qa` / `pnpm gold:run` |
 | MCP | `buscar_normatividad` **embebe** con `embeberConsulta` (misma degradación léxica que la web, y lo declara). `consultar_vigencia` | `pnpm mcp:start` |
 | g2-pulso | Lee `cadenciaHoras`. Senado: sin fecha de hecho → `sin_fecha_del_hecho` (no tumba). Zombie / `captura_stale` sí tumba | `pnpm g2 -- artefactos/…` |
 | CI | `verify.yml` push/PR. `gold.yml` lunes. `latido.yml` cada 3 días (activo en `main`). **`collect.yml`** en `main`: cron 07:41 UTC (Senado + Corte del año + piloto + g2 + load) | GitHub Actions |
@@ -126,9 +127,11 @@ Siguen sin existir las entidades FRBR/evento del §5.1: `tramite_evento`, `gacet
 
 ## Stack real vs PLAN-V2 §9
 
-Sin cambio respecto del recorte de stack (Context7 2026-08-21): Next **16.3.1** sin `cacheComponents` en config, **sin** `proxy.ts`, CSS inline (no Tailwind/shadcn/AI SDK), `@serwist/turbopack@9.5.12` `swUrl="/~serwist/sw.js"`, pnpm **11.22.0** + `allowBuilds`/`strictDepBuilds`, MCP SDK `^1.24.1`, Vitest **3.2.4**, coste IA = 0 (Ollama + `claude -p`). El `web:build` del verify confirmó Next 16.3.1.
+Árbol al 2026-08-22 (UI): Next **16.3.1** sin `cacheComponents` en config, **sin** `proxy.ts`, **Tailwind CSS 4** (`@import "tailwindcss"` + `@tailwindcss/postcss`) y componentes shadcn a mano con `--base radix` (no AI SDK, no chat). `@serwist/turbopack@9.5.12` `swUrl="/~serwist/sw.js"`. TUI Ink **7.1.1** en `tui/`. pnpm **11.22.0** + `allowBuilds`/`strictDepBuilds`, MCP SDK `^1.24.1`, Vitest **3.2.4**, coste IA = 0 (Ollama + `claude -p`).
 
-Library ids: `/vercel/next.js`, `/websites/pnpm_io`, `/modelcontextprotocol/typescript-sdk`, `/websites/serwist_pages_dev`.
+Los números de captura y el `web:build` de Next 16.3.1 siguen siendo los del recorte 2026-08-21. Esta pasada no re-midió el corpus.
+
+Library ids: `/vercel/next.js`, `/websites/pnpm_io`, `/modelcontextprotocol/typescript-sdk`, `/websites/serwist_pages_dev`, `/websites/tailwindcss`.
 
 ---
 
@@ -148,9 +151,9 @@ Library ids: `/vercel/next.js`, `/websites/pnpm_io`, `/modelcontextprotocol/type
 
 ## Lo que el plan promete y el árbol aún no cierra
 
-Dumps semanales a git · frescura por fuente en la UI · API JSON · timeline · perfiles · CONPES ingerido · prensa · Cámara en ejecución · OCR · alertas encadenadas · gates `g1`/`g3`–`g6` · Q&A en la UI · `proxy.ts` · fusionar la ventana 2026 viva al backfill · paginación basedoc.
+Dumps semanales a git · frescura por fuente en la UI · API JSON · timeline · perfiles · CONPES ingerido · prensa · Cámara en ejecución · OCR · alertas encadenadas · gates `g1`/`g3`–`g6` · Q&A en la UI · `proxy.ts` · fusionar la ventana 2026 viva al backfill · paginación basedoc · tabla `tema` / clasificador de 45 temas.
 
-Ya **no** es hueco en el árbol (otra cosa es que haya corrido en prod): `g2-pulso`, embeddings MCP, `INSERT` de `captura` (meta + hash), `collect.yml` diario en `main` con `SUPABASE_DB_URL`, enlace búsqueda → vigencia, `collect:basedoc` / `db:load-afectaciones`. El dispatch del 22 **no** es un collect verde: `load-providencias` sale 1 si el artefacto de Corte del año viene vacío.
+Ya **no** es hueco en el árbol (otra cosa es que haya corrido en prod): `g2-pulso`, embeddings MCP, `INSERT` de `captura` (meta + hash), `collect.yml` diario en `main` con `SUPABASE_DB_URL`, enlace búsqueda → vigencia, `collect:basedoc` / `db:load-afectaciones`, filtros de búsqueda en SQL (`legislatura`, `estado`, `camara` del trámite según Senado, `anio`, paginación `hay_mas`), browse `/proyectos` y `/providencias`, fichas, `/cobertura`, TUI Ink (`pnpm tui`), Tailwind 4 en `web/`. El dispatch del 22 **no** es un collect verde: `load-providencias` sale 1 si el artefacto de Corte del año viene vacío. Los filtros SQL **hay que desplegarlos** en la instancia (`DROP`+`CREATE`; `db:drift` revierte y no persiste).
 
 ---
 
