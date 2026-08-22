@@ -28,6 +28,7 @@ const SQL = [
   "07_suscripcion",
   "08_rag",
   "09_contexto",
+  "10_listados",
 ]
   .map((f) => readFileSync(new URL(`./schemas/${f}.sql`, import.meta.url), "utf-8"))
   .join("\n");
@@ -214,6 +215,21 @@ describe("hybrid_search — RRF sobre dos rankings", () => {
     for (const col of ["url_fuente", "captured_at", "tier"]) {
       expect(RRF, `hybrid_search no devuelve ${col}`).toMatch(new RegExp(`d\\.${col}`));
     }
+  });
+
+  /**
+   * Los filtros se aplican a los CANDIDATOS, no después del LIMIT. Un
+   * post-filtro sobre el top-20 vaciaría resultados en silencio.
+   */
+  it("filtra en el pool léxico, en el semántico y al rehidratar, y pagina al final", () => {
+    expect(RRF).toMatch(/filtro_legislatura/);
+    expect(RRF).toMatch(/filtro_estado/);
+    expect(RRF).toMatch(/filtro_camara/);
+    expect(RRF).toMatch(/filtro_anio/);
+    expect(RRF).toMatch(/filtro_tipo_providencia/);
+    expect(RRF).toMatch(/busqueda_lexica\(/);
+    expect(RRF).toMatch(/left join public\.proyecto_ley p/);
+    expect(RRF).toMatch(/offset greatest\(desplazamiento, 0\)/);
   });
 });
 

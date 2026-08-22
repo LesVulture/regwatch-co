@@ -21,6 +21,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { buscar, vigencia } from "../../web/src/lib/consultas.ts";
 import { embeberConsulta } from "../../web/src/lib/embedding-consulta.ts";
+import { advertenciaFiltros } from "../../web/src/lib/filtros.ts";
 import { consultanteDesdeEntorno } from "../../web/src/lib/supabase.ts";
 
 const server = new McpServer({ name: "regwatch-co", version: "0.1.0" });
@@ -51,17 +52,46 @@ server.registerTool(
     inputSchema: {
       consulta: z.string().min(1).describe("Términos a buscar, en español."),
       limite: z.number().int().min(1).max(50).default(20),
+      tipo: z
+        .enum(["proyecto_ley", "providencia", "norma"])
+        .optional()
+        .describe("Recorta a un origen. Si se omite, busca en los tres."),
+      legislatura: z
+        .string()
+        .optional()
+        .describe("Solo proyectos. Ej.: 2026-2027. Excluye normas y providencias."),
+      estado: z
+        .string()
+        .optional()
+        .describe("Estado de trámite canónico (radicado, en_comision…). Solo proyectos."),
+      camara: z
+        .enum(["senado", "camara"])
+        .optional()
+        .describe("Cámara del trámite según el Senado, no el corpus de la Cámara (gated)."),
+      anio: z.number().int().min(1810).max(2100).optional(),
+      tipo_providencia: z
+        .string()
+        .optional()
+        .describe("Auto, Tutela, Constitucionalidad, Sentencia de unificación."),
     },
   },
-  async ({ consulta, limite }) => {
+  async ({ consulta, limite, tipo, legislatura, estado, camara, anio, tipo_providencia }) => {
     // Misma degradación que la web: se pide el vector ANTES. Si Ollama no
     // está, `embeberConsulta` devuelve null con su motivo y `hybrid_search`
     // degrada a léxico. Callarlo aquí y no en la web haría que un agente
     // creyera que está buscando en semántico cuando no.
     const { vector, motivo } = await embeberConsulta(consulta);
-    const r = await buscar(consultanteDesdeEntorno(), consulta, "mcp", limite, {
+    const opciones = {
       embedding: vector,
-    });
+      ...(tipo !== undefined ? { soloTipo: tipo } : {}),
+      ...(legislatura !== undefined ? { legislatura } : {}),
+      ...(estado !== undefined ? { estado } : {}),
+      ...(camara !== undefined ? { camara } : {}),
+      ...(anio !== undefined ? { anio } : {}),
+      ...(tipo_providencia !== undefined ? { tipoProvidencia: tipo_providencia } : {}),
+    };
+    const r = await buscar(consultanteDesdeEntorno(), consulta, "mcp", limite, opciones);
+    const avisoFiltro = advertenciaFiltros(opciones);
     const cuerpo =
       r.filas.length === 0
         ? (r.advertencia ?? "Sin resultados.")
@@ -77,7 +107,10 @@ server.registerTool(
       motivo !== null
         ? `Solo búsqueda léxica en esta consulta: ${motivo}. Los resultados que únicamente encontraría el vector no aparecen.\n\n`
         : "";
-    return { content: [{ type: "text", text: sem + aviso + cuerpo + ADVERTENCIA_SIEMPRE }] };
+    const recorte = avisoFiltro ? `${avisoFiltro}\n\n` : "";
+    return {
+      content: [{ type: "text", text: sem + recorte + aviso + cuerpo + ADVERTENCIA_SIEMPRE }],
+    };
   },
 );
 

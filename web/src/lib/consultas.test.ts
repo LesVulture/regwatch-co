@@ -12,7 +12,9 @@ import {
   type Consultante,
   contextoQa,
   ensanchar,
+  fichaProyecto,
   identidadNorma,
+  listarProyectos,
   MAX_ENTIDADES_QA,
   PROCEDENCIA_CAMPOS,
   verificarProcedencia,
@@ -248,6 +250,37 @@ describe("buscar() pasa por hybrid_search, también sin vector", () => {
     await buscar(db, "salud", "api_bloque");
     expect(llamadas[0]?.args).not.toHaveProperty("peso_lexico");
     expect(llamadas[0]?.args).not.toHaveProperty("peso_semantico");
+    expect(llamadas[0]?.args).not.toHaveProperty("solo_tipo");
+    expect(llamadas[0]?.args).not.toHaveProperty("filtro_legislatura");
+  });
+
+  it("pide una fila de más: hay_mas no es un total, es si vale la página siguiente", async () => {
+    const filas = Array.from({ length: 21 }, (_, i) => ({
+      ...FILA_BUSQUEDA,
+      id: `uuid-${i}`,
+    }));
+    const r = await buscar(db(filas), "salud", "api_bloque", 20);
+    expect(r.filas).toHaveLength(20);
+    expect(r.hay_mas).toBe(true);
+  });
+
+  it("pasa los filtros a hybrid_search, no los aplica después", async () => {
+    const { db, llamadas } = espia();
+    await buscar(db, "salud", "api_bloque", 20, {
+      soloTipo: "proyecto_ley",
+      legislatura: "2026-2027",
+      estado: "en_comision",
+      camara: "senado",
+      anio: 2026,
+    });
+    expect(llamadas[0]?.args).toMatchObject({
+      solo_tipo: "proyecto_ley",
+      filtro_legislatura: "2026-2027",
+      filtro_estado: "en_comision",
+      filtro_camara: "senado",
+      filtro_anio: 2026,
+      limite: 21,
+    });
   });
 
   /** Una consulta vacía no llega a la base. */
@@ -650,5 +683,42 @@ describe("el ensanchado se DECLARA, nunca se hace en silencio", () => {
     const r = await vigencia(db2, { tipo: "ley", numero: "9999", anio: 2099 }, "api_bloque");
     expect(llamadas).toBe(1);
     expect(r.ensanchada).toBe(false);
+  });
+});
+
+describe("listarProyectos — browse, no FTS", () => {
+  it("llama listar_proyectos y no le pasa solo_tipo", async () => {
+    const llamadas: { nombre: string; args: Record<string, unknown> }[] = [];
+    const db: Consultante = {
+      rpc: async (nombre, args) => {
+        llamadas.push({ nombre, args });
+        return { filas: [] };
+      },
+    };
+    await listarProyectos(
+      db,
+      "api_bloque",
+      { legislatura: "2026-2027", estado: "en_comision", camara: "senado", comision: "Séptima" },
+      20,
+    );
+    expect(llamadas[0]?.nombre).toBe("listar_proyectos");
+    expect(llamadas[0]?.args).toMatchObject({
+      filtro_legislatura: "2026-2027",
+      filtro_estado: "en_comision",
+      filtro_camara: "senado",
+      filtro_comision: "Séptima",
+      limite: 21,
+    });
+    expect(llamadas[0]?.args).not.toHaveProperty("solo_tipo");
+  });
+
+  it("una ficha vacía no se recorta como si fuera un listado", async () => {
+    const r = await fichaProyecto(
+      db([]),
+      "454ca224-538e-4392-aeef-35f2540da1b1",
+      "ficha_individual",
+    );
+    expect(r.hay_mas).toBe(false);
+    expect(r.filas).toEqual([]);
   });
 });

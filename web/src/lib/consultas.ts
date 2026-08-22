@@ -66,6 +66,24 @@ export const PROCEDENCIA_CAMPOS: Readonly<Record<string, Procedencia>> = {
   url_fuente: "hecho_metadato",
   captured_at: "hecho_metadato",
   tier: "hecho_metadato",
+  // Ficha de proyecto / providencia (campos que YA están en el esquema).
+  legislatura: "hecho_metadato",
+  cuatrenio: "hecho_metadato",
+  autor: "hecho_metadato",
+  comision: "hecho_metadato",
+  estado_camara: "hecho_metadato",
+  estado_original: "hecho_metadato",
+  numero_senado_canonico: "hecho_metadato",
+  numero_camara_raw: "hecho_metadato",
+  crosswalk: "hecho_metadato",
+  crosswalk_motivo: "hecho_metadato",
+  sentencia: "hecho_metadato",
+  expediente: "hecho_metadato",
+  magistrados: "hecho_metadato",
+  fecha_publicacion: "hecho_metadato",
+  fecha_sentencia: "hecho_metadato",
+  url_texto: "hecho_metadato",
+  tipo: "hecho_metadato",
   // Vigencia
   veredicto: "hecho_metadato",
   articulo: "hecho_metadato",
@@ -95,6 +113,12 @@ export interface ResultadoBusqueda {
    * criterio más laxo que el pedido tiene que poder distinguirse en código.
    */
   readonly ensanchada: boolean;
+  /**
+   * `true` si había al menos una fila más allá del `limite` pedido. No es un
+   * total: el producto no publica conteos. Solo dice si vale pedir la página
+   * siguiente.
+   */
+  readonly hay_mas: boolean;
 }
 
 /**
@@ -252,6 +276,16 @@ export interface OpcionesBusqueda {
   readonly pesoLexico?: number;
   /** Sesgo a semántico: sube para `"impuesto a bebidas azucaradas"`. */
   readonly pesoSemantico?: number;
+  /** Recorte a un origen. Ya existía en SQL (`solo_tipo`); la capa no lo pasaba. */
+  readonly soloTipo?: "proyecto_ley" | "providencia" | "norma";
+  readonly legislatura?: string;
+  readonly estado?: string;
+  /** Cámara del trámite según el Senado, no el corpus de la Cámara. */
+  readonly camara?: string;
+  readonly anio?: number;
+  readonly tipoProvidencia?: string;
+  readonly comision?: string;
+  readonly desplazamiento?: number;
 }
 
 export async function buscar(
@@ -263,7 +297,13 @@ export async function buscar(
 ): Promise<ResultadoBusqueda> {
   const texto = consulta.trim();
   if (texto === "") {
-    return { filas: [], omitidos: [], advertencia: "consulta vacía", ensanchada: false };
+    return {
+      filas: [],
+      omitidos: [],
+      advertencia: "consulta vacía",
+      ensanchada: false,
+      hay_mas: false,
+    };
   }
 
   // Se llama SIEMPRE a `hybrid_search`, también sin vector. Mantener aquí la
@@ -271,10 +311,15 @@ export async function buscar(
   // de producción distinto del camino probado. Sigue valiendo con embeddings
   // locales: `embeberConsulta` devuelve `null` si Ollama no está, y entonces
   // esta misma llamada degrada a la mitad léxica sin cambiar de código.
+  //
+  // `limite + 1`: la fila de más no se publica; solo dice si hay página
+  // siguiente. Un total sería otra afirmación, y el producto no publica conteos.
+  const pedido = limite + 1;
   const args = (consultaSql: string) => ({
     consulta: consultaSql,
     consulta_embedding: opciones.embedding ? `[${opciones.embedding.join(",")}]` : null,
-    limite,
+    limite: pedido,
+    ...argsFiltro(opciones),
     ...(opciones.pesoLexico !== undefined ? { peso_lexico: opciones.pesoLexico } : {}),
     ...(opciones.pesoSemantico !== undefined ? { peso_semantico: opciones.pesoSemantico } : {}),
   });
@@ -293,13 +338,13 @@ export async function buscar(
   const sinLexico =
     filas.length === 0 ||
     filas.every((f) => (f as { posicion_lexica?: unknown }).posicion_lexica == null);
-  if (!sinLexico) return aplicarEgreso(filas, contexto, texto, false);
+  if (!sinLexico) return aplicarEgreso(filas, contexto, texto, false, limite);
 
   const laxa = ensanchar(texto);
-  if (laxa === null) return aplicarEgreso(filas, contexto, texto, false);
+  if (laxa === null) return aplicarEgreso(filas, contexto, texto, false, limite);
 
   const reintento = await db.rpc("hybrid_search", args(laxa));
-  if (reintento.filas.length === 0) return aplicarEgreso(filas, contexto, texto, false);
+  if (reintento.filas.length === 0) return aplicarEgreso(filas, contexto, texto, false, limite);
 
   // UNIÓN, no sustitución — y la diferencia es que la versión anterior sí podía
   // quitar resultados pese al comentario que juraba lo contrario. El reintento
@@ -309,11 +354,11 @@ export async function buscar(
   // el ensanchado añade de nuevo, recortado al mismo `limite` que se pidió.
   const yaVistas = new Set(filas.map((f) => String((f as { id?: unknown }).id)));
   const nuevas = reintento.filas.filter((f) => !yaVistas.has(String((f as { id?: unknown }).id)));
-  const union = [...filas, ...nuevas].slice(0, limite);
-  // Y se anuncia solo si algo ensanchado sobrevivió al recorte: avisar de un
-  // ensanchado cuyo aporte se acaba de tirar es avisar de algo que no está.
-  const aporta = union.length > filas.length;
-  return aplicarEgreso(union, contexto, texto, aporta);
+  const union = [...filas, ...nuevas];
+  const idsNuevas = new Set(nuevas.map((f) => String((f as { id?: unknown }).id)));
+  const recortadas = union.slice(0, limite);
+  const aportaNuevas = recortadas.some((f) => idsNuevas.has(String((f as { id?: unknown }).id)));
+  return aplicarEgreso(union, contexto, texto, aportaNuevas, limite);
 }
 
 /**
@@ -451,16 +496,131 @@ export async function vigencia(
   return r;
 }
 
+function argsFiltro(o: OpcionesBusqueda): Record<string, unknown> {
+  const a: Record<string, unknown> = {};
+  if (o.soloTipo !== undefined) a.solo_tipo = o.soloTipo;
+  if (o.legislatura !== undefined) a.filtro_legislatura = o.legislatura;
+  if (o.estado !== undefined) a.filtro_estado = o.estado;
+  if (o.camara !== undefined) a.filtro_camara = o.camara;
+  if (o.anio !== undefined) a.filtro_anio = o.anio;
+  if (o.tipoProvidencia !== undefined) a.filtro_tipo_providencia = o.tipoProvidencia;
+  if (o.desplazamiento !== undefined && o.desplazamiento > 0) {
+    a.desplazamiento = o.desplazamiento;
+  }
+  return a;
+}
+
+export async function listarProyectos(
+  db: Consultante,
+  contexto: ContextoEgreso,
+  opciones: OpcionesBusqueda = {},
+  limite = 20,
+): Promise<ResultadoBusqueda> {
+  const pedido = limite + 1;
+  const { filas } = await db.rpc("listar_proyectos", {
+    limite: pedido,
+    ...(opciones.legislatura !== undefined ? { filtro_legislatura: opciones.legislatura } : {}),
+    ...(opciones.estado !== undefined ? { filtro_estado: opciones.estado } : {}),
+    ...(opciones.camara !== undefined ? { filtro_camara: opciones.camara } : {}),
+    ...(opciones.comision !== undefined ? { filtro_comision: opciones.comision } : {}),
+    ...(opciones.anio !== undefined ? { filtro_anio: opciones.anio } : {}),
+    ...(opciones.desplazamiento !== undefined && opciones.desplazamiento > 0
+      ? { desplazamiento: opciones.desplazamiento }
+      : {}),
+  });
+  return aplicarEgreso(filas, contexto, "el recorte de proyectos pedido", false, limite);
+}
+
+export async function listarProvidencias(
+  db: Consultante,
+  contexto: ContextoEgreso,
+  opciones: OpcionesBusqueda = {},
+  limite = 20,
+): Promise<ResultadoBusqueda> {
+  const pedido = limite + 1;
+  const { filas } = await db.rpc("listar_providencias", {
+    limite: pedido,
+    ...(opciones.anio !== undefined ? { filtro_anio: opciones.anio } : {}),
+    ...(opciones.tipoProvidencia !== undefined ? { filtro_tipo: opciones.tipoProvidencia } : {}),
+    ...(opciones.desplazamiento !== undefined && opciones.desplazamiento > 0
+      ? { desplazamiento: opciones.desplazamiento }
+      : {}),
+  });
+  return aplicarEgreso(filas, contexto, "el recorte de jurisprudencia pedido", false, limite);
+}
+
+export async function fichaProyecto(
+  db: Consultante,
+  id: string,
+  contexto: ContextoEgreso,
+): Promise<ResultadoBusqueda> {
+  const { filas } = await db.rpc("ficha_proyecto", { proyecto: id });
+  return aplicarEgreso(filas, contexto, `proyecto ${id}`, false);
+}
+
+export async function fichaProvidencia(
+  db: Consultante,
+  id: string,
+  contexto: ContextoEgreso,
+): Promise<ResultadoBusqueda> {
+  const { filas } = await db.rpc("ficha_providencia", { prov: id });
+  return aplicarEgreso(filas, contexto, `providencia ${id}`, false);
+}
+
+export async function opcionesFiltroProyectos(db: Consultante): Promise<{
+  legislaturas: string[];
+  estados: string[];
+  camaras: string[];
+  comisiones: string[];
+}> {
+  const { filas } = await db.rpc("opciones_filtro_proyectos", {});
+  const f = filas[0] as
+    | {
+        legislaturas?: unknown;
+        estados?: unknown;
+        camaras?: unknown;
+        comisiones?: unknown;
+      }
+    | undefined;
+  return {
+    legislaturas: textos(f?.legislaturas),
+    estados: textos(f?.estados),
+    camaras: textos(f?.camaras),
+    comisiones: textos(f?.comisiones),
+  };
+}
+
+export async function opcionesFiltroProvidencias(
+  db: Consultante,
+): Promise<{ anios: number[]; tipos: string[] }> {
+  const { filas } = await db.rpc("opciones_filtro_providencias", {});
+  const f = filas[0] as { anios?: unknown; tipos?: unknown } | undefined;
+  return { anios: enteros(f?.anios), tipos: textos(f?.tipos) };
+}
+
+function textos(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+}
+
+function enteros(v: unknown): number[] {
+  return Array.isArray(v)
+    ? v.filter((x): x is number => typeof x === "number" && Number.isInteger(x))
+    : [];
+}
+
 function aplicarEgreso(
   filas: readonly unknown[],
   contexto: ContextoEgreso,
   consulta: string,
   ensanchada: boolean,
+  limite: number | null = null,
 ): ResultadoBusqueda {
+  const hayMas = limite !== null && filas.length > limite;
+  const visibles = hayMas ? filas.slice(0, limite) : filas;
   const salida: Record<string, unknown>[] = [];
   const omitidos = new Set<string>();
 
-  for (const f of filas) {
+  for (const f of visibles) {
     const { datos, omitidos: om } = filtrarRegistro(
       f as Record<string, unknown>,
       PROCEDENCIA_CAMPOS,
@@ -474,6 +634,7 @@ function aplicarEgreso(
     filas: salida,
     omitidos: [...omitidos],
     ensanchada,
+    hay_mas: hayMas,
     advertencia:
       salida.length === 0
         ? `Sin resultados para «${consulta}». Eso significa que no aparece en lo ` +
