@@ -6,6 +6,15 @@ name: collect
 #
 # Fuera de horario de oficina en Bogotá. No es un martillo: una corrida de
 # Senado, una ventana de Corte, y el piloto con 3 s entre normas.
+#
+# GitHub solo dispara `on.schedule` en la rama por defecto (el commit más
+# reciente de `main`; docs.github.com, evento `schedule`; Context7
+# /websites/github_en_actions, 2026-08-22). Este fichero fuera de `main` no
+# enciende el cron. `workflow_dispatch` sí se puede correr a mano sobre la
+# rama que lo traiga.
+#
+# El paso de carga exige el secreto `SUPABASE_DB_URL`. Sin él, collect deja
+# artefactos en el runner (efímeros) y sale 0.
 
 on:
   schedule:

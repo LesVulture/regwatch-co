@@ -38,4 +38,13 @@ describe("el cron de recolección no abre fuentes gated", () => {
     expect(yml).not.toContain("collect:camara");
     expect(yml).not.toMatch(/camara\.gov|funcionpublica\.gov|dnp\.gov|lasillavacia/i);
   });
+
+  it("el YAML avisa que el cron solo corre en la rama por defecto", () => {
+    const yml = readFileSync(
+      new URL("../../.github/workflows/collect.yml", import.meta.url),
+      "utf-8",
+    );
+    expect(yml).toMatch(/rama por defecto/);
+    expect(yml).toContain("SUPABASE_DB_URL");
+  });
 });

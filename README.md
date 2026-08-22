@@ -42,7 +42,7 @@ recorte as-built del **2026-08-21** está en `docs/ESTADO.md` y
 | 🟡 **Articulado, cobertura** | 8 normas de las miles que existen, y el troceador no saca todos los artículos de las leyes largas. Buscar y citar funciona sobre lo que hay; ampliarlo es correr `collect:articulado` más veces |
 | ⛔ **OCR de escaneados** | Sin proveedor. §7 del plan lo tenía en Mistral, que factura |
 | ⛔ **Cámara de Representantes** | El colector está escrito **con una guarda que impide correrlo** (`AUTORIZACION.concedida = false`). Los tres derechos de petición en `legal/peticiones/` son **borrador**, no radicados |
-| 🟡 **Recolección diaria** | **Programada** en `.github/workflows/collect.yml` (`41 7 * * *` UTC: Senado + Corte del año + piloto + g2 + load si hay `SUPABASE_DB_URL`). Siguen `verify`, `gold` (lunes) y `latido` (cada 3 días). **No se ha observado** que esa corrida de Actions haya terminado bien |
+| 🟡 **Recolección diaria** | YAML en `main` (`.github/workflows/collect.yml`, `41 7 * * *` UTC: Senado + Corte del año + piloto + g2 + load). GitHub solo dispara `on.schedule` en la rama por defecto, y el fichero **ya está ahí**. Secreto `SUPABASE_DB_URL` puesto: el dispatch del 2026-08-22 **sí cargó Senado**. El job salió rojo en `db:load-providencias` (artefacto de Corte del año vacío → exit 1). El `schedule` de hoy (07:41 UTC) ya había pasado al mergear. Siguen `verify`, `gold` (lunes) y `latido` (cada 3 días) |
 | 🟡 **Gates** | Existen `g0-contrato` y `g2-pulso` (`pnpm g2` lee `cadenciaHoras`). No hay `g1` / `g3`–`g6`. No hay `proxy.ts` |
 
 ### El 1 de 18, explicado (porque el número solo engaña)

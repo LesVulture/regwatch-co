@@ -3,7 +3,8 @@
 Mapa de **lo que está construido**, no de lo que el plan promete. Recorte: **2026-08-21** (capturas vivas ~2026-08-22T04:08Z ≈ 23:08 COT).
 
 - **Capturas vivas (manda):** [`docs/verificacion-viva-2026-08-21.md`](verificacion-viva-2026-08-21.md). `sources.ts` no se tocó.
-- **Árbol de código:** este fichero, leído el 2026-08-21 de noche. Un agente de producto ya cableó g2, embeddings en MCP, `INSERT` de `captura` y `collect.yml`. Eso no lo midió el verificador contra GitHub Actions ni contra la base viva.
+- **Árbol de código:** g2, embeddings en MCP, `INSERT` de `captura` y `collect.yml` están en `main` (merge `1a18751`, [PR #1](https://github.com/LesVulture/regwatch-co/pull/1), 2026-08-22).
+- **CI (2026-08-22):** `collect.yml` **está** en `origin/main`. GitHub registra el workflow `collect` (activo). Secreto `SUPABASE_DB_URL` **existe** (lista de secretos; el valor no se lee). `latido` corrió hoy en `main` por `schedule` (2026-08-22T06:56Z). `workflow_dispatch` de `collect` ([run 32585307087](https://github.com/LesVulture/regwatch-co/actions/runs/32585307087)): Senado/Corte/piloto/g2 en verde; **`db:load` de Senado escribió** (1693 enviadas, 1694 en `proyecto_ley`) — el secreto inyecta y conecta; **`db:load-providencias` exit 1** con artefacto de Corte del año a 0 ventanas / 0 providencias. El cron de hoy (07:41 UTC) ya había pasado al mergear.
 - Contrato de evidencia: [`GOVERNANCE.md`](../GOVERNANCE.md).
 - Plan histórico (no se reescribe): [`PLAN-V2.md`](../PLAN-V2.md).
 - Claim público: [`README.md`](../README.md).
@@ -59,9 +60,9 @@ Leído de los ficheros, no inferido del plan.
 | Q&A CLI | `claude -p` + OAuth. Citas literales | `pnpm qa` / `pnpm gold:run` |
 | MCP | `buscar_normatividad` **embebe** con `embeberConsulta` (misma degradación léxica que la web, y lo declara). `consultar_vigencia` | `pnpm mcp:start` |
 | g2-pulso | Lee `cadenciaHoras`. Senado: sin fecha de hecho → `sin_fecha_del_hecho` (no tumba). Zombie / `captura_stale` sí tumba | `pnpm g2 -- artefactos/…` |
-| CI | `verify.yml` push/PR. `gold.yml` lunes. `latido.yml` cada 3 días. **`collect.yml` diario** 07:41 UTC (Senado + Corte año en curso + piloto + g2 + load si hay `SUPABASE_DB_URL`) | GitHub Actions |
+| CI | `verify.yml` push/PR. `gold.yml` lunes. `latido.yml` cada 3 días (activo en `main`). **`collect.yml`** en `main`: cron 07:41 UTC (Senado + Corte del año + piloto + g2 + load) | GitHub Actions |
 
-`collect.yml` está en el árbol. **No se comprobó** esta noche que el workflow haya corrido en GitHub ni que el secreto `SUPABASE_DB_URL` esté puesto: sin él, collect deja artefactos en el runner y sale 0.
+`collect.yml` está en `main`. El evento `schedule` de GitHub **solo corre sobre la rama por defecto**. El secreto `SUPABASE_DB_URL` está puesto y **conectó** en el dispatch (Senado cargó). El job entero salió rojo porque `db:load-providencias` trata «nada que cargar» como exit 1 — no es un secreto ausente. Sin el secreto, collect dejaría artefactos en el runner (efímeros) y saldría 0.
 
 Cámara, DNP, Función Pública y La Silla Vacía: **no se abrieron**. Siguen gated / excluidas. Peticiones en borrador.
 
@@ -149,7 +150,7 @@ Library ids: `/vercel/next.js`, `/websites/pnpm_io`, `/modelcontextprotocol/type
 
 Dumps semanales a git · frescura por fuente en la UI · API JSON · timeline · perfiles · CONPES ingerido · prensa · Cámara en ejecución · OCR · alertas encadenadas · gates `g1`/`g3`–`g6` · Q&A en la UI · `proxy.ts` · fusionar la ventana 2026 viva al backfill · paginación basedoc.
 
-Ya **no** es hueco en el árbol (otra cosa es que haya corrido en prod): `g2-pulso`, embeddings MCP, `INSERT` de `captura` (meta + hash), `collect.yml` diario, enlace búsqueda → vigencia, `collect:basedoc` / `db:load-afectaciones`.
+Ya **no** es hueco en el árbol (otra cosa es que haya corrido en prod): `g2-pulso`, embeddings MCP, `INSERT` de `captura` (meta + hash), `collect.yml` diario en `main` con `SUPABASE_DB_URL`, enlace búsqueda → vigencia, `collect:basedoc` / `db:load-afectaciones`. El dispatch del 22 **no** es un collect verde: `load-providencias` sale 1 si el artefacto de Corte del año viene vacío.
 
 ---
 

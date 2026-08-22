@@ -1,6 +1,6 @@
 # regwatch-co — Monitor normativo y legislativo colombiano
 
-Motor de búsqueda y monitoreo de la normatividad y la actividad legislativa de Colombia, consultable desde el móvil, capaz de responder preguntas en lenguaje natural **con cada afirmación anclada a fuente primaria con URL y fecha de captura**. La tesis pide datos frescos desde fuentes oficiales. **`collect.yml` está programado a diario** (Senado + Corte del año + piloto); **no se ha observado** que esa corrida de Actions haya terminado bien (ver `docs/ESTADO.md`).
+Motor de búsqueda y monitoreo de la normatividad y la actividad legislativa de Colombia, consultable desde el móvil, capaz de responder preguntas en lenguaje natural **con cada afirmación anclada a fuente primaria con URL y fecha de captura**. La tesis pide datos frescos desde fuentes oficiales. **`collect.yml` está en `main`** (merge del PR #1, 2026-08-22): el cron diario queda registrado en la rama por defecto. El secreto `SUPABASE_DB_URL` existe. **No se afirma** que una corrida de `collect` haya terminado bien hasta observarla. Ver `docs/ESTADO.md`.
 
 **As-built:** [`docs/ESTADO.md`](docs/ESTADO.md) y el [`README.md`](README.md). **Contrato de evidencia:** [`GOVERNANCE.md`](GOVERNANCE.md). **Plan histórico de construcción:** [`PLAN-V2.md`](PLAN-V2.md) (no se reescribe el cuerpo). Si ESTADO y el plan discrepan sobre **qué existe**, manda ESTADO. Si discrepan sobre **qué debe ser cierto de un dato**, manda GOVERNANCE.
 
