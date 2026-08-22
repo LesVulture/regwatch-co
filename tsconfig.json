@@ -23,7 +23,9 @@
     "gold/**/*.ts",
     "web/**/*.ts",
     "web/**/*.tsx",
-    "mcp/**/*.ts"
+    "mcp/**/*.ts",
+    "tui/**/*.ts",
+    "tui/**/*.tsx"
   ],
   "exclude": ["node_modules", "**/dist", "**/.next"]
 }

@@ -125,6 +125,11 @@ comment on column chunk.embedding is
 -- con el default del servidor (`off`). No se finge un SET que el cliente
 -- de producción no puede emitir.
 -- ---------------------------------------------------------------------------
+-- DROP + CREATE: mismos motivos que `busqueda_lexica`. La firma vieja es la
+-- de `crear_hybrid_search_rrf` (8 args). Los filtros van AL FINAL con default
+-- NULL para que `contexto_qa` siga llamando por posición.
+drop function if exists public.hybrid_search(text, extensions.vector, integer, public.origen_resultado, real, real, integer, integer);
+
 create or replace function hybrid_search(
   consulta            text,
   consulta_embedding  extensions.vector(256) default null,
@@ -135,7 +140,15 @@ create or replace function hybrid_search(
   rrf_k               int  default 50,
   -- Se recuperan más candidatos de los que se devuelven: fusionar dos top-20
   -- pierde lo que un ranking vio en el puesto 25 y el otro no vio en absoluto.
-  pool                int  default 200
+  pool                int  default 200,
+  filtro_legislatura       text default null,
+  filtro_estado            text default null,
+  filtro_camara            text default null,
+  filtro_anio              int  default null,
+  filtro_tipo_providencia  text default null,
+  -- El OFFSET va AQUÍ, no dentro del pool léxico: RRF fusiona candidatos y
+  -- después pagina. Paginar cada ranking por separado devolvería otra mezcla.
+  desplazamiento           int  default 0
 )
 returns table (
   origen origen_resultado, id uuid, titulo text, referencia text, estado text,
@@ -148,17 +161,43 @@ stable
 set search_path = ''
 as $$
   with lex as (
+    -- El pool léxico NO pagina: desplazamiento 0. RRF pagina al final.
     select b.origen, b.id, b.posicion
-    from public.busqueda_lexica(consulta, pool, solo_tipo) b
+    from public.busqueda_lexica(
+           consulta, pool, solo_tipo,
+           filtro_legislatura, filtro_estado, filtro_camara, filtro_anio,
+           filtro_tipo_providencia, 0) b
   ),
   sem_chunk as (
     select c.fuente as origen,
            coalesce(c.norma_id, c.providencia_id, c.proyecto_id) as id,
            (c.embedding operator(extensions.<#>) consulta_embedding) as dist
     from public.chunk c
+    left join public.proyecto_ley p on p.id = c.proyecto_id
+    left join public.providencia pr on pr.id = c.providencia_id
+    left join public.norma n on n.id = c.norma_id
     where consulta_embedding is not null
       and c.embedding is not null
       and (solo_tipo is null or c.fuente = solo_tipo)
+      and (
+        (c.fuente = 'proyecto_ley'
+         and filtro_tipo_providencia is null
+         and (filtro_legislatura is null or p.legislatura = filtro_legislatura)
+         and (filtro_estado is null or p.estado::text = filtro_estado)
+         and (filtro_camara is null or p.estado_camara::text = filtro_camara)
+         and (filtro_anio is null or p.legislatura like ('%' || filtro_anio::text || '%')))
+        or
+        (c.fuente = 'providencia'
+         and filtro_legislatura is null and filtro_estado is null and filtro_camara is null
+         and (filtro_tipo_providencia is null or pr.tipo::text = filtro_tipo_providencia)
+         and (filtro_anio is null
+              or extract(year from pr.fecha_publicacion)::int = filtro_anio))
+        or
+        (c.fuente = 'norma'
+         and filtro_legislatura is null and filtro_estado is null and filtro_camara is null
+         and filtro_tipo_providencia is null
+         and (filtro_anio is null or n.anio = filtro_anio))
+      )
     order by (c.embedding operator(extensions.<#>) consulta_embedding)
     limit pool
   ),
@@ -202,18 +241,30 @@ as $$
            p.captured_at, p.tier
     from public.proyecto_ley p
     where exists (select 1 from claves k where k.origen = 'proyecto_ley' and k.id = p.id)
+      and filtro_tipo_providencia is null
+      and (filtro_legislatura is null or p.legislatura = filtro_legislatura)
+      and (filtro_estado is null or p.estado::text = filtro_estado)
+      and (filtro_camara is null or p.estado_camara::text = filtro_camara)
+      and (filtro_anio is null or p.legislatura like ('%' || filtro_anio::text || '%'))
     union all
     select 'providencia'::public.origen_resultado, pr.id,
            nullif(pr.tema, 'Sin información'), pr.sentencia, pr.tipo::text,
            pr.fecha_publicacion, pr.url_texto::text, pr.captured_at, pr.tier
     from public.providencia pr
     where exists (select 1 from claves k where k.origen = 'providencia' and k.id = pr.id)
+      and filtro_legislatura is null and filtro_estado is null and filtro_camara is null
+      and (filtro_tipo_providencia is null or pr.tipo::text = filtro_tipo_providencia)
+      and (filtro_anio is null
+           or extract(year from pr.fecha_publicacion)::int = filtro_anio)
     union all
     select 'norma'::public.origen_resultado, n.id, n.titulo,
            n.tipo || ' ' || n.numero || ' de ' || n.anio, null::text,
            n.fecha_publicacion, n.url_fuente::text, n.captured_at, n.tier
     from public.norma n
     where exists (select 1 from claves k where k.origen = 'norma' and k.id = n.id)
+      and filtro_legislatura is null and filtro_estado is null and filtro_camara is null
+      and filtro_tipo_providencia is null
+      and (filtro_anio is null or n.anio = filtro_anio)
   )
   -- Este JOIN sí es INNER, y no es una incoherencia con el de arriba: allí se
   -- fusionan RANKINGS y perder uno pierde recobro; aquí se adjunta PROCEDENCIA
@@ -226,6 +277,7 @@ as $$
   -- Desempate determinista. Sin él la paginación es inestable y nadie se entera
   -- hasta que un usuario pasa de página y ve dos veces la misma fila.
   order by k.score desc, k.origen, k.id
+  offset greatest(desplazamiento, 0)
   limit limite;
 $$;
 

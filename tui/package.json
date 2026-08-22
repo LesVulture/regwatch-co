@@ -1,0 +1,17 @@
+{
+  "name": "@regwatch/tui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=../.env --import tsx src/cli.ts"
+  },
+  "dependencies": {
+    "ink": "^7.1.1",
+    "react": "19.2.8",
+    "tsx": "^4.23.12"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18"
+  }
+}

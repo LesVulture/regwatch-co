@@ -100,4 +100,10 @@ describe("buscar_normatividad embebe igual que la web", () => {
     expect(CODIGO).toContain("embeberConsulta");
     expect(FUENTE).toContain("Solo búsqueda léxica en esta consulta");
   });
+
+  it("acepta los mismos recortes que la web (tipo, legislatura, estado, cámara, año)", () => {
+    expect(CODIGO).toContain("legislatura");
+    expect(CODIGO).toContain("soloTipo");
+    expect(CODIGO).toContain("advertenciaFiltros");
+  });
 });

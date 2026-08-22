@@ -1,113 +1,122 @@
-import { buscar, identidadNorma } from "../lib/consultas.ts";
-import { embeberConsulta } from "../lib/embedding-consulta.ts";
-import { consultanteDesdeEntorno } from "../lib/supabase.ts";
+import { Suspense } from "react";
+import { Avisos } from "../components/avisos.tsx";
+import { Conteo } from "../components/conteo.tsx";
+import { FormGet } from "../components/form-get.tsx";
+import { ListaResultados } from "../components/lista-resultados.tsx";
+import { Atajos } from "../components/nav.tsx";
+import { hrefConPage, Paginacion } from "../components/paginacion.tsx";
+import { SelectFiltro } from "../components/select-filtro.tsx";
+import { Input } from "../components/ui/input.tsx";
+import { Label } from "../components/ui/label.tsx";
+import { ejecutarBusqueda } from "../lib/ejecutar-busqueda.ts";
+import { etiquetaOrigen, ORIGENES, parsearSearchParams, queryDeSearch } from "../lib/filtros.ts";
 
 // Next 16: `searchParams` es asíncrono. No hay `proxy.ts`: este app no
 // intercepta requests (Context7, Next 16.2: proxy.ts sustituye a middleware
 // SOLO cuando hay interceptación). Inventar un proxy vacío para «cumplir
 // la convención» sería el mismo teatro que este repo prohíbe.
-function diasDesde(iso: unknown): number | null {
-  if (typeof iso !== "string" || iso.length < 10) return null;
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return null;
-  return Math.max(0, Math.floor((Date.now() - t) / 86_400_000));
+
+type Sp = Promise<Record<string, string | string[] | undefined>>;
+
+export default function Inicio({ searchParams }: { searchParams: Sp }) {
+  return (
+    <>
+      <h1 className="text-2xl font-semibold tracking-tight">Buscar</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Lenguaje natural sobre lo capturado: normas, proyectos de ley del Senado y jurisprudencia de
+        la Corte. Un recorte que no aplica a un tipo lo excluye; no lo deja pasar callado.
+      </p>
+      <Suspense
+        fallback={
+          <p className="mt-6 text-sm text-muted-foreground" aria-live="polite">
+            Consultando lo capturado…
+          </p>
+        }
+      >
+        <Busqueda searchParams={searchParams} />
+      </Suspense>
+    </>
+  );
 }
 
-export default async function Buscar({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q = "" } = await searchParams;
+async function Busqueda({ searchParams }: { searchParams: Sp }) {
+  const sp = await searchParams;
+  const f = parsearSearchParams(sp);
+  const qs = queryDeSearch(sp);
 
-  let resultado: Awaited<ReturnType<typeof buscar>> | null = null;
+  let resultado: Awaited<ReturnType<typeof ejecutarBusqueda>>["resultado"] = null;
   let error: string | null = null;
   let sinSemantica: string | null = null;
 
-  if (q.trim() !== "") {
-    try {
-      // El vector se pide ANTES y por separado: si Ollama no está, `embeberConsulta`
-      // devuelve null con su motivo y `hybrid_search` degrada a la búsqueda léxica
-      // sin error. Lo que no se hace es callarlo — la mitad semántica apagada cambia
-      // qué resultados existen, no solo su orden.
-      const { vector, motivo } = await embeberConsulta(q);
-      sinSemantica = motivo;
-      // `api_bloque`: se devuelven varias filas, así que la política de egreso
-      // aplica su criterio de bloque. NO es `ficha_individual`.
-      resultado = await buscar(consultanteDesdeEntorno(), q, "api_bloque", 20, {
-        embedding: vector,
-      });
-    } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-    }
+  if (f.consulta !== "") {
+    const r = await ejecutarBusqueda(f.consulta, f.opciones, f.limite);
+    resultado = r.resultado;
+    error = r.error;
+    sinSemantica = r.sinSemantica;
   }
+
+  const n = resultado?.filas.length ?? 0;
 
   return (
     <>
-      <form style={{ margin: "1.5rem 0" }}>
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="salud mental, inteligencia artificial…"
-          aria-label="Buscar en normas, proyectos de ley y jurisprudencia"
-          style={{ width: "70%", padding: ".5rem", fontSize: "1rem" }}
-        />
-        <button type="submit" style={{ padding: ".5rem 1rem", marginLeft: ".5rem" }}>
-          Buscar
-        </button>
-      </form>
+      <FormGet action="/">
+        <div>
+          <Label htmlFor="q">Consulta</Label>
+          <Input
+            id="q"
+            name="q"
+            defaultValue={f.consulta}
+            placeholder="salud mental, inteligencia artificial…"
+            aria-label="Buscar en normas, proyectos de ley y jurisprudencia"
+            className="mt-1"
+          />
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <SelectFiltro
+            name="tipo"
+            label="Tipo"
+            value={f.opciones.soloTipo ?? ""}
+            opciones={ORIGENES.map((o) => ({ value: o, label: etiquetaOrigen(o) }))}
+          />
+          <div className="min-w-[8rem]">
+            <Label htmlFor="anio">Año</Label>
+            <Input
+              id="anio"
+              name="anio"
+              type="number"
+              min={1810}
+              max={2100}
+              defaultValue={f.opciones.anio !== undefined ? String(f.opciones.anio) : ""}
+              className="mt-1"
+            />
+          </div>
+        </div>
+      </FormGet>
+      <Atajos />
 
-      {error && <p style={{ color: "#a00" }}>No se pudo consultar: {error}</p>}
+      <Avisos
+        error={error}
+        sinSemantica={sinSemantica}
+        advertencia={resultado?.advertencia ?? null}
+        avisoFiltro={f.advertencia}
+      />
 
-      {sinSemantica && (
-        <p style={{ fontSize: ".8rem", color: "#666" }}>
-          Solo búsqueda léxica en esta consulta: {sinSemantica}. Los resultados que únicamente
-          encontraría el vector no aparecen.
+      {f.consulta === "" ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          Escribe una consulta o usa un atajo. Los atajos rellenan <code>q=</code>; no son una
+          taxonomía de temas.
         </p>
+      ) : (
+        <>
+          <Conteo n={n} />
+          {resultado ? <ListaResultados filas={resultado.filas} /> : null}
+          <Paginacion
+            page={f.page}
+            hayMas={resultado?.hay_mas === true}
+            hrefPara={(p) => hrefConPage("/", qs, p)}
+          />
+        </>
       )}
-
-      {resultado?.advertencia && (
-        <p style={{ background: "#fff8e1", padding: ".75rem", borderLeft: "3px solid #f5a623" }}>
-          {resultado.advertencia}
-        </p>
-      )}
-
-      {resultado?.filas.map((f) => {
-        const idn = identidadNorma(f.origen, f.referencia);
-        const titulo = String(f.titulo ?? "(sin título)");
-        const dias = diasDesde(f.captured_at);
-        return (
-          <article key={String(f.id)} style={{ borderBottom: "1px solid #eee", padding: "1rem 0" }}>
-            <div style={{ fontSize: ".8rem", color: "#666" }}>
-              {String(f.origen)} · {String(f.referencia ?? "")}
-              {f.estado ? ` · ${String(f.estado)}` : ""}
-              {f.posicion_semantica != null && f.posicion_lexica == null
-                ? " · lo encontró el vector"
-                : ""}
-            </div>
-            <div style={{ fontWeight: 600, margin: ".25rem 0" }}>
-              {idn ? (
-                <a
-                  href={`/vigencia/${encodeURIComponent(idn.tipo)}/${encodeURIComponent(idn.numero)}/${idn.anio}`}
-                >
-                  {titulo}
-                </a>
-              ) : (
-                titulo
-              )}
-            </div>
-            {/* La procedencia se muestra SIEMPRE, no en un desplegable: un
-              resultado sin fuente visible invita a citarlo sin comprobarlo. */}
-            <div style={{ fontSize: ".8rem" }}>
-              <a href={String(f.url_fuente)} rel="noreferrer">
-                fuente
-              </a>{" "}
-              · capturado {String(f.captured_at ?? "").slice(0, 10)}
-              {dias !== null ? ` · hace ${dias} día${dias === 1 ? "" : "s"}` : ""}
-              {dias !== null && dias > 2
-                ? " · frescura: rezago respecto de una corrida diaria"
-                : ""}
-              {" · "}tier {String(f.tier)}
-            </div>
-          </article>
-        );
-      })}
     </>
   );
 }

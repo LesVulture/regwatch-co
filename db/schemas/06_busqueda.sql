@@ -18,10 +18,24 @@ create type origen_resultado as enum ('proyecto_ley', 'providencia', 'norma');
 -- sin URL comprobable no sirve para nada aquí, y si la procedencia fuera
 -- opcional acabaría siendo opcional de verdad.
 -- ---------------------------------------------------------------------------
+-- DROP + CREATE: añadir parámetros con CREATE OR REPLACE no sustituye, crea un
+-- overload. PostgREST no distinguiría cuál llamar. `db:drift` ejecuta este
+-- bloque en una transacción que revierte.
+drop function if exists public.busqueda_lexica(text, integer, public.origen_resultado);
+
 create or replace function busqueda_lexica(
-  consulta   text,
-  limite     int  default 20,
-  solo_tipo  origen_resultado default null
+  consulta                 text,
+  limite                   int  default 20,
+  solo_tipo                origen_resultado default null,
+  -- Filtros NULL = no restringen. Los que solo existen en `proyecto_ley`
+  -- (legislatura, estado de trámite, cámara) EXCLUYEN normas y providencias:
+  -- no hay fila que los cumpla, y dejarlas pasar sería un filtro mudo.
+  filtro_legislatura       text default null,
+  filtro_estado            text default null,
+  filtro_camara            text default null,
+  filtro_anio              int  default null,
+  filtro_tipo_providencia  text default null,
+  desplazamiento           int  default 0
 )
 returns table (
   origen origen_resultado, id uuid, titulo text, referencia text, estado text,
@@ -69,6 +83,14 @@ as $$
       p.url_fuente::text, p.captured_at, p.tier
     from public.proyecto_ley p, q
     where p.titulo_tsv @@ q.tsq
+      -- tipo_providencia no existe aquí: si se pidió, este CTE queda vacío.
+      and filtro_tipo_providencia is null
+      and (filtro_legislatura is null or p.legislatura = filtro_legislatura)
+      and (filtro_estado is null or p.estado::text = filtro_estado)
+      -- `estado_camara` es «en qué cámara va según el Senado», no el corpus
+      -- de la Cámara (gated). Un valor que no case deja cero filas, no error.
+      and (filtro_camara is null or p.estado_camara::text = filtro_camara)
+      and (filtro_anio is null or p.legislatura like ('%' || filtro_anio::text || '%'))
   ),
   providencias as (
     select
@@ -83,6 +105,12 @@ as $$
       pr.url_texto::text, pr.captured_at, pr.tier
     from public.providencia pr, q
     where pr.tema_tsv @@ q.tsq
+      and filtro_legislatura is null
+      and filtro_estado is null
+      and filtro_camara is null
+      and (filtro_tipo_providencia is null or pr.tipo::text = filtro_tipo_providencia)
+      and (filtro_anio is null
+           or extract(year from pr.fecha_publicacion)::int = filtro_anio)
   ),
   normas as (
     select
@@ -98,6 +126,11 @@ as $$
       n.url_fuente::text, n.captured_at, n.tier
     from public.norma n, q
     where to_tsvector('spanish', public.immutable_unaccent(n.titulo)) @@ q.tsq
+      and filtro_legislatura is null
+      and filtro_estado is null
+      and filtro_camara is null
+      and filtro_tipo_providencia is null
+      and (filtro_anio is null or n.anio = filtro_anio)
   ),
   todo as (
     select * from proyectos
@@ -113,7 +146,8 @@ as $$
   from todo t
   where solo_tipo is null or t.origen = solo_tipo
   order by t.rank desc, t.id
-  limit limite;
+  limit limite
+  offset greatest(desplazamiento, 0);
 $$;
 
 -- ---------------------------------------------------------------------------

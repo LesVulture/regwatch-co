@@ -56,4 +56,22 @@ describe("bloquesDeFuncion", () => {
       "db/schemas/09_contexto.sql",
     );
   });
+
+  /**
+   * Cambiar la firma exige DROP + CREATE. Si el DROP se queda fuera del bloque,
+   * `db:drift` ejecuta un CREATE OR REPLACE que no sustituye y el overload
+   * queda sin comprobar.
+   */
+  it("un DROP inmediatamente encima del CREATE viaja en el mismo bloque", () => {
+    const sql =
+      "drop function if exists public.uno() cascade;\n" +
+      FN("uno") +
+      "\ncreate index i on t (c);\n" +
+      FN("dos");
+    const b = bloquesDeFuncion(sql, "x.sql");
+    expect(b).toHaveLength(2);
+    expect(b[0]?.sql.startsWith("drop function")).toBe(true);
+    expect(b[0]?.sql).toContain("create or replace function uno()");
+    expect(b[1]?.sql).not.toContain("drop function");
+  });
 });

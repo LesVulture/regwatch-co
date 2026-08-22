@@ -45,15 +45,31 @@ interface Bloque {
 export function bloquesDeFuncion(texto: string, fichero: string): Bloque[] {
   const out: Bloque[] = [];
   let dentro: string[] | null = null;
+  // Un DROP inmediatamente encima del CREATE entra en el mismo bloque: cambiar
+  // la firma con CREATE OR REPLACE no sustituye la función, crea un overload,
+  // y PostgREST se queda sin saber cuál llamar. El DROP va en la transacción
+  // que `db:drift` revierte, así que comprobar no despliega.
+  let dropPendiente: string[] = [];
   for (const linea of texto.split("\n")) {
-    if (/^create\s+(or\s+replace\s+)?function/i.test(linea)) dentro = [linea];
-    else if (dentro) {
+    if (dentro === null && /^drop\s+function\b/i.test(linea)) {
+      dropPendiente.push(linea);
+      continue;
+    }
+    if (/^create\s+(or\s+replace\s+)?function/i.test(linea)) {
+      dentro = [...dropPendiente, linea];
+      dropPendiente = [];
+    } else if (dentro) {
       dentro.push(linea);
       if (/^\$\$;/.test(linea)) {
-        const m = dentro[0]?.match(/function\s+(?:public\.)?(\w+)/i);
+        const creacion = dentro.find((l) => /^create\s+(or\s+replace\s+)?function/i.test(l));
+        const m = creacion?.match(/function\s+(?:public\.)?(\w+)/i);
         out.push({ nombre: m?.[1] ?? "(sin nombre)", fichero, sql: dentro.join("\n") });
         dentro = null;
       }
+    } else if (linea.trim() === "" || linea.trimStart().startsWith("--")) {
+      // Comentario o blanco entre el DROP y el CREATE: el DROP sigue pendiente.
+    } else {
+      dropPendiente = [];
     }
   }
   if (dentro !== null) {
