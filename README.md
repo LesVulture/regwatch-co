@@ -1,75 +1,111 @@
 # regwatch-co
 
-Monitor de **normatividad y actividad legislativa de Colombia**, consultable desde el móvil o la terminal, con una regla que no se negocia:
+**Consulta leyes, proyectos de ley y sentencias de Colombia — y comprueba si un artículo sigue vigente.**
 
-> Ningún dato entra sin URL de fuente primaria y fecha de captura.
+En Colombia las normas cambian: una ley nueva puede modificar o derogar otra anterior. Buscar el texto en internet no siempre basta, porque lo que importaba ayer puede no ser lo que rige hoy.
 
-No es un buscador genérico de leyes. Existe para responder preguntas como *«¿qué decía esta norma el 3 de marzo de 2024?»* — y para anclar cada afirmación a una fuente oficial checkeable.
+regwatch-co es una herramienta abierta para:
 
-```
-ley 1616 de 2013 · Vigencia a día de hoy
+1. **Buscar** normas, proyectos del Senado y providencias de la Corte Constitucional.
+2. **Preguntar** si un artículo sigue vigente en una fecha concreta.
+3. **Ver de dónde salió cada dato**, con enlace a la página oficial.
 
-AFECTADA — el cambio ya surtió efecto a la fecha consultada
-  Artículo 1 · por ley 2460 de 2025 · Diario Oficial 53.153 · efecto 2025-06-18
-  «ARTÍCULO 3o. Modifíquese el artículo 1o de la Ley 1616 de 2013…»
-  declarado_en_norma · tier primaria · verificar en la fuente ↗
-```
+Puedes usarla desde el navegador (también en el móvil), desde la terminal o desde un asistente de IA conectado al proyecto.
 
-Esa cláusula entre comillas **es la prueba**. Sin ella la fila no existe: lo impone el esquema, no una convención de estilo.
+> Esto **no** es asesoría jurídica. Es un índice que te acerca al texto oficial. La decisión final siempre es tuya, leyendo la fuente.
 
 ---
 
-## ¿Para qué sirve?
+## Un ejemplo concreto
 
-| Si quieres… | regwatch-co te da… |
-|---|---|
-| Ver si un artículo sigue vigente | Consulta de vigencia a una fecha, con la afectación tipada y el enlace al Diario Oficial |
-| Buscar normas, proyectos o jurisprudencia | Búsqueda en lenguaje natural sobre lo capturado (léxica; semántica si hay Ollama) |
-| Preguntar en prosa y exigir citas | Q&A CLI que comprueba cada cita **literal** contra el texto enviado |
-| Usarlo desde un agente / IDE | Servidor MCP de solo lectura (`buscar_normatividad`, `consultar_vigencia`) |
-| Auditar de dónde salió un dato | Procedencia en cada registro: URL + `captured_at` + jerarquía de evidencia |
+Imagina que quieres saber qué pasa con la Ley 1616 de 2013 (salud mental) **hoy**.
 
-**No es asesoría jurídica.** Es un índice con procedencia. La lectura jurídica se hace sobre el texto oficial; cada resultado enlaza al suyo.
-
----
-
-## Casos de uso
-
-### 1. Vigencia de una norma
-
-Abre la ficha de vigencia (web) o pregunta por MCP/CLI:
+En lugar de quedarte solo con el texto original, regwatch-co te muestra si algún artículo fue modificado después, por qué norma, desde cuándo y con un enlace para verificarlo tú mismo:
 
 ```text
-/vigencia/ley/1616/2013
+ley 1616 de 2013 · Vigencia a día de hoy
+
+AFECTADA
+  Artículo 1 · cambiado por la ley 2460 de 2025 · efecto 2025-06-18
+  Enlace a la fuente oficial ↗
 ```
 
-Qué ves: artículos afectados, norma que los cambió, fecha de efecto y la cláusula que lo demuestra — con enlace a la fuente.
+Esa es la idea del producto: no solo «encontrar la ley», sino **entender qué sigue en pie**.
 
-### 2. Búsqueda en lenguaje natural
+---
 
-En la web (`pnpm web:dev` → http://localhost:3000) o en la TUI:
+## ¿Qué puedes hacer?
+
+| Necesidad | Qué ofrece regwatch-co |
+|---|---|
+| Buscar por tema | Escribes algo como «salud mental» o «protección de datos» y ves lo indexado |
+| Revisar vigencia | Abres la ficha de una norma y ves qué artículos cambiaron y cuándo |
+| Preguntar en español | Puedes hacer preguntas en prosa; las respuestas van con citas del texto capturado |
+| Usarlo en el día a día | Web, terminal o integración con herramientas de IA |
+
+### Otras preguntas típicas que resuelve
+
+- «¿Este artículo ya fue modificado?»
+- «¿Qué proyectos de ley hay sobre X en el Senado?»
+- «¿Qué dijo la Corte sobre este tema?» (dentro de lo que ya está cargado)
+
+---
+
+## Cómo empezar (lo más simple)
+
+Para probar la interfaz localmente necesitas Node.js 24 o superior, [pnpm](https://pnpm.io) y un proyecto en [Supabase](https://supabase.com) con los datos (o tu propia carga; ver más abajo).
+
+```bash
+git clone https://github.com/LesVulture/regwatch-co.git
+cd regwatch-co
+pnpm install
+
+cp .env.example .env
+# Completa SUPABASE_URL, SUPABASE_ANON_KEY y, si vas a cargar datos, SUPABASE_DB_URL
+
+pnpm web:dev
+```
+
+Abre http://localhost:3000 en el navegador.
+
+También puedes usar la interfaz de terminal:
 
 ```bash
 pnpm tui
 ```
 
-Ejemplos de consultas:
+---
 
-- «salud mental» → normas y fragmentos del corpus
-- «protección de datos» → lo indexado sobre esa materia
-- filtros por origen (norma / proyecto / providencia) cuando no quieres mezclar tipos
+## Casos de uso paso a paso
 
-Sin Ollama la búsqueda **sigue funcionando** en modo léxico y lo declara. Con Ollama (`nomic-embed-text`) añade semántica.
+### Buscar en la web
 
-### 3. Pregunta con citas comprobadas
+1. Arranca con `pnpm web:dev`.
+2. Escribe una consulta en lenguaje cotidiano.
+3. Filtra por tipo si quieres (norma, proyecto o providencia).
+4. Abre el resultado y sigue el enlace a la fuente oficial cuando lo necesites.
+
+Rutas útiles:
+
+| Página | Para qué |
+|---|---|
+| `/` | Búsqueda |
+| `/vigencia/ley/1616/2013` | Vigencia de una norma concreta |
+| `/proyectos` | Listado de proyectos de ley |
+| `/providencias` | Listado de providencias |
+| `/cobertura` | Qué hay cargado hoy |
+
+### Preguntar por escrito (con citas)
 
 ```bash
 pnpm qa "¿Qué obligaciones tiene el Estado en política migratoria?"
 ```
 
-Cada cita se verifica contra el texto del corpus. Si el modelo inventa o parafrasea de más, la frase no se publica. Si el corpus no cubre la pregunta, el sistema declina en lugar de rellenar.
+Si el sistema no tiene texto suficiente para responder con honestidad, **se niega a inventar**. Prefiere decir que no consta a completar con conjeturas.
 
-### 4. Integración MCP (Claude Desktop, Cursor, etc.)
+### Conectar un asistente de IA (MCP)
+
+Si usas Claude Desktop, Cursor u otra herramienta compatible con MCP:
 
 ```json
 {
@@ -86,79 +122,77 @@ Cada cita se verifica contra el texto del corpus. Si el modelo inventa o parafra
 }
 ```
 
-Herramientas: `buscar_normatividad` y `consultar_vigencia` (solo lectura; ninguna afirma vigencia sin fuente primaria).
+Expone dos herramientas de consulta (solo lectura): buscar normatividad y consultar vigencia.
 
 ---
 
-## Arranque rápido
+## Qué datos incluye hoy
 
-Requisitos: **Node ≥ 24** (`.nvmrc` fija 24), **pnpm 11**, cuenta de [Supabase](https://supabase.com) (Postgres + pgvector).
+El proyecto está en construcción. Funciona de punta a punta, pero el volumen de texto completo de leyes aún es un **piloto**.
 
-```bash
-git clone https://github.com/LesVulture/regwatch-co.git
-cd regwatch-co
-pnpm install
-git config core.hooksPath .githooks   # bloquea push de ramas backup/* (ver abajo)
-
-cp .env.example .env
-# Rellena SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_DB_URL
-
-pnpm web:dev                          # http://localhost:3000
-```
-
-Opcionales (gratis):
-
-```bash
-ollama pull nomic-embed-text          # búsqueda semántica (~270 MB)
-claude                                # una vez: sesión OAuth para `pnpm qa`
-```
-
-El `.env` vive en la **raíz** del monorepo. Next lo carga desde ahí; los scripts de Node usan `--env-file-if-exists=.env`.
-
-### Verificar que el árbol está sano
-
-```bash
-pnpm verify                           # lint + types + tests + build web
-```
-
----
-
-## Cómo se usa (flujos habituales)
-
-### Consultar lo ya cargado
-
-Si ya tienes base y datos:
-
-| Acción | Comando / ruta |
+| Contenido | Situación actual |
 |---|---|
-| Web | `pnpm web:dev` |
-| TUI | `pnpm tui` |
-| Q&A | `pnpm qa "tu pregunta"` |
-| MCP | `pnpm mcp:start` |
-| Vigencia (web) | `/vigencia/ley/1616/2013` |
-| Listados | `/proyectos`, `/providencias`, `/cobertura` |
+| Proyectos de ley del Senado | Disponible; se actualiza a diario |
+| Providencias de la Corte Constitucional | Disponible; se actualiza a diario (año en curso) |
+| Consulta de vigencia | Disponible |
+| Búsqueda en la web y en terminal | Disponible |
+| Texto completo artículo por artículo | Piloto (~7 normas); se puede ampliar |
+| Cámara de Representantes | Preparado, aún no activo (falta autorización) |
+| Alertas por correo | En preparación |
 
-### Recolectar e importar
+El estado medido día a día está en [`docs/ESTADO.md`](docs/ESTADO.md).
 
-Los colectores **nunca** escriben directo a la base: producen un artefacto JSON y un segundo paso lo importa.
+---
+
+## Para quien desarrolla o opera el sistema
+
+A partir de aquí el lenguaje es más técnico.
+
+### Requisitos
+
+- Node.js ≥ 24 (el repo fija 24 en `.nvmrc`)
+- pnpm 11
+- Supabase (Postgres + pgvector)
+- Opcional: [Ollama](https://ollama.com) con `nomic-embed-text` para búsqueda semántica
+- Opcional: sesión de Claude Code para `pnpm qa`
 
 ```bash
-pnpm collect:senado                   # → artefactos/senado-pdly.json
-pnpm collect:corte                    # → artefactos/corte-relatoria.json  (años: opcional)
-pnpm collect:articulado Ley 1616 2013 # → artefactos/articulado-….json
-
-pnpm db:load                          # proyectos de ley
-pnpm db:load-providencias             # providencias
-pnpm db:load-chunks artefactos/articulado-ley_1616_2013.json --crear-norma
-pnpm embed:chunks                     # vectores (necesita Ollama)
-pnpm g2 -- artefactos/senado-pdly.json artefactos/corte-relatoria.json
+ollama pull nomic-embed-text
+claude   # una vez, si vas a usar Q&A
 ```
 
-Hay un cron diario en GitHub Actions (`.github/workflows/collect.yml`) que corre Senado + Corte del año + piloto + g2 + carga cuando `SUPABASE_DB_URL` está configurado como secreto.
+Sin Ollama la búsqueda sigue funcionando en modo léxico y lo indica. Sin Claude, el resto del sistema sigue disponible.
 
-### Ampliar el articulado del piloto
+Configura el hook de Git (recomendado si vas a hacer push):
 
-Hoy el corpus de texto articulado es pequeño a propósito (piloto). Para sumar una norma:
+```bash
+git config core.hooksPath .githooks
+```
+
+Eso evita empujar por accidente ramas `backup/*` con historia que no debe republicarse.
+
+Comprueba que el árbol está sano:
+
+```bash
+pnpm verify
+```
+
+### Recolectar e importar datos
+
+Los recolectores **no escriben directo** en la base. Primero guardan un archivo JSON; después un comando aparte lo importa. Así puedes revisar una corrida antes de tocarla.
+
+```bash
+pnpm collect:senado
+pnpm collect:corte
+pnpm collect:articulado Ley 1616 2013
+
+pnpm db:load
+pnpm db:load-providencias
+pnpm db:load-chunks artefactos/articulado-ley_1616_2013.json --crear-norma
+pnpm embed:chunks
+```
+
+Para sumar otra norma al piloto:
 
 ```bash
 pnpm collect:articulado Ley 1751 2015
@@ -166,56 +200,28 @@ pnpm db:load-chunks artefactos/articulado-ley_1751_2015.json --crear-norma
 pnpm embed:chunks
 ```
 
-`--crear-norma` usa el **epígrafe oficial** del texto; si no lo encuentra, se niega a inventar un título.
+La recolección diaria en GitHub Actions está en `.github/workflows/collect.yml` (Senado + Corte del año + carga, si el secreto `SUPABASE_DB_URL` está configurado).
 
----
+### Cómo está organizado el código
 
-## Qué hay hoy (resumen honesto)
-
-Detalle medido y fechas de captura: [`docs/ESTADO.md`](docs/ESTADO.md).
-
-| Capacidad | Estado |
+| Carpeta | Función |
 |---|---|
-| Proyectos de ley (Senado) | Operativo; recolección diaria |
-| Providencias (Corte) | Operativo; ventana del año en el cron |
-| Vigencia a fecha | Operativo de punta a punta |
-| Búsqueda léxica / semántica | Operativo (semántica con Ollama) |
-| Web + TUI + MCP | Operativos |
-| Q&A con citas literales | Operativo; cobertura limitada por el corpus |
-| Articulado completo | Piloto (~7 normas con texto) |
-| Cámara de Representantes | Colector escrito, **gated** hasta autorización |
-| Alertas por correo | Piezas listas; aún sin runner ni proveedor de mail |
-| OCR de escaneados | No hay proveedor |
-
-Sobre el Q&A: lo medido y verde es que **no fabrica citas**. Cuánto responde depende de cuánto articulado esté cargado — ampliar el corpus es la palanca, no relajar el validador.
-
-**Cero claves de API de pago.** Embeddings con Ollama local; Q&A con la sesión OAuth de Claude Code. Solo Supabase (y la suscripción de Claude Code, si usas Q&A).
-
----
-
-## Cómo está hecho
-
-Monorepo pnpm:
-
-| Paquete / carpeta | Rol |
-|---|---|
-| `collectors/` | Recolección, gates de evidencia, RAG/Q&A |
+| `collectors/` | Descarga y validación de fuentes; búsqueda y Q&A |
 | `db/` | Esquema SQL e importadores |
-| `web/` | Next.js (búsqueda, vigencia, listados) |
-| `tui/` | Cliente de terminal (Ink) |
-| `mcp/` | Servidor MCP stdio |
+| `web/` | Aplicación web (Next.js) |
+| `tui/` | Interfaz de terminal |
+| `mcp/` | Servidor MCP |
 
-Tres invariantes:
+### En qué se diferencia de un buscador cualquiera
 
-1. **La vigencia no la inventa un LLM.** Fechas de afectación llevan procedencia; el esquema las rechaza si faltan.
-2. **Cero filas ≠ «vigente para siempre».** Significa que no consta afectación capturada; la UI lo dice así.
-3. **No se republica aparato editorial de terceros.** El articulado es dominio público; las notas de compilaciones privadas se descartan.
+- Cada resultado importante puede rastrearse hasta una página oficial.
+- La vigencia no la «adivina» un modelo de lenguaje: se basa en afectaciones registradas con su prueba.
+- Si no hay afectaciones cargadas, el sistema **no** afirma que la norma esté vigente para siempre: dice que no consta cambio capturado.
+- No republica notas editoriales de compilaciones privadas; solo el texto normativo de dominio público.
 
-Reglas completas: [`GOVERNANCE.md`](GOVERNANCE.md). Plan histórico (no se reescribe): [`PLAN-V2.md`](PLAN-V2.md).
+Detalle de reglas: [`GOVERNANCE.md`](GOVERNANCE.md). Plan histórico: [`PLAN-V2.md`](PLAN-V2.md).
 
-### Hook `pre-push`
-
-`git config core.hooksPath .githooks` activa un hook que **bloquea** empujar ramas `backup/*`. Esas ramas conservan historia previa a una redacción de rutas locales; un `git push --all` las republicaría en un repo público.
+**Coste de APIs de pago:** ninguna. Los embeddings corren en Ollama local; el Q&A usa la sesión OAuth de Claude Code. Lo demás es Supabase.
 
 ---
 
@@ -223,13 +229,15 @@ Reglas completas: [`GOVERNANCE.md`](GOVERNANCE.md). Plan histórico (no se reesc
 
 | Documento | Contenido |
 |---|---|
-| [`docs/ESTADO.md`](docs/ESTADO.md) | As-built: qué corre, qué está gated, capturas |
-| [`GOVERNANCE.md`](GOVERNANCE.md) | Contrato de evidencia |
+| [`docs/ESTADO.md`](docs/ESTADO.md) | Qué está construido y medido hoy |
+| [`GOVERNANCE.md`](GOVERNANCE.md) | Reglas de evidencia y procedencia |
 | [`PLAN-V2.md`](PLAN-V2.md) | Plan histórico de construcción |
-| [`research/`](research/) | Anexo de procedencia (investigación; no alimenta la base) |
+| [`research/`](research/) | Investigación de fuentes (no alimenta la base) |
 
 ---
 
 ## Licencia
 
-MIT — ver [LICENSE](LICENSE). El código es MIT; el texto normativo indexado pertenece a sus fuentes oficiales y cada registro enlaza a la suya.
+MIT — ver [LICENSE](LICENSE).
+
+El código es MIT. El texto de las normas pertenece a sus fuentes oficiales; cada registro enlaza a la suya.
