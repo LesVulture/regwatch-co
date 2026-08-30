@@ -134,9 +134,16 @@ export async function recolectar(
 }
 
 async function main(): Promise<void> {
-  const [a, b] = process.argv.slice(2);
+  const argumentos = process.argv.slice(2).filter((arg) => arg !== "--");
+  if (argumentos.length > 2) {
+    throw new Error(`uso: collect:corte [desde] [hasta]; llegaron ${argumentos.length} argumentos`);
+  }
+  const [a, b] = argumentos;
   const desde = a ? Number(a) : 2015;
   const hasta = b ? Number(b) : 2026;
+  if (!Number.isInteger(desde) || !Number.isInteger(hasta) || hasta < desde) {
+    throw new Error(`rango de años inválido: ${String(a)}..${String(b)}`);
+  }
   const anios = Array.from({ length: hasta - desde + 1 }, (_, i) => desde + i);
 
   console.log(`Backfill de la Corte: ${desde}–${hasta} (${anios.length} peticiones)\n`);
