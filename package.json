@@ -24,7 +24,7 @@
     "db:load:dry": "node --env-file-if-exists=.env db/load.ts --dry-run",
     "db:load-afectaciones": "node --env-file-if-exists=.env db/load-afectaciones.ts",
     "db:load-afectaciones:dry": "node --env-file-if-exists=.env db/load-afectaciones.ts --dry-run",
-    "collect:corte": "node --env-file-if-exists=.env collectors/src/corte/run-relatoria.ts",
+    "collect:corte": "NODE_EXTRA_CA_CERTS=collectors/certs/godaddy-secure-certificate-authority-g2.pem node --env-file-if-exists=.env collectors/src/corte/run-relatoria.ts",
     "web:dev": "pnpm --filter @regwatch/web dev",
     "web:build": "pnpm --filter @regwatch/web build",
     "collect:articulado": "node --env-file-if-exists=.env collectors/src/rag/run-articulado.ts",

@@ -80,6 +80,11 @@ async function main(): Promise<void> {
   for (const ruta of rutas) {
     const art = JSON.parse(readFileSync(ruta, "utf-8")) as Record<string, unknown>;
     const v = pulsoDesdeArtefacto(art, ahora);
+    if (Array.isArray(art.corridas) && art.corridas.length === 0) {
+      console.error(`FAIL                   artefacto sin corridas  ${ruta}`);
+      fallos++;
+      continue;
+    }
     const marca = pulsoFallaCorrida(v) ? "FAIL" : v.outcome === "ok" ? "ok" : v.outcome;
     console.log(
       `${marca.padEnd(22)} ${v.sourceKey}  cadencia=${v.cadenciaHoras ?? "—"}h  ` +

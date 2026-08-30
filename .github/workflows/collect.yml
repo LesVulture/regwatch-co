@@ -46,7 +46,7 @@ jobs:
         run: pnpm collect:senado
 
       - name: Recolectar Corte (año en curso)
-        run: pnpm collect:corte -- "$(date +%Y)" "$(date +%Y)"
+        run: pnpm collect:corte "$(date +%Y)" "$(date +%Y)"
 
       - name: Recolectar articulado del piloto
         # Una norma contaminada no cancela Senado/Corte. El runner ya espera 3 s.

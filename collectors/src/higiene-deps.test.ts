@@ -33,6 +33,7 @@ describe("el cron de recolección no abre fuentes gated", () => {
     );
     expect(yml).toContain("pnpm collect:senado");
     expect(yml).toContain("pnpm collect:corte");
+    expect(yml).not.toContain("pnpm collect:corte --");
     expect(yml).toContain("pnpm collect:piloto");
     expect(yml).toContain("pnpm g2");
     expect(yml).not.toContain("collect:camara");
